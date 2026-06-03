@@ -17,7 +17,13 @@ const FlatDetailClient = dynamic(
     })),
   { loading: () => <AppLoader label="Loading flat" /> },
 );
-
+//usegetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentId to get all the resident of flat is developer route we have to make it use for admin as well
+//usePostV1SocietiesBySocietyIdFlatsAndFlatIdResidentsUsersUserIdMutation // use this mutation to add resident in flats
+//usedeleteV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentId to remove resident from flat
+//postV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentIdMoveOut move out resident
+//postV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentIdPrimary chnage primary resident
+//patchV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentIdRole update flat resident role
+// These all thing can be done here
 type FlatDetailPageProps = {
   params: Promise<{
     societyId: string;

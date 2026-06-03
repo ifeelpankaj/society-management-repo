@@ -36,3 +36,9 @@ export default async function ClaimsPage({ params }: ClaimsPageProps) {
     <ClaimsClient encodedSocietyId={encodedSocietyId} societyId={societyId} />
   );
 }
+//TODO: we have to create a detail page for claim as well and in that page
+//getV1SocietiesBySocietyIdFlatClaimsAndClaimId to get claim details
+//getV1MeResidences use this and pass society and flat id which we got from getV1SocietiesBySocietyIdFlatClaimsAndClaimId to show all flat resident
+// and that to in taable format when user click on it it can redirect to flat details page with same
+//postV1FlatClaimsByClaimIdApprove to approve claim
+//postV1FlatClaimsByClaimIdCancel to reject claim

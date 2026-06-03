@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useMemo } from "react";
 
 import type { SmartTableColumn } from "@/components/tables/smart-table";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FlatStatusBadge } from "@/features/admin/flats/components/flat-status-badge";
 import type { ModelsFlatResponse } from "@/lib/api/generated-api";
 import { formatShortDateIN } from "@/lib/format";
+import { useRouter } from "next/navigation";
 
 export function flatLabel(flat: ModelsFlatResponse) {
   return flat.flat_number ?? `Flat #${flat.id}`;
@@ -27,6 +28,10 @@ export function useFlatsTableColumns({
   onDeactivate,
   onEdit,
 }: UseFlatsTableColumnsOptions) {
+  const router = useRouter();
+  const handleDetails = (flat: ModelsFlatResponse) => {
+    router.push(`flats/${flat.id}`);
+  };
   return useMemo<SmartTableColumn<ModelsFlatResponse>[]>(
     () => [
       {
@@ -74,49 +79,19 @@ export function useFlatsTableColumns({
         meta: { headerClassName: "text-right", className: "text-right" },
         cell: ({ row }) => {
           const flat = row.original;
-          const isBlocked = flat.status === "blocked";
+
           return (
-            <div className="flex justify-end gap-1.5">
+            <div className="flex justify-end">
               <Button
-                aria-label={`Update ${flatLabel(flat)}`}
+                aria-label={`Details ${flatLabel(flat)}`}
                 disabled={!flat.id || actionInProgress}
-                onClick={() => onEdit(flat)}
+                onClick={() => handleDetails(flat)}
                 size="icon-sm"
-                title="Update flat"
+                title="Flat Details"
                 type="button"
                 variant="ghost"
               >
-                <Pencil className="size-4" />
-              </Button>
-              <Button
-                aria-label={
-                  isBlocked
-                    ? `Unblock ${flatLabel(flat)}`
-                    : `Block ${flatLabel(flat)}`
-                }
-                disabled={!flat.id || actionInProgress}
-                onClick={() => onBlockToggle(flat)}
-                size="icon-sm"
-                title={isBlocked ? "Unblock flat" : "Block flat"}
-                type="button"
-                variant="outline"
-              >
-                {isBlocked ? (
-                  <CheckCircle2 className="size-4" />
-                ) : (
-                  <Ban className="size-4" />
-                )}
-              </Button>
-              <Button
-                aria-label={`Deactivate ${flatLabel(flat)}`}
-                disabled={!flat.id || actionInProgress}
-                onClick={() => onDeactivate(flat)}
-                size="icon-sm"
-                title="Deactivate flat"
-                type="button"
-                variant="destructive"
-              >
-                <Trash2 className="size-4" />
+                <Eye className="size-4" />
               </Button>
             </div>
           );

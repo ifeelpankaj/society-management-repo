@@ -7,7 +7,15 @@ export const metadata = createPageMetadata(
   "Society details",
   "Review society profile, status, and subscription.",
 );
-
+//getV1SocietiesBySocietyId to get society details
+//patchV1SocietiesBySocietyId to update society details like name and address
+//postV1SocietiesBySocietyIdApprove to approve society if pending
+//postV1SocietiesBySocietyIdReject to reject society if pending once rejected nothing an
+//deleteV1SocietiesBySocietyId to delete society
+//postV1SocietiesBySocietyIdRestore to restore deleted society
+//postV1SocietiesBySocietyIdSuspend to suspend society if active
+//postV1SocietiesBySocietyIdReactivate to reactivate society if suspended
+//postV1SocietiesBySocietyIdTransferOwnership to transfer society ownership to another user
 type DeveloperSocietyDetailPageProps = {
   params: Promise<{
     societyId: string;
