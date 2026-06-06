@@ -13,6 +13,8 @@ import (
 	plansvc "go-server/internal/services/planSvc"
 	societysvc "go-server/internal/services/societySvc"
 	subscriptionsvc "go-server/internal/services/subscriptionSvc"
+	visitorentrysvc "go-server/internal/services/visitorEntrySvc"
+	visitorsettingsvc "go-server/internal/services/visitorSettingSvc"
 	"time"
 
 	"go-server/pkg/database"
@@ -25,21 +27,26 @@ type Dependencies struct {
 	V1 *V1Handlers
 	V2 *V2Handlers
 
-	Society      societysvc.SocietyService
-	Flat         flatsvc.FlatService
-	Plan         plansvc.PlanService
-	Subscription subscriptionsvc.SubscriptionService
+	Society        societysvc.SocietyService
+	Flat           flatsvc.FlatService
+	Plan           plansvc.PlanService
+	Subscription   subscriptionsvc.SubscriptionService
+	VisitorInvite  visitorentrysvc.VisitorInviteService
+	VisitorEntry   visitorentrysvc.VisitorEntryService
+	VisitorSetting visitorsettingsvc.VisitorSettingService
 
 	cleanupCancel context.CancelFunc
 }
 
 type V1Handlers struct {
-	Auth         *handlers.AuthHandler
-	Bootstrap    *handlers.BootstrapHandler
-	Society      *handlers.SocietyHandler
-	Flat         *handlers.FlatHandler
-	Plan         *handlers.PlanHandler
-	Subscription *handlers.SubscriptionHandler
+	Auth           *handlers.AuthHandler
+	Bootstrap      *handlers.BootstrapHandler
+	Society        *handlers.SocietyHandler
+	Flat           *handlers.FlatHandler
+	Plan           *handlers.PlanHandler
+	Subscription   *handlers.SubscriptionHandler
+	VisitorEntry   *handlers.VisitorEntryHandler
+	VisitorSetting *handlers.VisitorSettingHandler
 }
 
 type V2Handlers struct{}
@@ -64,6 +71,11 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 	flatResidentRepo := repository.NewFlatResidentRepository(db)
 	planRepo := repository.NewPlanRepository(db)
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
+	visitorSettingRepo := repository.NewVisitorSettingRepository(db)
+	visitorRepo := repository.NewVisitorRepository(db)
+	visitorInviteRepo := repository.NewVisitorInviteRepository(db)
+	visitorEntryRepo := repository.NewVisitorEntryRepository(db)
+	visitorEntryEventRepo := repository.NewVisitorEntryEventRepository(db)
 	txManager := repository.NewTransactionManager(db)
 
 	emailSvc, err := service.NewEmailService(cfg)
@@ -103,6 +115,24 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 
 	planSvc := plansvc.NewPlanService(planRepo)
 	subscriptionSvc := subscriptionsvc.NewSubscriptionService(subscriptionRepo, societyRepo)
+	visitorSettingSvc := visitorsettingsvc.NewVisitorSettingService(
+		visitorSettingRepo,
+		societyMemberRepo,
+		flatResidentRepo,
+		flatRepo,
+		txManager,
+	)
+	visitorInviteSvc, visitorEntrySvc := visitorentrysvc.NewVisitorService(
+		visitorRepo,
+		visitorInviteRepo,
+		visitorEntryRepo,
+		visitorEntryEventRepo,
+		visitorSettingSvc,
+		societyMemberRepo,
+		flatResidentRepo,
+		flatRepo,
+		txManager,
+	)
 
 	societySvc := societysvc.NewSocietyService(
 		societyRepo,
@@ -114,6 +144,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		flatClaimRepo,
 		planSvc,
 		subscriptionSvc,
+		visitorSettingSvc,
 	)
 
 	flatSvc := flatsvc.NewFlatService(
@@ -124,6 +155,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		txManager,
 		societySvc,
 		subscriptionSvc,
+		visitorSettingSvc,
 	)
 
 	bootstrapSvc := bootstrapsvc.NewBootstrapService(
@@ -144,11 +176,13 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 			passwordSvc,
 			&cfg.Auth,
 		),
-		Bootstrap:    handlers.NewBootstrapHandler(bootstrapSvc),
-		Society:      handlers.NewSocietyHandler(societySvc),
-		Flat:         handlers.NewFlatHandler(flatSvc),
-		Plan:         handlers.NewPlanHandler(planSvc),
-		Subscription: handlers.NewSubscriptionHandler(subscriptionSvc),
+		Bootstrap:      handlers.NewBootstrapHandler(bootstrapSvc),
+		Society:        handlers.NewSocietyHandler(societySvc),
+		Flat:           handlers.NewFlatHandler(flatSvc),
+		Plan:           handlers.NewPlanHandler(planSvc),
+		Subscription:   handlers.NewSubscriptionHandler(subscriptionSvc),
+		VisitorEntry:   handlers.NewVisitorEntryHandler(visitorInviteSvc, visitorEntrySvc),
+		VisitorSetting: handlers.NewVisitorSettingHandler(visitorSettingSvc),
 	}
 
 	v2Handlers := &V2Handlers{}
@@ -156,12 +190,15 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 	logger.Info("dependencies initialized successfully")
 
 	return &Dependencies{
-		V1:            v1Handlers,
-		V2:            v2Handlers,
-		Society:       societySvc,
-		Flat:          flatSvc,
-		Plan:          planSvc,
-		Subscription:  subscriptionSvc,
-		cleanupCancel: cleanupCancel,
+		V1:             v1Handlers,
+		V2:             v2Handlers,
+		Society:        societySvc,
+		Flat:           flatSvc,
+		Plan:           planSvc,
+		Subscription:   subscriptionSvc,
+		VisitorInvite:  visitorInviteSvc,
+		VisitorEntry:   visitorEntrySvc,
+		VisitorSetting: visitorSettingSvc,
+		cleanupCancel:  cleanupCancel,
 	}, nil
 }

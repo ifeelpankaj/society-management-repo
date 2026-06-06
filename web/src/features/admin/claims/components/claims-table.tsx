@@ -11,6 +11,7 @@ type ClaimsTableProps = {
   isFetching: boolean;
   onRowClick: (claim: ModelsFlatClaimResponse) => void;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   page: number;
   pageSize: number;
   totalItems: number;
@@ -23,6 +24,7 @@ export function ClaimsTable({
   isFetching,
   onRowClick,
   onPageChange,
+  onPageSizeChange,
   page,
   pageSize,
   totalItems,
@@ -39,6 +41,7 @@ export function ClaimsTable({
       <PaginationFooter
         loading={isFetching}
         onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
         page={page}
         pageSize={pageSize}
         totalItems={totalItems}

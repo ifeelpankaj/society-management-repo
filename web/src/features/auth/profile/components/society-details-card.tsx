@@ -19,7 +19,8 @@ type SocietyDetailsCardProps = {
     | null
     | undefined;
   isFetchingSociety: boolean;
-  onboardingLink: string;
+  claimLink: string;
+  host: string;
   qrUrl: string;
   onCopyLink: () => void;
 };
@@ -27,14 +28,15 @@ type SocietyDetailsCardProps = {
 export function SocietyDetailsCard({
   society,
   isFetchingSociety,
-  onboardingLink,
+  claimLink,
+  host,
   qrUrl,
   onCopyLink,
 }: SocietyDetailsCardProps) {
   return (
     <SectionCard
       title="Society details"
-      description="Use the code and QR link for public resident onboarding."
+      description="Use the code and claim link for public resident flat claims."
       contentClassName="space-y-5"
     >
       {isFetchingSociety ? (
@@ -59,6 +61,12 @@ export function SocietyDetailsCard({
             />
 
             <ProfileRow
+              icon={<KeyRound className="size-4" />}
+              label="Current host"
+              value={host || "Not available"}
+            />
+
+            <ProfileRow
               icon={<MapPin className="size-4" />}
               label="Address"
               value={[
@@ -72,31 +80,28 @@ export function SocietyDetailsCard({
             />
           </div>
 
-          {onboardingLink ? (
+          {claimLink ? (
             <div className="grid gap-4 rounded-lg border border-border bg-background p-4 sm:grid-cols-[auto_1fr] sm:items-center">
               <div className="rounded-md border border-border bg-white p-3">
                 {/* biome-ignore lint/performance/noImgElement: external QR endpoint is a generated image and next/image needs remote config */}
                 <img
                   src={qrUrl}
-                  alt={`QR code for ${society.name ?? "society"} onboarding`}
+                  alt={`QR code for ${society.name ?? "society"} claim link`}
                   className="size-44"
                 />
               </div>
 
               <div className="min-w-0 space-y-3">
                 <div>
-                  <h3 className="font-semibold text-base">
-                    Resident onboarding QR
-                  </h3>
+                  <h3 className="font-semibold text-base">Resident claim QR</h3>
 
                   <p className="mt-1 text-muted-foreground text-sm leading-6">
-                    Scanning this opens the public flat selection page for this
-                    society.
+                    Scanning this opens the public claim page for this society.
                   </p>
                 </div>
 
                 <p className="break-all rounded-md bg-muted px-3 py-2 text-muted-foreground text-xs">
-                  {onboardingLink}
+                  {claimLink}
                 </p>
 
                 <Button onClick={onCopyLink} type="button" variant="outline">

@@ -160,6 +160,9 @@ type FlatClaim struct {
 	FlatStatus       *FlatStatus      `json:"flat_status,omitempty"`
 	SocietyName      *string          `json:"society_name,omitempty"`
 	SocietyCode      *string          `json:"society_code,omitempty"`
+	ReviewerName     *string          `json:"reviewer_name,omitempty"`
+	ReviewerEmail    *string          `json:"reviewer_email,omitempty"`
+	ReviewerPhone    *string          `json:"reviewer_phone,omitempty"`
 }
 
 func (c *FlatClaim) ToResponse() *FlatClaimResponse {
@@ -173,6 +176,7 @@ func (c *FlatClaim) ToResponse() *FlatClaimResponse {
 		ReviewedAt: c.ReviewedAt, CancelledAt: c.CancelledAt, CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt, UserName: c.UserName, UserEmail: c.UserEmail, UserPhone: c.UserPhone,
 		FlatNumber: c.FlatNumber, Block: c.Block, Floor: c.Floor, FlatStatus: c.FlatStatus,
-		SocietyName: c.SocietyName, SocietyCode: c.SocietyCode,
+		SocietyName: c.SocietyName, SocietyCode: c.SocietyCode, ReviewerName: c.ReviewerName,
+		ReviewerEmail: c.ReviewerEmail, ReviewerPhone: c.ReviewerPhone,
 	}
 }

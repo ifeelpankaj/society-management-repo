@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ModelsFlatStatus } from "@/lib/api/generated-api";
 import { useGetV1SocietiesBySocietyIdFlatsStatsQuery } from "@/lib/api/generated-api";
@@ -13,25 +13,48 @@ type UseFlatsListOptions = {
 };
 
 export function useFlatsList({ societyId }: UseFlatsListOptions) {
+  const [block, setBlock] = useState("");
+  const [floor, setFloor] = useState("");
+  const [flatNumber, setFlatNumber] = useState("");
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search);
+  const debouncedSearch = useDebouncedValue(search, 2000);
+  const debouncedBlock = useDebouncedValue(block, 2000);
+  const debouncedFloor = useDebouncedValue(floor, 2000);
+  const debouncedFlatNumber = useDebouncedValue(flatNumber, 2000);
   const [status, setStatus] = useState<ModelsFlatStatus | "all">("all");
+  const [isActive, setIsActive] = useState<"all" | "true" | "false">("all");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
+  const resetKey = [
+    debouncedBlock,
+    debouncedFloor,
+    debouncedFlatNumber,
+    debouncedSearch,
+    status,
+    isActive,
+  ].join("\u0000");
+  const previousResetKeyRef = useRef(resetKey);
 
   const statsQuery = useGetV1SocietiesBySocietyIdFlatsStatsQuery({ societyId });
-
-  useEffect(() => {
-    setPage(1);
-  }, []);
 
   const stats = statsQuery.data?.data?.stats;
   const offset = (page - 1) * pageSize;
 
+  useEffect(() => {
+    if (previousResetKeyRef.current !== resetKey) {
+      previousResetKeyRef.current = resetKey;
+      setPage(1);
+    }
+  }, [resetKey]);
+
   const flatsQuery = useGetV1SocietiesBySocietyIdFlatsPaginatedQuery({
     societyId,
+    block: debouncedBlock.trim() || undefined,
+    floor: debouncedFloor.trim() || undefined,
+    flatNumber: debouncedFlatNumber.trim() || undefined,
     search: debouncedSearch.trim() || undefined,
     status: status === "all" ? undefined : status,
+    isActive: isActive === "all" ? undefined : isActive === "true",
     limit: pageSize,
     offset,
   });
@@ -61,11 +84,16 @@ export function useFlatsList({ societyId }: UseFlatsListOptions) {
     isError,
     isFetching,
     isLoading,
+    isActive,
     page,
     pageEnd,
     pageSize,
     pageStart,
     refetch,
+    setBlock,
+    setFloor,
+    setFlatNumber,
+    setIsActive,
     search,
     setPage,
     setPageSize,
@@ -74,6 +102,9 @@ export function useFlatsList({ societyId }: UseFlatsListOptions) {
     stats,
     statsQuery,
     status,
+    block,
+    floor,
+    flatNumber,
     totalFlats,
     totalPages,
   };

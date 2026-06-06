@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "go-server/docs"
 	"go.uber.org/zap"
@@ -27,10 +28,14 @@ func SetupMiddleware(r *gin.Engine, cfg *config.Config) {
 	// Request ID (must be first for logging)
 	r.Use(middleware.RequestID())
 
+	if cfg.EnableMetrics {
+		r.Use(middleware.Metrics())
+	}
+
 	// Logger middleware
 	loggerCfg := middleware.DefaultLoggerConfig()
 	loggerCfg.SkipHealthCheck = true
-	loggerCfg.SkipPaths = []string{"/favicon.ico"}
+	loggerCfg.SkipPaths = []string{"/favicon.ico", "/metrics", "/api/health/live", "/api/health/ready"}
 	r.Use(middleware.LoggerWithConfig(loggerCfg))
 
 	// Recovery middleware
@@ -52,6 +57,10 @@ func SetupMiddleware(r *gin.Engine, cfg *config.Config) {
 // setupRoutes configures all application routes
 func SetupRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 	logger.Info("🛣️  Setting up routes...")
+
+	if cfg.EnableMetrics {
+		r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	}
 
 	// API version 1
 	apiV1 := r.Group("/api/v1")

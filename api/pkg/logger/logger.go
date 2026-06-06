@@ -38,7 +38,7 @@ func DefaultConfig() Config {
 		LogDir:         "logs",
 		MaxSize:        100,
 		MaxBackups:     5,
-		MaxAge:         30,
+		MaxAge:         15,
 		Compress:       true,
 		EnableConsole:  false,
 		EnableCaller:   true,

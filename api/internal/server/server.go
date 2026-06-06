@@ -101,6 +101,7 @@ func logShutdownStats() {
 func InitializeLogger(cfg *config.Config) error {
 	logCfg := logger.DefaultConfig()
 	logCfg.Env = cfg.Environment
+	logCfg.LogDir = cfg.LogDir
 	logCfg.MaxSize = cfg.LogMaxSize
 	logCfg.MaxBackups = cfg.LogMaxBackups
 	logCfg.MaxAge = cfg.LogMaxAge

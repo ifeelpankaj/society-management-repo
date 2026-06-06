@@ -20,15 +20,36 @@ export const paths = {
   developerSociety: (societyId: number) =>
     `${AUTH_ROUTES.developer}/societies/${encodeSocietyId(societyId)}`,
   developerPlans: () => `${AUTH_ROUTES.developer}/plans`,
+  developerPlan: (planId: number) => `${AUTH_ROUTES.developer}/plans/${planId}`,
   developerSubscriptions: () => `${AUTH_ROUTES.developer}/subscriptions`,
+  developerSubscription: (subscriptionId: number) =>
+    `${AUTH_ROUTES.developer}/subscriptions/${subscriptionId}`,
   developerResidences: () => `${AUTH_ROUTES.developer}/residences`,
+  developerResidenceMember: (societyId: number, memberId: number) =>
+    `${AUTH_ROUTES.developer}/residences/${societyId}/${memberId}`,
+  developerResidenceUser: (societyId: number, userId: number) =>
+    `${AUTH_ROUTES.developer}/residences/${societyId}/users/${userId}`,
+  developerFlatDetail: (societyId: number, flatId: number) =>
+    `${AUTH_ROUTES.developer}/residences/${societyId}/flats/${flatId}`,
+  developerFlatResidentDetail: (
+    societyId: number,
+    flatId: number,
+    residentId: number,
+  ) =>
+    `${AUTH_ROUTES.developer}/residences/${societyId}/flats/${flatId}/residents/${residentId}`,
+  developerClaimDetail: (societyId: number, claimId: number) =>
+    `${AUTH_ROUTES.developer}/residences/${societyId}/claims/${claimId}`,
   dashboard: (societyId: number) => societyPath(societyId),
   flats: (societyId: number) => societyPath(societyId, "flats"),
   flatCreate: (societyId: number) => societyPath(societyId, "flats/create"),
   flatDetail: (societyId: number, flatId: number) =>
     `${societyPath(societyId, "flats")}/${flatId}`,
+  flatResidentDetail: (societyId: number, flatId: number, residentId: number) =>
+    `${societyPath(societyId, "flats")}/${flatId}/residents/${residentId}`,
   residents: (societyId: number) => societyPath(societyId, "residents"),
   residentDetail: (societyId: number, memberId: number) =>
     `${societyPath(societyId, "residents")}/${memberId}`,
   claims: (societyId: number) => societyPath(societyId, "claims"),
+  claimDetail: (societyId: number, claimId: number) =>
+    `${societyPath(societyId, "claims")}/${claimId}`,
 } as const;

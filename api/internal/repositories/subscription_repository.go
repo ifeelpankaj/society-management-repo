@@ -213,11 +213,11 @@ func subscriptionFromParts(id, societyID int64, planID *int64, status db.Subscri
 }
 
 func subscriptionGetParams(filter *models.SubscriptionFilter) db.GetSubscriptionParams {
-	return db.GetSubscriptionParams{ID: subID(filter), SocietyID: subSocietyID(filter), PlanID: subPlanID(filter), Status: dbSubscriptionStatusPtr(subStatus(filter)), PlanCode: subPlanCode(filter), BillingCycle: dbBillingCyclePtr(subBillingCycle(filter)), IsActiveOnly: subIsActiveOnly(filter), StartsAfter: timePtrToPgTimestamptz(subStartsAfter(filter)), StartsBefore: timePtrToPgTimestamptz(subStartsBefore(filter)), EndsAfter: timePtrToPgTimestamptz(subEndsAfter(filter)), EndsBefore: timePtrToPgTimestamptz(subEndsBefore(filter)), ExpiringBefore: timePtrToPgTimestamptz(subExpiringBefore(filter)), ExpiredOnly: subExpiredOnly(filter), Search: subSearch(filter)}
+	return db.GetSubscriptionParams{ID: subID(filter), SocietyID: subSocietyID(filter), PlanID: subPlanID(filter), Status: dbSubscriptionStatusPtr(subStatus(filter)), PlanCode: subPlanCode(filter), BillingCycle: dbBillingCyclePtr(subBillingCycle(filter)), IsActiveOnly: subIsActiveOnly(filter), StartsAfter: timePtrToPgTimestamptz(subStartsAfter(filter)), StartsBefore: timePtrToPgTimestamptz(subStartsBefore(filter)), EndsAfter: timePtrToPgTimestamptz(subEndsAfter(filter)), EndsBefore: timePtrToPgTimestamptz(subEndsBefore(filter)), ExpiringBefore: timePtrToPgTimestamptz(subExpiringBefore(filter)), ExpiredOnly: subExpiredOnly(filter), Search: subSearch(filter), SearchMode: subSearchMode(filter)}
 }
 
 func subscriptionListParams(filter *models.SubscriptionFilter) db.ListSubscriptionsParams {
-	return db.ListSubscriptionsParams{ID: subID(filter), SocietyID: subSocietyID(filter), PlanID: subPlanID(filter), Status: dbSubscriptionStatusPtr(subStatus(filter)), PlanCode: subPlanCode(filter), BillingCycle: dbBillingCyclePtr(subBillingCycle(filter)), IsActiveOnly: subIsActiveOnly(filter), StartsAfter: timePtrToPgTimestamptz(subStartsAfter(filter)), StartsBefore: timePtrToPgTimestamptz(subStartsBefore(filter)), EndsAfter: timePtrToPgTimestamptz(subEndsAfter(filter)), EndsBefore: timePtrToPgTimestamptz(subEndsBefore(filter)), ExpiringBefore: timePtrToPgTimestamptz(subExpiringBefore(filter)), ExpiredOnly: subExpiredOnly(filter), Search: subSearch(filter), Limit: normalizeLimit(subLimit(filter)), Offset: normalizeOffset(subOffset(filter))}
+	return db.ListSubscriptionsParams{ID: subID(filter), SocietyID: subSocietyID(filter), PlanID: subPlanID(filter), Status: dbSubscriptionStatusPtr(subStatus(filter)), PlanCode: subPlanCode(filter), BillingCycle: dbBillingCyclePtr(subBillingCycle(filter)), IsActiveOnly: subIsActiveOnly(filter), StartsAfter: timePtrToPgTimestamptz(subStartsAfter(filter)), StartsBefore: timePtrToPgTimestamptz(subStartsBefore(filter)), EndsAfter: timePtrToPgTimestamptz(subEndsAfter(filter)), EndsBefore: timePtrToPgTimestamptz(subEndsBefore(filter)), ExpiringBefore: timePtrToPgTimestamptz(subExpiringBefore(filter)), ExpiredOnly: subExpiredOnly(filter), Search: subSearch(filter), SearchMode: subSearchMode(filter), Limit: normalizeLimit(subLimit(filter)), Offset: normalizeOffset(subOffset(filter))}
 }
 
 func subID(f *models.SubscriptionFilter) *int64 {
@@ -303,6 +303,14 @@ func subSearch(f *models.SubscriptionFilter) *string {
 		return nil
 	}
 	return f.Search
+}
+func subSearchMode(f *models.SubscriptionFilter) *string {
+	mode := ""
+	if f != nil && f.SearchMode != nil {
+		mode = *f.SearchMode
+	}
+	normalized := normalizeSearchMode(mode, "society", "plan", "action_user", "resident_member")
+	return &normalized
 }
 func subLimit(f *models.SubscriptionFilter) int32 {
 	if f == nil {

@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Inter, Roboto } from "next/font/google";
+import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { rootMetadata } from "@/lib/site-metadata";
@@ -8,10 +8,9 @@ import { ThemeProvider } from "@/theme/theme-provider";
 
 const robotoHeading = Roboto({
   subsets: ["latin"],
-  variable: "--font-heading",
+  variable: "--font-heading-family",
+  weight: ["400", "500", "700"],
 });
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +39,6 @@ export default function RootLayout({
         geistSans.variable,
         geistMono.variable,
         "font-sans",
-        inter.variable,
         robotoHeading.variable,
       )}
     >

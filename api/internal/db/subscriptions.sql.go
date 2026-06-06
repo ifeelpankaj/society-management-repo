@@ -430,6 +430,9 @@ SELECT
 FROM society_subscriptions ss
 JOIN societies s ON s.id = ss.society_id
 LEFT JOIN plans p ON p.id = ss.plan_id
+LEFT JOIN users created_user ON created_user.id = ss.created_by
+LEFT JOIN users activated_user ON activated_user.id = ss.activated_by
+LEFT JOIN users cancelled_user ON cancelled_user.id = ss.cancelled_by
 WHERE ($1::bigint IS NULL OR ss.id = $1::bigint)
   AND ($2::bigint IS NULL OR ss.society_id = $2::bigint)
   AND ($3::bigint IS NULL OR ss.plan_id = $3::bigint)
@@ -453,11 +456,53 @@ WHERE ($1::bigint IS NULL OR ss.id = $1::bigint)
   )
   AND (
       COALESCE($14::text, '') = ''
-      OR s.name ILIKE '%' || $14::text || '%'
-      OR s.society_code ILIKE '%' || $14::text || '%'
-      OR ss.plan_name ILIKE '%' || $14::text || '%'
-      OR ss.plan_code ILIKE '%' || $14::text || '%'
-      OR ss.status::text ILIKE '%' || $14::text || '%'
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'society')
+          AND (
+              s.name ILIKE '%' || $14::text || '%'
+              OR s.society_code ILIKE '%' || $14::text || '%'
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'plan')
+          AND (
+              ss.plan_name ILIKE '%' || $14::text || '%'
+              OR ss.plan_code ILIKE '%' || $14::text || '%'
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'action_user')
+          AND (
+              COALESCE(created_user.full_name, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(created_user.email, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(created_user.phone_number, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(activated_user.full_name, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(activated_user.email, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(activated_user.phone_number, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(cancelled_user.full_name, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(cancelled_user.email, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(cancelled_user.phone_number, '') ILIKE '%' || $14::text || '%'
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'resident_member')
+          AND EXISTS (
+              SELECT 1
+              FROM society_members sm
+              JOIN users member_user ON member_user.id = sm.user_id
+              WHERE sm.society_id = ss.society_id
+                AND sm.status != 'removed'
+                AND (
+                    member_user.full_name ILIKE '%' || $14::text || '%'
+                    OR COALESCE(member_user.email, '') ILIKE '%' || $14::text || '%'
+                    OR COALESCE(member_user.phone_number, '') ILIKE '%' || $14::text || '%'
+                )
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all')
+          AND ss.status::text ILIKE '%' || $14::text || '%'
+      )
   )
 ORDER BY ss.id DESC
 LIMIT 1
@@ -478,6 +523,7 @@ type GetSubscriptionParams struct {
 	ExpiringBefore pgtype.Timestamptz  `db:"expiring_before" json:"expiring_before"`
 	ExpiredOnly    *bool               `db:"expired_only" json:"expired_only"`
 	Search         *string             `db:"search" json:"search"`
+	SearchMode     *string             `db:"search_mode" json:"search_mode"`
 }
 
 type GetSubscriptionRow struct {
@@ -530,6 +576,7 @@ func (q *Queries) GetSubscription(ctx context.Context, arg GetSubscriptionParams
 		arg.ExpiringBefore,
 		arg.ExpiredOnly,
 		arg.Search,
+		arg.SearchMode,
 	)
 	var i GetSubscriptionRow
 	err := row.Scan(
@@ -631,6 +678,9 @@ SELECT
 FROM society_subscriptions ss
 JOIN societies s ON s.id = ss.society_id
 LEFT JOIN plans p ON p.id = ss.plan_id
+LEFT JOIN users created_user ON created_user.id = ss.created_by
+LEFT JOIN users activated_user ON activated_user.id = ss.activated_by
+LEFT JOIN users cancelled_user ON cancelled_user.id = ss.cancelled_by
 WHERE ($1::bigint IS NULL OR ss.id = $1::bigint)
   AND ($2::bigint IS NULL OR ss.society_id = $2::bigint)
   AND ($3::bigint IS NULL OR ss.plan_id = $3::bigint)
@@ -654,14 +704,56 @@ WHERE ($1::bigint IS NULL OR ss.id = $1::bigint)
   )
   AND (
       COALESCE($14::text, '') = ''
-      OR s.name ILIKE '%' || $14::text || '%'
-      OR s.society_code ILIKE '%' || $14::text || '%'
-      OR ss.plan_name ILIKE '%' || $14::text || '%'
-      OR ss.plan_code ILIKE '%' || $14::text || '%'
-      OR ss.status::text ILIKE '%' || $14::text || '%'
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'society')
+          AND (
+              s.name ILIKE '%' || $14::text || '%'
+              OR s.society_code ILIKE '%' || $14::text || '%'
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'plan')
+          AND (
+              ss.plan_name ILIKE '%' || $14::text || '%'
+              OR ss.plan_code ILIKE '%' || $14::text || '%'
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'action_user')
+          AND (
+              COALESCE(created_user.full_name, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(created_user.email, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(created_user.phone_number, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(activated_user.full_name, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(activated_user.email, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(activated_user.phone_number, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(cancelled_user.full_name, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(cancelled_user.email, '') ILIKE '%' || $14::text || '%'
+              OR COALESCE(cancelled_user.phone_number, '') ILIKE '%' || $14::text || '%'
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all', 'resident_member')
+          AND EXISTS (
+              SELECT 1
+              FROM society_members sm
+              JOIN users member_user ON member_user.id = sm.user_id
+              WHERE sm.society_id = ss.society_id
+                AND sm.status != 'removed'
+                AND (
+                    member_user.full_name ILIKE '%' || $14::text || '%'
+                    OR COALESCE(member_user.email, '') ILIKE '%' || $14::text || '%'
+                    OR COALESCE(member_user.phone_number, '') ILIKE '%' || $14::text || '%'
+                )
+          )
+      )
+      OR (
+          COALESCE($15::text, 'all') IN ('', 'all')
+          AND ss.status::text ILIKE '%' || $14::text || '%'
+      )
   )
 ORDER BY ss.created_at DESC
-LIMIT $16 OFFSET $15
+LIMIT $17 OFFSET $16
 `
 
 type ListSubscriptionsParams struct {
@@ -679,6 +771,7 @@ type ListSubscriptionsParams struct {
 	ExpiringBefore pgtype.Timestamptz  `db:"expiring_before" json:"expiring_before"`
 	ExpiredOnly    *bool               `db:"expired_only" json:"expired_only"`
 	Search         *string             `db:"search" json:"search"`
+	SearchMode     *string             `db:"search_mode" json:"search_mode"`
 	Offset         int32               `db:"offset" json:"offset"`
 	Limit          int32               `db:"limit" json:"limit"`
 }
@@ -733,6 +826,7 @@ func (q *Queries) ListSubscriptions(ctx context.Context, arg ListSubscriptionsPa
 		arg.ExpiringBefore,
 		arg.ExpiredOnly,
 		arg.Search,
+		arg.SearchMode,
 		arg.Offset,
 		arg.Limit,
 	)

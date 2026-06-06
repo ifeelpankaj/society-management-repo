@@ -48,7 +48,8 @@ export function ProfileLayout() {
               <SocietyDetailsCard
                 society={profile.society}
                 isFetchingSociety={profile.isFetchingSociety}
-                onboardingLink={profile.onboardingLink}
+                claimLink={profile.claimLink}
+                host={profile.host}
                 qrUrl={profile.qrUrl}
                 onCopyLink={profile.handleCopyLink}
               />

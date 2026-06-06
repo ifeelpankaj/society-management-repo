@@ -1,0 +1,59 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: society-api-files
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: society-go-api
+          service: society-api
+          __path__: /var/log/society/*.log
+
+    pipeline_stages:
+      - regex:
+          source: filename
+          expression: ".*/(?P<log_type>info|error)\\.(?P<environment>[^.]+)\\.log$"
+
+      - regex:
+          expression: "^(?P<raw>.*)$"
+
+      - json:
+          expressions:
+            timestamp: '"@timestamp"'
+            level: level
+            logger: logger
+            caller: caller
+            message: message
+            method: method
+            path: path
+            status: status
+            error_code: error_code
+            request_id: request_id
+            ip: ip
+            user_agent: user_agent
+            latency: latency
+            request_size: request_size
+            response_size: response_size
+
+      - timestamp:
+          source: timestamp
+          format: "2006-01-02T15:04:05.000-0700"
+
+      - labels:
+          environment:
+          log_type:
+          level:
+          method:
+          status:
+
+      - output:
+          source: raw

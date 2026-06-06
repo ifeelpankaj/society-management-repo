@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 
 export const pageTitleVariants = cva(
-  "font-semibold tracking-normal text-balance",
+  "font-heading font-semibold tracking-tight text-balance",
   {
     variants: {
       size: {

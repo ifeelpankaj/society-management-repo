@@ -52,13 +52,36 @@ WHERE (sqlc.narg('id')::bigint IS NULL OR fr.id = sqlc.narg('id')::bigint)
   AND (sqlc.narg('is_primary')::bool IS NULL OR fr.is_primary = sqlc.narg('is_primary')::bool)
   AND (
       sqlc.arg('search')::text = ''
-      OR u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR f.flat_number ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(f.block, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR fr.role::text ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR fr.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'resident')
+          AND (
+              u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'society')
+          AND (
+              s.name ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR s.society_code ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'flat')
+          AND (
+              f.flat_number ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(f.block, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(f.floor, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all')
+          AND (
+              fr.role::text ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR fr.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
   )
 ORDER BY fr.moved_in_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');

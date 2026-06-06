@@ -278,6 +278,49 @@ type MyResidencesData struct {
 	Residences []*FlatResidentResponse `json:"residences"`
 }
 
+type SocietyVisitorSettingsData struct {
+	VisitorSettings *SocietyVisitorSettingsResponse `json:"visitor_settings"`
+}
+
+type FlatVisitorSettingsData struct {
+	VisitorSettings []FlatVisitorSettingsResponse `json:"visitor_settings"`
+}
+
+type FlatVisitorSettingData struct {
+	VisitorSetting *FlatVisitorSettingsResponse `json:"visitor_setting"`
+}
+
+type VisitorEntryOptionsData struct {
+	Options *VisitorEntryOptionsResponse `json:"options"`
+}
+
+type VisitorInviteData struct {
+	Invite *VisitorInvite `json:"invite"`
+}
+
+type VisitorInviteTokenData struct {
+	Invite *VisitorInvite   `json:"invite"`
+	Token  *QRTokenResponse `json:"token"`
+}
+
+type VisitorEntryMutationAPIResponse struct {
+	Success bool                          `json:"success" example:"true"`
+	Message string                        `json:"message" example:"Visitor entry created successfully"`
+	Data    *VisitorEntryMutationResponse `json:"data"`
+}
+
+type VisitorEntryData struct {
+	Entry *VisitorEntry `json:"entry"`
+}
+
+type VisitorEntriesData struct {
+	Entries []*VisitorEntry `json:"entries"`
+}
+
+type VisitorEntryEventsData struct {
+	Events []*VisitorEntryEvent `json:"events"`
+}
+
 type FlatAPIResponse struct {
 	Success bool     `json:"success" example:"true"`
 	Message string   `json:"message" example:"Flat fetched successfully"`
@@ -342,6 +385,60 @@ type MyResidencesAPIResponse struct {
 	Success bool             `json:"success" example:"true"`
 	Message string           `json:"message" example:"My residences fetched successfully"`
 	Data    MyResidencesData `json:"data"`
+}
+
+type SocietyVisitorSettingsAPIResponse struct {
+	Success bool                       `json:"success" example:"true"`
+	Message string                     `json:"message" example:"Visitor settings fetched successfully"`
+	Data    SocietyVisitorSettingsData `json:"data"`
+}
+
+type FlatVisitorSettingsAPIResponse struct {
+	Success bool                    `json:"success" example:"true"`
+	Message string                  `json:"message" example:"Flat visitor settings fetched successfully"`
+	Data    FlatVisitorSettingsData `json:"data"`
+}
+
+type FlatVisitorSettingAPIResponse struct {
+	Success bool                   `json:"success" example:"true"`
+	Message string                 `json:"message" example:"Flat visitor setting updated successfully"`
+	Data    FlatVisitorSettingData `json:"data"`
+}
+
+type VisitorEntryOptionsAPIResponse struct {
+	Success bool                    `json:"success" example:"true"`
+	Message string                  `json:"message" example:"Visitor entry options fetched successfully"`
+	Data    VisitorEntryOptionsData `json:"data"`
+}
+
+type VisitorInviteAPIResponse struct {
+	Success bool              `json:"success" example:"true"`
+	Message string            `json:"message" example:"Visitor invite fetched successfully"`
+	Data    VisitorInviteData `json:"data"`
+}
+
+type VisitorInviteTokenAPIResponse struct {
+	Success bool                   `json:"success" example:"true"`
+	Message string                 `json:"message" example:"Visitor invite created successfully"`
+	Data    VisitorInviteTokenData `json:"data"`
+}
+
+type VisitorEntryAPIResponse struct {
+	Success bool             `json:"success" example:"true"`
+	Message string           `json:"message" example:"Visitor entry fetched successfully"`
+	Data    VisitorEntryData `json:"data"`
+}
+
+type VisitorEntriesAPIResponse struct {
+	Success bool               `json:"success" example:"true"`
+	Message string             `json:"message" example:"Visitor entries fetched successfully"`
+	Data    VisitorEntriesData `json:"data"`
+}
+
+type VisitorEntryEventsAPIResponse struct {
+	Success bool                   `json:"success" example:"true"`
+	Message string                 `json:"message" example:"Visitor entry events fetched successfully"`
+	Data    VisitorEntryEventsData `json:"data"`
 }
 
 type PlanData struct {

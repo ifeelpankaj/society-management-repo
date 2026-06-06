@@ -221,6 +221,7 @@ const injectedRtkApi = api
             status: queryArg.status,
             is_primary: queryArg.isPrimary,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
             limit: queryArg.limit,
             offset: queryArg.offset,
           },
@@ -366,6 +367,7 @@ const injectedRtkApi = api
           params: {
             status: queryArg.status,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
             name: queryArg.name,
             code: queryArg.code,
             city: queryArg.city,
@@ -431,6 +433,29 @@ const injectedRtkApi = api
           body: queryArg.modelsUpdateSocietyRequest,
         }),
         invalidatesTags: ["Societies"],
+      }),
+      getV1SocietiesBySocietyIdAllmember: build.query<
+        GetV1SocietiesBySocietyIdAllmemberApiResponse,
+        GetV1SocietiesBySocietyIdAllmemberApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/allmember`,
+          params: {
+            search: queryArg.search,
+            role: queryArg.role,
+            status: queryArg.status,
+            user_id: queryArg.userId,
+            invited_by: queryArg.invitedBy,
+            removed_by: queryArg.removedBy,
+            joined_from: queryArg.joinedFrom,
+            joined_to: queryArg.joinedTo,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+            sort_by: queryArg.sortBy,
+            sort_order: queryArg.sortOrder,
+          },
+        }),
+        providesTags: ["Developer"],
       }),
       postV1SocietiesBySocietyIdApprove: build.mutation<
         PostV1SocietiesBySocietyIdApproveApiResponse,
@@ -587,6 +612,23 @@ const injectedRtkApi = api
           method: "POST",
         }),
         invalidatesTags: ["Flats"],
+      }),
+      getV1SocietiesBySocietyIdFlatsAndFlatIdResidents: build.query<
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiResponse,
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/residents`,
+          params: {
+            role: queryArg.role,
+            status: queryArg.status,
+            is_primary: queryArg.isPrimary,
+            search: queryArg.search,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+          },
+        }),
+        providesTags: ["Flat Residents"],
       }),
       postV1SocietiesBySocietyIdFlatsAndFlatIdResidentsUsersUserId:
         build.mutation<
@@ -866,6 +908,7 @@ const injectedRtkApi = api
             plan_id: queryArg.planId,
             status: queryArg.status,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
           },
         }),
         providesTags: ["Subscriptions"],
@@ -1076,6 +1119,8 @@ export type GetV1FlatResidentsApiArg = {
   isPrimary?: boolean;
   /** Search user, contact, flat, block, role, or status */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
   /** Limit */
   limit?: number;
   /** Offset */
@@ -1206,6 +1251,8 @@ export type GetV1SocietiesApiArg = {
   status?: string;
   /** Search text */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
   /** Society name */
   name?: string;
   /** Society code */
@@ -1267,6 +1314,36 @@ export type PatchV1SocietiesBySocietyIdApiArg = {
   societyId: number;
   /** Update society payload */
   modelsUpdateSocietyRequest: ModelsUpdateSocietyRequest;
+};
+export type GetV1SocietiesBySocietyIdAllmemberApiResponse =
+  /** status 200 Members fetched successfully */ ModelsPaginatedMembersApiResponse;
+export type GetV1SocietiesBySocietyIdAllmemberApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Search full name, email, phone, role, or status */
+  search?: string;
+  /** Member role */
+  role?: string;
+  /** Member status */
+  status?: string;
+  /** User ID */
+  userId?: number;
+  /** Invited by user ID */
+  invitedBy?: number;
+  /** Removed by user ID */
+  removedBy?: number;
+  /** Joined from RFC3339 timestamp */
+  joinedFrom?: string;
+  /** Joined to RFC3339 timestamp */
+  joinedTo?: string;
+  /** Limit */
+  limit?: number;
+  /** Offset */
+  offset?: number;
+  /** Sort by: joined_at, role, status */
+  sortBy?: string;
+  /** Sort order: asc, desc */
+  sortOrder?: string;
 };
 export type PostV1SocietiesBySocietyIdApproveApiResponse =
   /** status 200 Society approved successfully */ ModelsSocietyApiResponse;
@@ -1401,6 +1478,26 @@ export type PostV1SocietiesBySocietyIdFlatsAndFlatIdBlockApiArg = {
   societyId: number;
   /** Flat ID */
   flatId: number;
+};
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiResponse =
+  /** status 200 Residents fetched successfully */ ModelsFlatResidentsApiResponse;
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Flat ID */
+  flatId: number;
+  /** Resident role: owner, tenant, family */
+  role?: string;
+  /** Resident status: active, inactive, moved_out */
+  status?: string;
+  /** Primary resident flag */
+  isPrimary?: boolean;
+  /** Search user, contact, flat, block, role, or status */
+  search?: string;
+  /** Limit */
+  limit?: number;
+  /** Offset */
+  offset?: number;
 };
 export type PostV1SocietiesBySocietyIdFlatsAndFlatIdResidentsUsersUserIdApiResponse =
   /** status 201 Resident added successfully */ ModelsFlatResidentApiResponse;
@@ -1649,6 +1746,8 @@ export type GetV1SubscriptionsApiArg = {
   status?: string;
   /** Search text */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
 };
 export type GetV1SubscriptionsLookupApiResponse =
   /** status 200 Subscription fetched successfully */ ModelsSubscriptionApiResponse;
@@ -2061,6 +2160,9 @@ export type ModelsFlatClaimResponse = {
   rejection_reason?: string;
   requested_primary?: boolean;
   requested_role?: ModelsFlatResidentRole;
+  reviewer_email?: string;
+  reviewer_name?: string;
+  reviewer_phone?: string;
   reviewed_at?: string;
   reviewed_by?: number;
   society_code?: string;
@@ -2339,6 +2441,20 @@ export type ModelsUpdateSocietyRequest = {
   total_blocks?: number;
   total_flats?: number;
 };
+export type ModelsPaginatedMembersResponse = {
+  items?: ModelsSocietyMemberResponse[];
+  limit?: number;
+  offset?: number;
+  total?: number;
+};
+export type ModelsPaginatedMembersData = {
+  members?: ModelsPaginatedMembersResponse;
+};
+export type ModelsPaginatedMembersApiResponse = {
+  data?: ModelsPaginatedMembersData;
+  message?: string;
+  success?: boolean;
+};
 export type ModelsFlatClaimStatsResponse = {
   approved_claims?: number;
   cancelled_claims?: number;
@@ -2508,20 +2624,6 @@ export type ModelsCreateGuardRequest = {
   password: string;
   phone_number: string;
 };
-export type ModelsPaginatedMembersResponse = {
-  items?: ModelsSocietyMemberResponse[];
-  limit?: number;
-  offset?: number;
-  total?: number;
-};
-export type ModelsPaginatedMembersData = {
-  members?: ModelsPaginatedMembersResponse;
-};
-export type ModelsPaginatedMembersApiResponse = {
-  data?: ModelsPaginatedMembersData;
-  message?: string;
-  success?: boolean;
-};
 export type ModelsSocietyMemberData = {
   member?: ModelsSocietyMemberResponse;
 };
@@ -2676,6 +2778,7 @@ export const {
   useGetV1SocietiesBySocietyIdQuery,
   useDeleteV1SocietiesBySocietyIdMutation,
   usePatchV1SocietiesBySocietyIdMutation,
+  useGetV1SocietiesBySocietyIdAllmemberQuery,
   usePostV1SocietiesBySocietyIdApproveMutation,
   useGetV1SocietiesBySocietyIdDashboardBootstrapQuery,
   useGetV1SocietiesBySocietyIdFlatClaimsQuery,
@@ -2690,6 +2793,7 @@ export const {
   useDeleteV1SocietiesBySocietyIdFlatsAndFlatIdMutation,
   usePatchV1SocietiesBySocietyIdFlatsAndFlatIdMutation,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdBlockMutation,
+  useGetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsQuery,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdResidentsUsersUserIdMutation,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentIdQuery,
   useDeleteV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentIdMutation,

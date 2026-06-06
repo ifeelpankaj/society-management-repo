@@ -61,13 +61,18 @@ type FlatResidentQueryService interface {
 }
 
 type FlatSvc struct {
-	flatRepo        repository.FlatRepository
-	claimRepo       repository.FlatClaimRepository
-	residentRepo    repository.FlatResidentRepository
-	memberRepo      repository.SocietyMemberRepository
-	txManager       repository.TransactionManager
-	societySvc      societysvc.SocietyService
-	subscriptionSvc flatSubscriptionGuard
+	flatRepo          repository.FlatRepository
+	claimRepo         repository.FlatClaimRepository
+	residentRepo      repository.FlatResidentRepository
+	memberRepo        repository.SocietyMemberRepository
+	txManager         repository.TransactionManager
+	societySvc        societysvc.SocietyService
+	subscriptionSvc   flatSubscriptionGuard
+	visitorSettingSvc flatVisitorSettingDefaults
+}
+
+type flatVisitorSettingDefaults interface {
+	CreateDefaultFlatSettings(ctx context.Context, societyID int64, flatID int64, actorUserID int64) error
 }
 
 type flatSubscriptionGuard interface {
@@ -84,11 +89,19 @@ func NewFlatService(
 	txManager repository.TransactionManager,
 	societySvc societysvc.SocietyService,
 	subscriptionSvc flatSubscriptionGuard,
+	deps ...any,
 ) FlatService {
-	return &FlatSvc{
+	svc := &FlatSvc{
 		flatRepo: flatRepo, claimRepo: claimRepo, residentRepo: residentRepo,
 		memberRepo: memberRepo, txManager: txManager, societySvc: societySvc, subscriptionSvc: subscriptionSvc,
 	}
+	for _, dep := range deps {
+		switch value := dep.(type) {
+		case flatVisitorSettingDefaults:
+			svc.visitorSettingSvc = value
+		}
+	}
+	return svc
 }
 
 var _ FlatService = (*FlatSvc)(nil)

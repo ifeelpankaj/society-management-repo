@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared/empty-state";
-import { PageShell } from "@/components/shared/page-shell";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import { SmartTable } from "@/components/tables/smart-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -202,89 +202,87 @@ function SelectSocietyContent() {
   );
 
   return (
-    <PageShell background="tinted" className="min-h-screen py-10">
-      <main className="mx-auto w-full max-w-6xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
-            <p className="font-medium text-muted-foreground text-sm">
-              Choose workspace
-            </p>
-            <h1 className="font-semibold text-3xl tracking-tight">
-              Select a society
-            </h1>
-            <p className="max-w-2xl text-muted-foreground">
-              Open a society where you are an active owner, admin, or staff
-              member.
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/onboarding">
-              <Plus className="size-4" />
-              Add society
-            </Link>
-          </Button>
-        </header>
+    <WorkspacePage className="min-h-screen py-10">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <p className="font-medium text-muted-foreground text-sm">
+            Choose workspace
+          </p>
+          <h1 className="font-semibold text-3xl tracking-tight">
+            Select a society
+          </h1>
+          <p className="max-w-2xl text-muted-foreground">
+            Open a society where you are an active owner, admin, or staff
+            member.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/onboarding">
+            <Plus className="size-4" />
+            Add society
+          </Link>
+        </Button>
+      </header>
 
-        <SmartTable
-          columns={columns}
-          data={visibleRows}
-          loading={isLoading || isFetching}
-          rowKey="id"
-          emptyState={
-            <EmptyState
-              className="border-0"
-              title="No admin societies found"
-              description="You do not have an active owner, admin, or staff membership yet. Create a society request to get started."
-              action={
-                <Button asChild>
-                  <Link href="/onboarding">
-                    <Plus className="size-4" />
-                    Add society
-                  </Link>
-                </Button>
+      <SmartTable
+        columns={columns}
+        data={visibleRows}
+        loading={isLoading || isFetching}
+        rowKey="id"
+        emptyState={
+          <EmptyState
+            className="border-0"
+            title="No admin societies found"
+            description="You do not have an active owner, admin, or staff membership yet. Create a society request to get started."
+            action={
+              <Button asChild>
+                <Link href="/onboarding">
+                  <Plus className="size-4" />
+                  Add society
+                </Link>
+              </Button>
+            }
+          />
+        }
+      />
+
+      {showPagination ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-muted-foreground text-sm">
+            Showing {startIndex + 1}-
+            {Math.min(startIndex + PAGE_SIZE, rows.length)} of {rows.length}{" "}
+            societies
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              disabled={page === 1}
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              <ArrowLeft className="size-3.5" />
+              Previous
+            </Button>
+            <span className="min-w-16 text-center text-sm">
+              {page} / {totalPages}
+            </span>
+            <Button
+              disabled={page === totalPages}
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
               }
-            />
-          }
-        />
-
-        {showPagination ? (
-          <div className="flex flex-col gap-3 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted-foreground text-sm">
-              Showing {startIndex + 1}-
-              {Math.min(startIndex + PAGE_SIZE, rows.length)} of {rows.length}{" "}
-              societies
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                disabled={page === 1}
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                <ArrowLeft className="size-3.5" />
-                Previous
-              </Button>
-              <span className="min-w-16 text-center text-sm">
-                {page} / {totalPages}
-              </span>
-              <Button
-                disabled={page === totalPages}
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  setPage((current) => Math.min(totalPages, current + 1))
-                }
-              >
-                Next
-                <ArrowRight className="size-3.5" />
-              </Button>
-            </div>
+            >
+              Next
+              <ArrowRight className="size-3.5" />
+            </Button>
           </div>
-        ) : null}
-      </main>
-    </PageShell>
+        </div>
+      ) : null}
+    </WorkspacePage>
   );
 }
 

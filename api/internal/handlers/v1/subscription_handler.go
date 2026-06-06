@@ -277,7 +277,7 @@ func parseSocietyAndPlan(c *gin.Context) (int64, int64, bool) {
 }
 
 func subscriptionFilterFromQuery(c *gin.Context) (*models.SubscriptionFilter, bool) {
-	filter := &models.SubscriptionFilter{Status: optionalString(c.Query("status")), PlanCode: optionalString(c.Query("plan_code")), BillingCycle: optionalString(c.Query("billing_cycle")), Search: optionalString(c.Query("search"))}
+	filter := &models.SubscriptionFilter{Status: optionalString(c.Query("status")), PlanCode: optionalString(c.Query("plan_code")), BillingCycle: optionalString(c.Query("billing_cycle")), Search: optionalString(c.Query("search")), SearchMode: optionalString(c.Query("search_mode"))}
 	if !queryInt64Ptr(c, "id", &filter.ID) || !queryInt64Ptr(c, "society_id", &filter.SocietyID) || !queryInt64Ptr(c, "plan_id", &filter.PlanID) {
 		return nil, false
 	}

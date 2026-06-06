@@ -5,7 +5,6 @@ type ClaimPageProps = {
     societyCode: string;
   }>;
 };
-
 export default async function ClaimPage({ params }: ClaimPageProps) {
   const { societyCode } = await params;
 

@@ -191,7 +191,7 @@ func (g *Guards) requireSocietyMembership(societyIDParam string, roles ...string
 			return
 		}
 
-		if isDeveloperRole(c) && isSocietyRootRoute(c, societyIDParam) {
+		if isDeveloperRole(c) {
 			c.Set("society_id", societyID)
 			c.Set("societyId", societyID)
 			c.Set("global_guard_roles", []models.GlobalRole{models.GlobalRoleDeveloper, models.GlobalRoleSuperAdmin})
@@ -232,16 +232,6 @@ func isDeveloperRole(c *gin.Context) bool {
 	}
 
 	return role == string(models.GlobalRoleDeveloper) || role == string(models.GlobalRoleSuperAdmin)
-}
-
-func isSocietyRootRoute(c *gin.Context, societyIDParam string) bool {
-	switch c.Request.Method {
-	case http.MethodGet, http.MethodPatch, http.MethodDelete:
-	default:
-		return false
-	}
-
-	return strings.HasSuffix(c.FullPath(), "/societies/:"+societyIDParam)
 }
 
 func societyIDFromParam(c *gin.Context, name string) (int64, bool) {

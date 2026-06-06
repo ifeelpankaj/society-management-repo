@@ -28,8 +28,16 @@ export type SocietyMemberDetail = {
 export type GetSocietyMembersArg = {
   societyId: number;
   search?: string;
+  searchMode?: string;
   role?: ModelsSocietyMemberRole;
   status?: ModelsSocietyMemberStatus;
+  userId?: number;
+  invitedBy?: number;
+  removedBy?: number;
+  joinedFrom?: string;
+  joinedTo?: string;
+  sortBy?: string;
+  sortOrder?: string;
   limit?: number;
   offset?: number;
 };
@@ -70,13 +78,43 @@ type MemberMutationResponse = {
 export const societyMembersApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
+    //getV1SocietiesBySocietyIdAllmember use this querry from genrated api
     getV1SocietiesBySocietyIdMembersPaginated: build.query<
       MembersResponse,
       GetSocietyMembersArg
     >({
-      query: ({ societyId, search, role, status, limit = 20, offset = 0 }) => ({
+      query: ({
+        societyId,
+        search,
+        searchMode,
+        role,
+        status,
+        userId,
+        invitedBy,
+        removedBy,
+        joinedFrom,
+        joinedTo,
+        sortBy,
+        sortOrder,
+        limit = 20,
+        offset = 0,
+      }) => ({
         url: `/v1/societies/${societyId}/members`,
-        params: { search, role, status, limit, offset },
+        params: {
+          search,
+          search_mode: searchMode,
+          role,
+          status,
+          user_id: userId,
+          invited_by: invitedBy,
+          removed_by: removedBy,
+          joined_from: joinedFrom,
+          joined_to: joinedTo,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+          limit,
+          offset,
+        },
       }),
       providesTags: ["Society Members"],
     }),

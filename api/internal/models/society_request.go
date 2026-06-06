@@ -163,6 +163,7 @@ type ListSocietiesFilter struct {
 	ID          *int64
 	Status      *string
 	Search      string
+	SearchMode  string
 	Name        string
 	Code        string
 	City        string
@@ -194,6 +195,7 @@ type GetSocietyMemberFilter struct {
 type ListSocietyMembersFilter struct {
 	SocietyID  int64
 	Search     string
+	SearchMode string
 	Role       *string
 	Status     *string
 	UserID     *int64

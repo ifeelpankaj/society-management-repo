@@ -49,6 +49,9 @@ SELECT
 FROM society_subscriptions ss
 JOIN societies s ON s.id = ss.society_id
 LEFT JOIN plans p ON p.id = ss.plan_id
+LEFT JOIN users created_user ON created_user.id = ss.created_by
+LEFT JOIN users activated_user ON activated_user.id = ss.activated_by
+LEFT JOIN users cancelled_user ON cancelled_user.id = ss.cancelled_by
 WHERE (sqlc.narg('id')::bigint IS NULL OR ss.id = sqlc.narg('id')::bigint)
   AND (sqlc.narg('society_id')::bigint IS NULL OR ss.society_id = sqlc.narg('society_id')::bigint)
   AND (sqlc.narg('plan_id')::bigint IS NULL OR ss.plan_id = sqlc.narg('plan_id')::bigint)
@@ -72,11 +75,53 @@ WHERE (sqlc.narg('id')::bigint IS NULL OR ss.id = sqlc.narg('id')::bigint)
   )
   AND (
       COALESCE(sqlc.narg('search')::text, '') = ''
-      OR s.name ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR s.society_code ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR ss.plan_name ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR ss.plan_code ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR ss.status::text ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'society')
+          AND (
+              s.name ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR s.society_code ILIKE '%' || sqlc.narg('search')::text || '%'
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'plan')
+          AND (
+              ss.plan_name ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR ss.plan_code ILIKE '%' || sqlc.narg('search')::text || '%'
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'action_user')
+          AND (
+              COALESCE(created_user.full_name, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(created_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(created_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(activated_user.full_name, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(activated_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(activated_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(cancelled_user.full_name, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(cancelled_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(cancelled_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'resident_member')
+          AND EXISTS (
+              SELECT 1
+              FROM society_members sm
+              JOIN users member_user ON member_user.id = sm.user_id
+              WHERE sm.society_id = ss.society_id
+                AND sm.status != 'removed'
+                AND (
+                    member_user.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
+                    OR COALESCE(member_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+                    OR COALESCE(member_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+                )
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all')
+          AND ss.status::text ILIKE '%' || sqlc.narg('search')::text || '%'
+      )
   )
 ORDER BY ss.id DESC
 LIMIT 1;
@@ -91,6 +136,9 @@ SELECT
 FROM society_subscriptions ss
 JOIN societies s ON s.id = ss.society_id
 LEFT JOIN plans p ON p.id = ss.plan_id
+LEFT JOIN users created_user ON created_user.id = ss.created_by
+LEFT JOIN users activated_user ON activated_user.id = ss.activated_by
+LEFT JOIN users cancelled_user ON cancelled_user.id = ss.cancelled_by
 WHERE (sqlc.narg('id')::bigint IS NULL OR ss.id = sqlc.narg('id')::bigint)
   AND (sqlc.narg('society_id')::bigint IS NULL OR ss.society_id = sqlc.narg('society_id')::bigint)
   AND (sqlc.narg('plan_id')::bigint IS NULL OR ss.plan_id = sqlc.narg('plan_id')::bigint)
@@ -114,11 +162,53 @@ WHERE (sqlc.narg('id')::bigint IS NULL OR ss.id = sqlc.narg('id')::bigint)
   )
   AND (
       COALESCE(sqlc.narg('search')::text, '') = ''
-      OR s.name ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR s.society_code ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR ss.plan_name ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR ss.plan_code ILIKE '%' || sqlc.narg('search')::text || '%'
-      OR ss.status::text ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'society')
+          AND (
+              s.name ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR s.society_code ILIKE '%' || sqlc.narg('search')::text || '%'
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'plan')
+          AND (
+              ss.plan_name ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR ss.plan_code ILIKE '%' || sqlc.narg('search')::text || '%'
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'action_user')
+          AND (
+              COALESCE(created_user.full_name, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(created_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(created_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(activated_user.full_name, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(activated_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(activated_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(cancelled_user.full_name, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(cancelled_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+              OR COALESCE(cancelled_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all', 'resident_member')
+          AND EXISTS (
+              SELECT 1
+              FROM society_members sm
+              JOIN users member_user ON member_user.id = sm.user_id
+              WHERE sm.society_id = ss.society_id
+                AND sm.status != 'removed'
+                AND (
+                    member_user.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
+                    OR COALESCE(member_user.email, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+                    OR COALESCE(member_user.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+                )
+          )
+      )
+      OR (
+          COALESCE(sqlc.narg('search_mode')::text, 'all') IN ('', 'all')
+          AND ss.status::text ILIKE '%' || sqlc.narg('search')::text || '%'
+      )
   )
 ORDER BY ss.created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');

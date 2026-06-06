@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   ModelsSocietyMemberRole,
@@ -11,7 +11,6 @@ import {
   useGetV1SocietiesBySocietyIdMembersSummaryQuery,
 } from "@/lib/api/society-members-api";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
-import { usePagination } from "@/lib/hooks/use-pagination";
 import { useQueryRefetch } from "@/lib/hooks/use-query-refetch";
 
 type UseResidentsListOptions = {
@@ -20,26 +19,55 @@ type UseResidentsListOptions = {
 
 export function useResidentsList({ societyId }: UseResidentsListOptions) {
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search);
+  const [searchMode, setSearchMode] = useState("all");
+  const debouncedSearch = useDebouncedValue(search, 2000);
   const [role, setRole] = useState<ModelsSocietyMemberRole | "all">("all");
   const [status, setStatus] = useState<ModelsSocietyMemberStatus | "all">(
     "all",
   );
+  const [joinedFrom, setJoinedFrom] = useState("");
+  const [joinedTo, setJoinedTo] = useState("");
+  const [sortBy, setSortBy] = useState<"all" | "joined_at" | "role" | "status">(
+    "all",
+  );
+  const [sortOrder, setSortOrder] = useState<"all" | "asc" | "desc">("all");
+  const [page, setPageState] = useState(1);
+  const [pageSize, setPageSizeState] = useState(10);
+  const resetKey = [
+    debouncedSearch,
+    searchMode,
+    role,
+    status,
+    joinedFrom,
+    joinedTo,
+    sortBy,
+    sortOrder,
+  ].join("\u0000");
+  const previousResetKeyRef = useRef(resetKey);
 
   const summaryQuery = useGetV1SocietiesBySocietyIdMembersSummaryQuery({
     societyId,
   });
 
-  const { page, pageSize, offset, setPage, setPageSize } = usePagination({
-    totalItems: 0,
-    resetDeps: [debouncedSearch, role, status],
-  });
+  useEffect(() => {
+    if (previousResetKeyRef.current !== resetKey) {
+      previousResetKeyRef.current = resetKey;
+      setPageState(1);
+    }
+  }, [resetKey]);
+
+  const offset = (page - 1) * pageSize;
 
   const membersQuery = useGetV1SocietiesBySocietyIdMembersPaginatedQuery({
     societyId,
     search: debouncedSearch.trim() || undefined,
+    searchMode,
     role: role === "all" ? undefined : role,
     status: status === "all" ? undefined : status,
+    joinedFrom: joinedFrom.trim() || undefined,
+    joinedTo: joinedTo.trim() || undefined,
+    sortBy: sortBy === "all" ? undefined : sortBy,
+    sortOrder: sortOrder === "all" ? undefined : sortOrder,
     limit: pageSize,
     offset,
   });
@@ -52,9 +80,21 @@ export function useResidentsList({ societyId }: UseResidentsListOptions) {
 
   useEffect(() => {
     if (page > totalPages) {
-      setPage(totalPages);
+      setPageState(totalPages);
     }
-  }, [page, totalPages, setPage]);
+  }, [page, totalPages]);
+
+  const setPage = useCallback(
+    (nextPage: number) => {
+      setPageState(Math.max(1, Math.min(nextPage, totalPages)));
+    },
+    [totalPages],
+  );
+
+  const setPageSize = useCallback((nextPageSize: number) => {
+    setPageSizeState(nextPageSize);
+    setPageState(1);
+  }, []);
 
   const { refetch, isFetching } = useQueryRefetch(summaryQuery, membersQuery);
 
@@ -67,6 +107,8 @@ export function useResidentsList({ societyId }: UseResidentsListOptions) {
     isError,
     isFetching,
     isLoading,
+    joinedFrom,
+    joinedTo,
     members,
     page,
     pageEnd,
@@ -75,11 +117,19 @@ export function useResidentsList({ societyId }: UseResidentsListOptions) {
     refetch,
     role,
     search,
+    searchMode,
+    setJoinedFrom,
+    setJoinedTo,
     setPage,
     setPageSize,
     setRole,
     setSearch,
+    setSearchMode,
+    setSortBy,
+    setSortOrder,
     setStatus,
+    sortBy,
+    sortOrder,
     status,
     summary: summaryQuery.data?.data?.summary,
     total,

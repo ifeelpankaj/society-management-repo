@@ -534,6 +534,328 @@ func (ns NullVerificationPurpose) Value() (driver.Value, error) {
 	return string(ns.VerificationPurpose), nil
 }
 
+type VisitorApprovalMode string
+
+const (
+	VisitorApprovalModeMandatory VisitorApprovalMode = "mandatory"
+	VisitorApprovalModeOptional  VisitorApprovalMode = "optional"
+	VisitorApprovalModeHybrid    VisitorApprovalMode = "hybrid"
+)
+
+func (e *VisitorApprovalMode) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorApprovalMode(s)
+	case string:
+		*e = VisitorApprovalMode(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorApprovalMode: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorApprovalMode struct {
+	VisitorApprovalMode VisitorApprovalMode `json:"visitor_approval_mode"`
+	Valid               bool                `json:"valid"` // Valid is true if VisitorApprovalMode is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorApprovalMode) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorApprovalMode, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorApprovalMode.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorApprovalMode) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorApprovalMode), nil
+}
+
+type VisitorEventType string
+
+const (
+	VisitorEventTypeCreated     VisitorEventType = "created"
+	VisitorEventTypeApproved    VisitorEventType = "approved"
+	VisitorEventTypeRejected    VisitorEventType = "rejected"
+	VisitorEventTypeCheckedIn   VisitorEventType = "checked_in"
+	VisitorEventTypeCheckedOut  VisitorEventType = "checked_out"
+	VisitorEventTypeCancelled   VisitorEventType = "cancelled"
+	VisitorEventTypeExpired     VisitorEventType = "expired"
+	VisitorEventTypeAutoClosed  VisitorEventType = "auto_closed"
+	VisitorEventTypeQrGenerated VisitorEventType = "qr_generated"
+	VisitorEventTypeQrUsed      VisitorEventType = "qr_used"
+)
+
+func (e *VisitorEventType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorEventType(s)
+	case string:
+		*e = VisitorEventType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorEventType: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorEventType struct {
+	VisitorEventType VisitorEventType `json:"visitor_event_type"`
+	Valid            bool             `json:"valid"` // Valid is true if VisitorEventType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorEventType) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorEventType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorEventType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorEventType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorEventType), nil
+}
+
+type VisitorInviteStatus string
+
+const (
+	VisitorInviteStatusActive    VisitorInviteStatus = "active"
+	VisitorInviteStatusUsed      VisitorInviteStatus = "used"
+	VisitorInviteStatusExpired   VisitorInviteStatus = "expired"
+	VisitorInviteStatusCancelled VisitorInviteStatus = "cancelled"
+)
+
+func (e *VisitorInviteStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorInviteStatus(s)
+	case string:
+		*e = VisitorInviteStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorInviteStatus: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorInviteStatus struct {
+	VisitorInviteStatus VisitorInviteStatus `json:"visitor_invite_status"`
+	Valid               bool                `json:"valid"` // Valid is true if VisitorInviteStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorInviteStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorInviteStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorInviteStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorInviteStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorInviteStatus), nil
+}
+
+type VisitorPurpose string
+
+const (
+	VisitorPurposeGuest       VisitorPurpose = "guest"
+	VisitorPurposeDelivery    VisitorPurpose = "delivery"
+	VisitorPurposeCab         VisitorPurpose = "cab"
+	VisitorPurposeService     VisitorPurpose = "service"
+	VisitorPurposeMaintenance VisitorPurpose = "maintenance"
+	VisitorPurposeStaff       VisitorPurpose = "staff"
+	VisitorPurposeOther       VisitorPurpose = "other"
+)
+
+func (e *VisitorPurpose) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorPurpose(s)
+	case string:
+		*e = VisitorPurpose(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorPurpose: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorPurpose struct {
+	VisitorPurpose VisitorPurpose `json:"visitor_purpose"`
+	Valid          bool           `json:"valid"` // Valid is true if VisitorPurpose is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorPurpose) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorPurpose, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorPurpose.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorPurpose) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorPurpose), nil
+}
+
+type VisitorSource string
+
+const (
+	VisitorSourceResidentLink VisitorSource = "resident_link"
+	VisitorSourcePublicQr     VisitorSource = "public_qr"
+	VisitorSourceGuardEntry   VisitorSource = "guard_entry"
+	VisitorSourceQuickLink    VisitorSource = "quick_link"
+)
+
+func (e *VisitorSource) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorSource(s)
+	case string:
+		*e = VisitorSource(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorSource: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorSource struct {
+	VisitorSource VisitorSource `json:"visitor_source"`
+	Valid         bool          `json:"valid"` // Valid is true if VisitorSource is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorSource) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorSource, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorSource.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorSource) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorSource), nil
+}
+
+type VisitorStatus string
+
+const (
+	VisitorStatusWaitingApproval VisitorStatus = "waiting_approval"
+	VisitorStatusApproved        VisitorStatus = "approved"
+	VisitorStatusRejected        VisitorStatus = "rejected"
+	VisitorStatusCheckedIn       VisitorStatus = "checked_in"
+	VisitorStatusCheckedOut      VisitorStatus = "checked_out"
+	VisitorStatusCancelled       VisitorStatus = "cancelled"
+	VisitorStatusExpired         VisitorStatus = "expired"
+	VisitorStatusAutoClosed      VisitorStatus = "auto_closed"
+)
+
+func (e *VisitorStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorStatus(s)
+	case string:
+		*e = VisitorStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorStatus: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorStatus struct {
+	VisitorStatus VisitorStatus `json:"visitor_status"`
+	Valid         bool          `json:"valid"` // Valid is true if VisitorStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorStatus), nil
+}
+
+type VisitorVehicleType string
+
+const (
+	VisitorVehicleTypeBike  VisitorVehicleType = "bike"
+	VisitorVehicleTypeCar   VisitorVehicleType = "car"
+	VisitorVehicleTypeAuto  VisitorVehicleType = "auto"
+	VisitorVehicleTypeCab   VisitorVehicleType = "cab"
+	VisitorVehicleTypeTruck VisitorVehicleType = "truck"
+	VisitorVehicleTypeOther VisitorVehicleType = "other"
+)
+
+func (e *VisitorVehicleType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VisitorVehicleType(s)
+	case string:
+		*e = VisitorVehicleType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VisitorVehicleType: %T", src)
+	}
+	return nil
+}
+
+type NullVisitorVehicleType struct {
+	VisitorVehicleType VisitorVehicleType `json:"visitor_vehicle_type"`
+	Valid              bool               `json:"valid"` // Valid is true if VisitorVehicleType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVisitorVehicleType) Scan(value interface{}) error {
+	if value == nil {
+		ns.VisitorVehicleType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VisitorVehicleType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVisitorVehicleType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VisitorVehicleType), nil
+}
+
 type Flat struct {
 	ID         int64              `db:"id" json:"id"`
 	SocietyID  int64              `db:"society_id" json:"society_id"`
@@ -580,6 +902,20 @@ type FlatResident struct {
 	CreatedBy  *int64             `db:"created_by" json:"created_by"`
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type FlatVisitorSetting struct {
+	ID                          int64              `db:"id" json:"id"`
+	SocietyID                   int64              `db:"society_id" json:"society_id"`
+	FlatID                      int64              `db:"flat_id" json:"flat_id"`
+	Purpose                     VisitorPurpose     `db:"purpose" json:"purpose"`
+	ApprovalRequired            bool               `db:"approval_required" json:"approval_required"`
+	DefaultVisitDurationMinutes *int32             `db:"default_visit_duration_minutes" json:"default_visit_duration_minutes"`
+	IsEnabled                   bool               `db:"is_enabled" json:"is_enabled"`
+	Metadata                    []byte             `db:"metadata" json:"metadata"`
+	UpdatedBy                   *int64             `db:"updated_by" json:"updated_by"`
+	CreatedAt                   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type Plan struct {
@@ -677,6 +1013,23 @@ type SocietySubscription struct {
 	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type SocietyVisitorSetting struct {
+	ID                          int64               `db:"id" json:"id"`
+	SocietyID                   int64               `db:"society_id" json:"society_id"`
+	ApprovalMode                VisitorApprovalMode `db:"approval_mode" json:"approval_mode"`
+	DefaultVisitDurationMinutes int32               `db:"default_visit_duration_minutes" json:"default_visit_duration_minutes"`
+	GracePeriodMinutes          int32               `db:"grace_period_minutes" json:"grace_period_minutes"`
+	QrExpiryMinutes             int32               `db:"qr_expiry_minutes" json:"qr_expiry_minutes"`
+	AllowResidentPreApproval    bool                `db:"allow_resident_pre_approval" json:"allow_resident_pre_approval"`
+	AllowPublicQrEntry          bool                `db:"allow_public_qr_entry" json:"allow_public_qr_entry"`
+	AllowGuardEntry             bool                `db:"allow_guard_entry" json:"allow_guard_entry"`
+	IsActive                    bool                `db:"is_active" json:"is_active"`
+	Metadata                    []byte              `db:"metadata" json:"metadata"`
+	UpdatedBy                   *int64              `db:"updated_by" json:"updated_by"`
+	CreatedAt                   pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+}
+
 type User struct {
 	ID                int64              `db:"id" json:"id"`
 	FirstName         *string            `db:"first_name" json:"first_name"`
@@ -718,4 +1071,73 @@ type UserVerification struct {
 	ExpiresAt   pgtype.Timestamptz  `db:"expires_at" json:"expires_at"`
 	UsedAt      pgtype.Timestamptz  `db:"used_at" json:"used_at"`
 	CreatedAt   pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+}
+
+type Visitor struct {
+	ID          int64              `db:"id" json:"id"`
+	FullName    string             `db:"full_name" json:"full_name"`
+	PhoneNumber *string            `db:"phone_number" json:"phone_number"`
+	Email       *string            `db:"email" json:"email"`
+	PhotoUrl    *string            `db:"photo_url" json:"photo_url"`
+	Metadata    []byte             `db:"metadata" json:"metadata"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type VisitorEntry struct {
+	ID                 int64               `db:"id" json:"id"`
+	SocietyID          int64               `db:"society_id" json:"society_id"`
+	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
+	InviteID           *int64              `db:"invite_id" json:"invite_id"`
+	Source             VisitorSource       `db:"source" json:"source"`
+	Purpose            VisitorPurpose      `db:"purpose" json:"purpose"`
+	Status             VisitorStatus       `db:"status" json:"status"`
+	VehicleNumber      *string             `db:"vehicle_number" json:"vehicle_number"`
+	VehicleType        *VisitorVehicleType `db:"vehicle_type" json:"vehicle_type"`
+	CompanionsCount    int32               `db:"companions_count" json:"companions_count"`
+	CompanionDetails   []byte              `db:"companion_details" json:"companion_details"`
+	ExpectedAt         pgtype.Timestamptz  `db:"expected_at" json:"expected_at"`
+	ExpectedCheckoutAt pgtype.Timestamptz  `db:"expected_checkout_at" json:"expected_checkout_at"`
+	CheckedInAt        pgtype.Timestamptz  `db:"checked_in_at" json:"checked_in_at"`
+	CheckedOutAt       pgtype.Timestamptz  `db:"checked_out_at" json:"checked_out_at"`
+	AutoClosedAt       pgtype.Timestamptz  `db:"auto_closed_at" json:"auto_closed_at"`
+	ApprovedBy         *int64              `db:"approved_by" json:"approved_by"`
+	RejectedBy         *int64              `db:"rejected_by" json:"rejected_by"`
+	HandledByGuardID   *int64              `db:"handled_by_guard_id" json:"handled_by_guard_id"`
+	CreatedBy          *int64              `db:"created_by" json:"created_by"`
+	QrTokenHash        *string             `db:"qr_token_hash" json:"qr_token_hash"`
+	QrExpiresAt        pgtype.Timestamptz  `db:"qr_expires_at" json:"qr_expires_at"`
+	QrUsedAt           pgtype.Timestamptz  `db:"qr_used_at" json:"qr_used_at"`
+	Notes              *string             `db:"notes" json:"notes"`
+	RejectionReason    *string             `db:"rejection_reason" json:"rejection_reason"`
+	Metadata           []byte              `db:"metadata" json:"metadata"`
+	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+}
+
+type VisitorEntryEvent struct {
+	ID             int64              `db:"id" json:"id"`
+	VisitorEntryID int64              `db:"visitor_entry_id" json:"visitor_entry_id"`
+	SocietyID      int64              `db:"society_id" json:"society_id"`
+	ActorUserID    *int64             `db:"actor_user_id" json:"actor_user_id"`
+	EventType      VisitorEventType   `db:"event_type" json:"event_type"`
+	Message        *string            `db:"message" json:"message"`
+	Metadata       []byte             `db:"metadata" json:"metadata"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type VisitorInvite struct {
+	ID        int64               `db:"id" json:"id"`
+	SocietyID int64               `db:"society_id" json:"society_id"`
+	FlatID    int64               `db:"flat_id" json:"flat_id"`
+	CreatedBy int64               `db:"created_by" json:"created_by"`
+	Purpose   VisitorPurpose      `db:"purpose" json:"purpose"`
+	TokenHash string              `db:"token_hash" json:"token_hash"`
+	Status    VisitorInviteStatus `db:"status" json:"status"`
+	ExpiresAt pgtype.Timestamptz  `db:"expires_at" json:"expires_at"`
+	UsedAt    pgtype.Timestamptz  `db:"used_at" json:"used_at"`
+	Metadata  []byte              `db:"metadata" json:"metadata"`
+	CreatedAt pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
 }

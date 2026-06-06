@@ -3,7 +3,7 @@ import { CheckCircle2, RefreshCw, Wrench } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
-import { PageShell } from "@/components/shared/page-shell";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import type { SmartTableColumn } from "@/components/tables/smart-table";
 import { SmartTable } from "@/components/tables/smart-table";
 import { Badge } from "@/components/ui/badge";
@@ -124,74 +124,70 @@ export function PendingSocietiesClient() {
     [approving, handleApprove, setSelectedSociety],
   );
   return (
-    <PageShell background="tinted" className="min-h-screen py-10">
-      <main className="mx-auto w-full max-w-6xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
-            <p className="font-medium text-muted-foreground text-sm">
-              Developer workspace
-            </p>
-            <h1 className="font-semibold text-3xl tracking-tight">
-              Pending societies
-            </h1>
-            <p className="max-w-2xl text-muted-foreground">
-              Approve societies, assign a subscription, and activate it to
-              complete the lifecycle.
-            </p>
-          </div>
-          <Button
-            disabled={isFetching}
-            onClick={refetch}
-            type="button"
-            variant="outline"
-          >
-            <RefreshCw
-              className={isFetching ? "size-4 animate-spin" : "size-4"}
+    <WorkspacePage className="min-h-screen py-10">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <p className="font-medium text-muted-foreground text-sm">
+            Developer workspace
+          </p>
+          <h1 className="font-semibold text-3xl tracking-tight">
+            Pending societies
+          </h1>
+          <p className="max-w-2xl text-muted-foreground">
+            Approve societies, assign a subscription, and activate it to
+            complete the lifecycle.
+          </p>
+        </div>
+        <Button
+          disabled={isFetching}
+          onClick={refetch}
+          type="button"
+          variant="outline"
+        >
+          <RefreshCw
+            className={isFetching ? "size-4 animate-spin" : "size-4"}
+          />
+          Refresh
+        </Button>
+      </header>
+      <Card>
+        <CardHeader>
+          <CardTitle>Societies</CardTitle>
+          <CardDescription>
+            {isFetching ? "Refreshing..." : `${societies.length} pending`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isError ? (
+            <EmptyState
+              title="Could not load pending societies"
+              description="Refresh and try again."
+              action={
+                <Button onClick={refetch} type="button">
+                  Retry
+                </Button>
+              }
             />
-            Refresh
-          </Button>
-        </header>
-        <Card>
-          <CardHeader>
-            <CardTitle>Societies</CardTitle>
-            <CardDescription>
-              {isFetching ? "Refreshing..." : `${societies.length} pending`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isError ? (
-              <EmptyState
-                title="Could not load pending societies"
-                description="Refresh and try again."
-                action={
-                  <Button onClick={refetch} type="button">
-                    Retry
-                  </Button>
-                }
-              />
-            ) : (
-              <SmartTable
-                columns={columns}
-                data={societies}
-                loading={isLoading}
-                onRowClick={(row) => setSelectedSociety(row)}
-                rowKey={(row, index) =>
-                  row.id ?? row.society_code ?? `${index}`
-                }
-              />
-            )}
-          </CardContent>
-        </Card>
-        <SocietySubscriptionDialog
-          onDone={refetch}
-          onOpenChange={(open) => {
-            if (!open) setSelectedSociety(null);
-          }}
-          open={Boolean(selectedSociety)}
-          society={selectedSociety}
-        />
-      </main>
-    </PageShell>
+          ) : (
+            <SmartTable
+              columns={columns}
+              data={societies}
+              loading={isLoading}
+              onRowClick={(row) => setSelectedSociety(row)}
+              rowKey={(row, index) => row.id ?? row.society_code ?? `${index}`}
+            />
+          )}
+        </CardContent>
+      </Card>
+      <SocietySubscriptionDialog
+        onDone={refetch}
+        onOpenChange={(open) => {
+          if (!open) setSelectedSociety(null);
+        }}
+        open={Boolean(selectedSociety)}
+        society={selectedSociety}
+      />
+    </WorkspacePage>
   );
 }
 function SocietySubscriptionDialog({

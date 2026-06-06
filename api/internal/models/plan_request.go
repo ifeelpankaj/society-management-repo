@@ -138,7 +138,8 @@ type SubscriptionFilter struct {
 	ExpiringBefore *time.Time
 	ExpiredOnly    *bool
 
-	Search *string
+	Search     *string
+	SearchMode *string
 
 	Limit  int32
 	Offset int32

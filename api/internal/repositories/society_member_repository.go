@@ -100,7 +100,7 @@ func (r *societyMemberRepository) Count(ctx context.Context, filter models.ListS
 	return GetQueries(ctx, r.db).CountSocietyMembers(ctx, db.CountSocietyMembersParams{
 		SocietyID: params.SocietyID, Role: params.Role, Status: params.Status, UserID: params.UserID,
 		InvitedBy: params.InvitedBy, RemovedBy: params.RemovedBy, JoinedFrom: params.JoinedFrom,
-		JoinedTo: params.JoinedTo, Search: params.Search,
+		JoinedTo: params.JoinedTo, Search: params.Search, SearchMode: params.SearchMode,
 	})
 }
 
@@ -212,7 +212,9 @@ func listMembersParams(filter models.ListSocietyMembersFilter) db.ListSocietyMem
 		SocietyID: filter.SocietyID, Role: dbSocietyMemberRolePtr(filter.Role), Status: dbSocietyMemberStatusPtr(filter.Status),
 		UserID: filter.UserID, InvitedBy: filter.InvitedBy, RemovedBy: filter.RemovedBy,
 		JoinedFrom: timePtrToPgTimestamptz(filter.JoinedFrom), JoinedTo: timePtrToPgTimestamptz(filter.JoinedTo),
-		Search: filter.Search, SortBy: normalizeMemberSort(filter.SortBy), SortOrder: normalizeSortOrder(filter.SortOrder),
+		Search:     filter.Search,
+		SearchMode: normalizeSearchMode(filter.SearchMode, "resident", "invited_by", "removed_by"),
+		SortBy:     normalizeMemberSort(filter.SortBy), SortOrder: normalizeSortOrder(filter.SortOrder),
 		Limit: normalizeLimit(filter.Limit), Offset: normalizeOffset(filter.Offset),
 	}
 }

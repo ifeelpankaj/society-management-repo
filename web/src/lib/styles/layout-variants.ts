@@ -10,7 +10,7 @@ export const pageShellVariants = cva(
         full: "max-w-full",
       },
       background: {
-        default: "full",
+        default: "",
         tinted:
           "isolate overflow-hidden before:pointer-events-none before:absolute before:inset-x-[calc(50%_-_50vw)] before:top-0 before:-z-10 before:h-full before:bg-[linear-gradient(145deg,color-mix(in_oklch,var(--primary)_7%,var(--background))_0%,var(--background)_38rem),linear-gradient(90deg,color-mix(in_oklch,var(--muted)_58%,transparent)_0%,transparent_46%,color-mix(in_oklch,var(--accent)_22%,transparent)_100%),linear-gradient(180deg,color-mix(in_oklch,var(--background)_96%,white)_0%,var(--background)_100%)] dark:before:bg-[linear-gradient(145deg,color-mix(in_oklch,var(--primary)_12%,var(--background))_0%,var(--background)_36rem),linear-gradient(90deg,color-mix(in_oklch,var(--muted)_18%,transparent)_0%,transparent_48%,color-mix(in_oklch,var(--accent)_12%,transparent)_100%),linear-gradient(180deg,var(--background)_0%,color-mix(in_oklch,var(--background)_94%,black)_100%)]",
 

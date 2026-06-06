@@ -11,7 +11,7 @@ import {
   Send,
   UserPlus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppLoader } from "@/components/shared/app-loader";
@@ -26,6 +26,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { clearClientSession } from "@/features/auth/logout";
+import {
+  ClaimLoginForm,
+  type ClaimLoginFormValues,
+  ClaimRegisterForm,
+  type ClaimRegisterFormValues,
+} from "@/features/resident-claim/components/claim-auth-form";
 import {
   type ModelsLoginRequest,
   type ModelsPublicClaimFlatResponse,
@@ -39,8 +46,7 @@ import {
   usePostV1FlatClaimsMutation,
 } from "@/lib/api/generated-api";
 import { getApiErrorMessage, getApiMessage } from "@/lib/api-message";
-import { toIndianPhone } from "@/lib/validations";
-import { clearClientSession } from "@/features/auth/logout";
+import { buildLoginPayload, toIndianPhone } from "@/lib/validations";
 import { useAppDispatch } from "@/store/store";
 
 type ResidentClaimPageProps = {
@@ -50,8 +56,13 @@ type ResidentClaimPageProps = {
 type AuthMode = "login" | "register";
 type ResidentRole = "owner" | "tenant" | "family";
 
-const roles: Array<{ value: ResidentRole; label: string }> = [
+const allRoles: Array<{ value: ResidentRole; label: string }> = [
   { value: "owner", label: "Owner" },
+  { value: "tenant", label: "Tenant" },
+  { value: "family", label: "Family" },
+];
+
+const occupiedRoles: Array<{ value: ResidentRole; label: string }> = [
   { value: "tenant", label: "Tenant" },
   { value: "family", label: "Family" },
 ];
@@ -73,6 +84,21 @@ function statusVariant(status?: ModelsPublicClaimFlatResponse["status"]) {
   return "outline" as const;
 }
 
+function canClaimFlat(flat: ModelsPublicClaimFlatResponse | null) {
+  return flat?.status === "vacant" || flat?.status === "occupied";
+}
+
+function resolvePrimaryForSubmit(
+  role: ResidentRole,
+  flat: ModelsPublicClaimFlatResponse | null,
+  requestedPrimary: boolean,
+) {
+  if (flat?.status === "occupied" || role === "family") {
+    return false;
+  }
+  return requestedPrimary;
+}
+
 export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
   const normalizedCode = decodeURIComponent(societyCode).trim().toUpperCase();
   const [search, setSearch] = useState("");
@@ -81,15 +107,9 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
   const [requestedPrimary, setRequestedPrimary] = useState(true);
   const [note, setNote] = useState("");
   const [authMode, setAuthMode] = useState<AuthMode>("login");
-  const [loginIdentifier, setLoginIdentifier] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [registerFirstName, setRegisterFirstName] = useState("");
-  const [registerLastName, setRegisterLastName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPhone, setRegisterPhone] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
   const [submittedClaimId, setSubmittedClaimId] = useState<number | null>(null);
   const dispatch = useAppDispatch();
+
   const {
     data: claimOptions,
     isError: isClaimOptionsError,
@@ -122,16 +142,47 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
   const [submitClaim, { isLoading: isSubmittingClaim }] =
     usePostV1FlatClaimsMutation();
   const [logout, { isLoading: isLoggingOut }] = usePostV1AuthLogoutMutation();
+
+  const society = claimOptions?.data?.society ?? null;
+  const flats = claimOptions?.data?.flats ?? [];
+  const selectedFlat = flats.find((flat) => flat.id === selectedFlatId) ?? null;
+  const isOccupiedFlat = selectedFlat?.status === "occupied";
+  const isBlockedFlat = selectedFlat?.status === "blocked";
+  const claimableFlat = canClaimFlat(selectedFlat) ? selectedFlat : null;
+  const roleOptions = isOccupiedFlat ? occupiedRoles : allRoles;
+  const primaryAllowed =
+    requestedRole !== "family" && selectedFlat?.status === "vacant";
+
+  const handleRoleChange = useCallback((role: ResidentRole) => {
+    setRequestedRole(role);
+    if (role === "family") {
+      setRequestedPrimary(false);
+    }
+  }, []);
+
+  const handleFlatSelect = useCallback(
+    (flat: ModelsPublicClaimFlatResponse) => {
+      if (!flat.id) {
+        return;
+      }
+      setSelectedFlatId(flat.id);
+      if (flat.status === "occupied") {
+        setRequestedRole((current) =>
+          current === "owner" ? "tenant" : current,
+        );
+        setRequestedPrimary(false);
+      }
+    },
+    [],
+  );
+
   const handleLogout = async () => {
     const toastId = toast.loading("Signing out...");
 
     try {
       const response = await logout().unwrap();
-
+      clearClientSession(dispatch);
       setSubmittedClaimId(null);
-
-      await refetchProfile();
-
       toast.success(getApiMessage(response, "Signed out successfully."), {
         id: toastId,
       });
@@ -141,10 +192,6 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
       });
     }
   };
-  const society = claimOptions?.data?.society ?? null;
-  const flats = claimOptions?.data?.flats ?? [];
-  const selectedFlat = flats.find((flat) => flat.id === selectedFlatId) ?? null;
-  const availableFlat = selectedFlat?.status === "vacant" ? selectedFlat : null;
 
   const filteredFlats = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -174,21 +221,14 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
     ) ??
     null;
 
-  const handleLogin = async () => {
-    const identifier = loginIdentifier.trim();
-    if (!identifier || !loginPassword) {
-      toast.error("Enter your email or phone and password.");
-      return;
-    }
-
-    const payload = identifier.includes("@")
-      ? { email: identifier.toLowerCase(), password: loginPassword }
-      : { phone_number: toIndianPhone(identifier), password: loginPassword };
-
+  const handleLogin = async (values: ClaimLoginFormValues) => {
     const toastId = toast.loading("Signing you in...");
     try {
       const response = await login({
-        modelsLoginRequest: payload as ModelsLoginRequest,
+        modelsLoginRequest: buildLoginPayload(
+          values.identifier,
+          values.password,
+        ) as ModelsLoginRequest,
       }).unwrap();
       await refetchProfile();
       toast.success(getApiMessage(response, "Welcome back."), {
@@ -202,26 +242,16 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
     }
   };
 
-  const handleRegister = async () => {
-    if (
-      !registerFirstName.trim() ||
-      !registerEmail.trim() ||
-      !registerPhone.trim() ||
-      !registerPassword
-    ) {
-      toast.error("Fill the required registration fields.");
-      return;
-    }
-
+  const handleRegister = async (values: ClaimRegisterFormValues) => {
     const toastId = toast.loading("Creating your resident account...");
     try {
       const response = await registerResident({
         modelsResidentRegisterRequest: {
-          first_name: registerFirstName.trim(),
-          last_name: registerLastName.trim() || undefined,
-          email: registerEmail.trim().toLowerCase(),
-          phone_number: toIndianPhone(registerPhone),
-          password: registerPassword,
+          first_name: values.first_name.trim(),
+          last_name: values.last_name.trim() || undefined,
+          email: values.email.trim().toLowerCase(),
+          phone_number: toIndianPhone(values.phone_number),
+          password: values.password,
         },
       }).unwrap();
       await refetchProfile();
@@ -238,12 +268,16 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
   };
 
   const handleSubmitClaim = async () => {
-    if (!society?.id || !availableFlat?.id) {
-      toast.error("Select a vacant flat to continue.");
+    if (!society?.id || !claimableFlat?.id) {
+      toast.error("Select a vacant or occupied flat to continue.");
       return;
     }
     if (!user) {
       toast.error("Login or register before submitting the claim.");
+      return;
+    }
+    if (isOccupiedFlat && requestedRole === "owner") {
+      toast.error("Occupied flats accept tenant or family claims only.");
       return;
     }
 
@@ -252,9 +286,13 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
       const response = await submitClaim({
         modelsSubmitFlatClaimRequest: {
           society_id: society.id,
-          flat_id: availableFlat.id,
+          flat_id: claimableFlat.id,
           requested_role: requestedRole,
-          requested_primary: requestedPrimary,
+          requested_primary: resolvePrimaryForSubmit(
+            requestedRole,
+            claimableFlat,
+            requestedPrimary,
+          ),
           note: note.trim() || undefined,
         } as ModelsSubmitFlatClaimRequest,
       }).unwrap();
@@ -347,7 +385,8 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
             <CardHeader>
               <CardTitle>Select your flat</CardTitle>
               <CardDescription>
-                Occupied or blocked flats are shown but cannot be claimed.
+                Vacant flats accept any role. Occupied flats accept tenant or
+                family claims only. Blocked flats cannot be claimed.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -365,7 +404,7 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
               <div className="grid gap-2 sm:grid-cols-2">
                 {filteredFlats.map((flat) => {
                   const isSelected = selectedFlatId === flat.id;
-                  const isVacant = flat.status === "vacant";
+                  const isBlocked = flat.status === "blocked";
                   return (
                     <button
                       className={[
@@ -373,14 +412,10 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                         isSelected
                           ? "border-primary bg-primary/5"
                           : "bg-background hover:bg-muted/50",
-                        isVacant ? "" : "opacity-70",
+                        isBlocked ? "opacity-70" : "",
                       ].join(" ")}
                       key={flat.id ?? flat.flat_number}
-                      onClick={() => {
-                        if (flat.id) {
-                          setSelectedFlatId(flat.id);
-                        }
-                      }}
+                      onClick={() => handleFlatSelect(flat)}
                       type="button"
                     >
                       <span className="min-w-0">
@@ -421,11 +456,13 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-2">
-                  {roles.map((role) => (
+                <div
+                  className={`grid gap-2 ${roleOptions.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}
+                >
+                  {roleOptions.map((role) => (
                     <Button
                       key={role.value}
-                      onClick={() => setRequestedRole(role.value)}
+                      onClick={() => handleRoleChange(role.value)}
                       type="button"
                       variant={
                         requestedRole === role.value ? "default" : "outline"
@@ -436,16 +473,30 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                   ))}
                 </div>
 
-                <label className="flex items-center gap-2 rounded-lg border p-3 text-sm">
+                <label
+                  className={`flex items-center gap-2 rounded-lg border p-3 text-sm ${primaryAllowed ? "" : "opacity-60"}`}
+                >
                   <input
-                    checked={requestedPrimary}
+                    checked={primaryAllowed ? requestedPrimary : false}
                     className="size-4"
+                    disabled={!primaryAllowed}
                     onChange={(event) =>
                       setRequestedPrimary(event.target.checked)
                     }
                     type="checkbox"
                   />
-                  Primary resident for this flat
+                  <span>
+                    Primary resident for this flat
+                    {!primaryAllowed ? (
+                      <span className="mt-0.5 block text-muted-foreground text-xs">
+                        {requestedRole === "family"
+                          ? "Family members cannot be primary residents."
+                          : isOccupiedFlat
+                            ? "Occupied flats cannot receive a new primary resident."
+                            : "Primary is available for owner or tenant on vacant flats."}
+                      </span>
+                    ) : null}
+                  </span>
                 </label>
 
                 <label className="block space-y-2 text-sm">
@@ -462,7 +513,7 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                 <Button
                   className="w-full"
                   disabled={
-                    !availableFlat ||
+                    !claimableFlat ||
                     !user ||
                     isSubmittingClaim ||
                     Boolean(submittedClaim)
@@ -478,10 +529,15 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                   Submit claim
                 </Button>
 
-                {selectedFlat && selectedFlat.status !== "vacant" ? (
+                {isBlockedFlat ? (
                   <p className="text-destructive text-sm">
-                    This flat is {selectedFlat.status} and cannot receive a new
-                    claim.
+                    This flat is blocked and cannot receive a new claim.
+                  </p>
+                ) : null}
+                {isOccupiedFlat ? (
+                  <p className="text-muted-foreground text-sm">
+                    This flat is occupied. You can claim as tenant or family
+                    only.
                   </p>
                 ) : null}
               </CardContent>
@@ -516,97 +572,15 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                   </div>
 
                   {authMode === "login" ? (
-                    <div className="space-y-3">
-                      <Input
-                        autoComplete="email"
-                        onChange={(event) =>
-                          setLoginIdentifier(event.target.value)
-                        }
-                        placeholder="Email or phone"
-                        value={loginIdentifier}
-                      />
-                      <Input
-                        autoComplete="current-password"
-                        onChange={(event) =>
-                          setLoginPassword(event.target.value)
-                        }
-                        placeholder="Password"
-                        type="password"
-                        value={loginPassword}
-                      />
-                      <Button
-                        className="w-full"
-                        disabled={isLoggingIn}
-                        onClick={handleLogin}
-                        type="button"
-                      >
-                        {isLoggingIn ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <LogIn />
-                        )}
-                        Login
-                      </Button>
-                    </div>
+                    <ClaimLoginForm
+                      isLoading={isLoggingIn}
+                      onSubmit={handleLogin}
+                    />
                   ) : (
-                    <div className="space-y-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <Input
-                          autoComplete="given-name"
-                          onChange={(event) =>
-                            setRegisterFirstName(event.target.value)
-                          }
-                          placeholder="First name"
-                          value={registerFirstName}
-                        />
-                        <Input
-                          autoComplete="family-name"
-                          onChange={(event) =>
-                            setRegisterLastName(event.target.value)
-                          }
-                          placeholder="Last name"
-                          value={registerLastName}
-                        />
-                      </div>
-                      <Input
-                        autoComplete="email"
-                        onChange={(event) =>
-                          setRegisterEmail(event.target.value)
-                        }
-                        placeholder="Email"
-                        value={registerEmail}
-                      />
-                      <Input
-                        autoComplete="tel"
-                        onChange={(event) =>
-                          setRegisterPhone(event.target.value)
-                        }
-                        placeholder="Phone"
-                        value={registerPhone}
-                      />
-                      <Input
-                        autoComplete="new-password"
-                        onChange={(event) =>
-                          setRegisterPassword(event.target.value)
-                        }
-                        placeholder="Password"
-                        type="password"
-                        value={registerPassword}
-                      />
-                      <Button
-                        className="w-full"
-                        disabled={isRegistering}
-                        onClick={handleRegister}
-                        type="button"
-                      >
-                        {isRegistering ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <UserPlus />
-                        )}
-                        Register
-                      </Button>
-                    </div>
+                    <ClaimRegisterForm
+                      isLoading={isRegistering}
+                      onSubmit={handleRegister}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -624,17 +598,17 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
                 <CardContent>
                   <Button
                     className="w-full"
-                    variant="outline"
-                    onClick={handleLogout}
                     disabled={isLoggingOut}
+                    onClick={handleLogout}
                     type="button"
+                    variant="outline"
                   >
                     {isLoggingOut ? (
                       <Loader2 className="animate-spin" />
                     ) : (
                       <LogOut />
                     )}
-                    Logout
+                    Sign out
                   </Button>
                 </CardContent>
               </Card>

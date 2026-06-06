@@ -1,24 +1,25 @@
 import dynamic from "next/dynamic";
+
 import { notFound } from "next/navigation";
 
 import { AppLoader } from "@/components/shared/app-loader";
+
 import { decodeSocietyId } from "@/lib/routes/society-route";
+
 import { createPageMetadata } from "@/lib/site-metadata";
 
 export const metadata = createPageMetadata(
   "Resident details",
+
   "View and manage a society member record.",
 );
-//getV1SocietiesBySocietyIdMembersAndMemberId to get member details
-//deleteV1SocietiesBySocietyIdMembersAndUserId to remove member from society
-//postV1SocietiesBySocietyIdMembersAndUserIdSuspend to suspend member from society
-//postV1SocietiesBySocietyIdMembersAndUserIdReactivate to reactivate member if suspended
-//patchV1SocietiesBySocietyIdMembersAndUserIdRole chnage member role society level
+
 const ResidentDetailClient = dynamic(
   () =>
     import("@/features/admin/residents").then((m) => ({
       default: m.ResidentDetailClient,
     })),
+
   { loading: () => <AppLoader label="Loading resident" /> },
 );
 
@@ -30,7 +31,9 @@ export default async function ResidentDetailPage({
   params,
 }: ResidentDetailPageProps) {
   const { societyId: encodedSocietyId, memberId } = await params;
+
   const societyId = decodeSocietyId(encodedSocietyId);
+
   const decodedMemberId = Number.parseInt(memberId, 10);
 
   if (

@@ -28,8 +28,18 @@ func (s *FlatSvc) CreateFlat(ctx context.Context, societyID int64, createdBy int
 		SocietyID: societyID, Block: req.Block, Floor: req.Floor, FlatNumber: req.FlatNumber,
 		Status: models.FlatStatusVacant, IsActive: true, CreatedBy: &createdBy, Metadata: req.Metadata,
 	}
-	if err := s.flatRepo.Create(ctx, flat); err != nil {
-		return nil, ErrFlatConflict.WithCause(err)
+	if err := s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.flatRepo.Create(txCtx, flat); err != nil {
+			return ErrFlatConflict.WithCause(err)
+		}
+		if s.visitorSettingSvc != nil {
+			if err := s.visitorSettingSvc.CreateDefaultFlatSettings(txCtx, societyID, flat.ID, createdBy); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 	return s.GetFlat(ctx, &models.FlatFilter{ID: &flat.ID, SocietyID: &societyID})
 }
@@ -65,6 +75,11 @@ func (s *FlatSvc) BulkCreateFlats(ctx context.Context, societyID int64, createdB
 			}
 			if err := s.flatRepo.Create(txCtx, flat); err != nil {
 				return ErrFlatConflict.WithCause(err)
+			}
+			if s.visitorSettingSvc != nil {
+				if err := s.visitorSettingSvc.CreateDefaultFlatSettings(txCtx, societyID, flat.ID, createdBy); err != nil {
+					return err
+				}
 			}
 			loaded, err := s.flatRepo.Get(txCtx, &models.FlatFilter{ID: &flat.ID, SocietyID: &societyID})
 			if err != nil {

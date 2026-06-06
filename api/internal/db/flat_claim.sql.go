@@ -93,9 +93,13 @@ SELECT
     f.floor AS floor,
     f.status AS flat_status,
     s.name AS society_name,
-    s.society_code AS society_code
+    s.society_code AS society_code,
+    reviewer.full_name AS reviewer_name,
+    reviewer.email AS reviewer_email,
+    reviewer.phone_number AS reviewer_phone
 FROM flat_claim_requests fc
 JOIN users u ON u.id = fc.user_id
+LEFT JOIN users reviewer ON reviewer.id = fc.reviewed_by
 JOIN flats f ON f.id = fc.flat_id
 JOIN societies s ON s.id = fc.society_id
 WHERE ($1::bigint IS NULL OR fc.id = $1::bigint)
@@ -140,6 +144,9 @@ type GetFlatClaimRow struct {
 	FlatStatus       FlatStatus         `db:"flat_status" json:"flat_status"`
 	SocietyName      string             `db:"society_name" json:"society_name"`
 	SocietyCode      string             `db:"society_code" json:"society_code"`
+	ReviewerName     *string            `db:"reviewer_name" json:"reviewer_name"`
+	ReviewerEmail    *string            `db:"reviewer_email" json:"reviewer_email"`
+	ReviewerPhone    *string            `db:"reviewer_phone" json:"reviewer_phone"`
 }
 
 func (q *Queries) GetFlatClaim(ctx context.Context, arg GetFlatClaimParams) (GetFlatClaimRow, error) {
@@ -176,6 +183,9 @@ func (q *Queries) GetFlatClaim(ctx context.Context, arg GetFlatClaimParams) (Get
 		&i.FlatStatus,
 		&i.SocietyName,
 		&i.SocietyCode,
+		&i.ReviewerName,
+		&i.ReviewerEmail,
+		&i.ReviewerPhone,
 	)
 	return i, err
 }
@@ -223,9 +233,13 @@ SELECT
     f.floor AS floor,
     f.status AS flat_status,
     s.name AS society_name,
-    s.society_code AS society_code
+    s.society_code AS society_code,
+    reviewer.full_name AS reviewer_name,
+    reviewer.email AS reviewer_email,
+    reviewer.phone_number AS reviewer_phone
 FROM flat_claim_requests fc
 JOIN users u ON u.id = fc.user_id
+LEFT JOIN users reviewer ON reviewer.id = fc.reviewed_by
 JOIN flats f ON f.id = fc.flat_id
 JOIN societies s ON s.id = fc.society_id
 WHERE ($1::bigint IS NULL OR fc.id = $1::bigint)
@@ -235,26 +249,49 @@ WHERE ($1::bigint IS NULL OR fc.id = $1::bigint)
   AND ($5::flat_claim_status IS NULL OR fc.status = $5::flat_claim_status)
   AND (
       $6::text = ''
-      OR u.full_name ILIKE '%' || $6::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || $6::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || $6::text || '%'
-      OR f.flat_number ILIKE '%' || $6::text || '%'
-      OR COALESCE(f.block, '') ILIKE '%' || $6::text || '%'
-      OR fc.status::text ILIKE '%' || $6::text || '%'
+      OR (
+          $7::text IN ('', 'all', 'claimant')
+          AND (
+              u.full_name ILIKE '%' || $6::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || $6::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || $6::text || '%'
+          )
+      )
+      OR (
+          $7::text IN ('', 'all', 'flat')
+          AND (
+              f.flat_number ILIKE '%' || $6::text || '%'
+              OR COALESCE(f.block, '') ILIKE '%' || $6::text || '%'
+              OR COALESCE(f.floor, '') ILIKE '%' || $6::text || '%'
+          )
+      )
+      OR (
+          $7::text IN ('', 'all', 'reviewer')
+          AND (
+              COALESCE(reviewer.full_name, '') ILIKE '%' || $6::text || '%'
+              OR COALESCE(reviewer.email, '') ILIKE '%' || $6::text || '%'
+              OR COALESCE(reviewer.phone_number, '') ILIKE '%' || $6::text || '%'
+          )
+      )
+      OR (
+          $7::text IN ('', 'all')
+          AND fc.status::text ILIKE '%' || $6::text || '%'
+      )
   )
 ORDER BY fc.created_at DESC
-LIMIT $8 OFFSET $7
+LIMIT $9 OFFSET $8
 `
 
 type ListFlatClaimsParams struct {
-	ID        *int64           `db:"id" json:"id"`
-	SocietyID *int64           `db:"society_id" json:"society_id"`
-	FlatID    *int64           `db:"flat_id" json:"flat_id"`
-	UserID    *int64           `db:"user_id" json:"user_id"`
-	Status    *FlatClaimStatus `db:"status" json:"status"`
-	Search    string           `db:"search" json:"search"`
-	Offset    int32            `db:"offset" json:"offset"`
-	Limit     int32            `db:"limit" json:"limit"`
+	ID         *int64           `db:"id" json:"id"`
+	SocietyID  *int64           `db:"society_id" json:"society_id"`
+	FlatID     *int64           `db:"flat_id" json:"flat_id"`
+	UserID     *int64           `db:"user_id" json:"user_id"`
+	Status     *FlatClaimStatus `db:"status" json:"status"`
+	Search     string           `db:"search" json:"search"`
+	SearchMode string           `db:"search_mode" json:"search_mode"`
+	Offset     int32            `db:"offset" json:"offset"`
+	Limit      int32            `db:"limit" json:"limit"`
 }
 
 type ListFlatClaimsRow struct {
@@ -282,6 +319,9 @@ type ListFlatClaimsRow struct {
 	FlatStatus       FlatStatus         `db:"flat_status" json:"flat_status"`
 	SocietyName      string             `db:"society_name" json:"society_name"`
 	SocietyCode      string             `db:"society_code" json:"society_code"`
+	ReviewerName     *string            `db:"reviewer_name" json:"reviewer_name"`
+	ReviewerEmail    *string            `db:"reviewer_email" json:"reviewer_email"`
+	ReviewerPhone    *string            `db:"reviewer_phone" json:"reviewer_phone"`
 }
 
 func (q *Queries) ListFlatClaims(ctx context.Context, arg ListFlatClaimsParams) ([]ListFlatClaimsRow, error) {
@@ -292,6 +332,7 @@ func (q *Queries) ListFlatClaims(ctx context.Context, arg ListFlatClaimsParams) 
 		arg.UserID,
 		arg.Status,
 		arg.Search,
+		arg.SearchMode,
 		arg.Offset,
 		arg.Limit,
 	)
@@ -327,6 +368,9 @@ func (q *Queries) ListFlatClaims(ctx context.Context, arg ListFlatClaimsParams) 
 			&i.FlatStatus,
 			&i.SocietyName,
 			&i.SocietyCode,
+			&i.ReviewerName,
+			&i.ReviewerEmail,
+			&i.ReviewerPhone,
 		); err != nil {
 			return nil, err
 		}

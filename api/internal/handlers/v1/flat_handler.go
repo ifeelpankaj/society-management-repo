@@ -876,6 +876,35 @@ func (h *FlatHandler) ListFlatResidents(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Residents fetched successfully", gin.H{"residents": result})
 }
 
+// ListSocietyFlatResidents godoc
+// @Summary List flat residents for a society flat
+// @Description [Owner/Admin/Staff] Lists residents for the flat identified in the path.
+// @Tags Flat Residents
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param flatId path int true "Flat ID"
+// @Param role query string false "Resident role: owner, tenant, family"
+// @Param status query string false "Resident status: active, inactive, moved_out"
+// @Param is_primary query bool false "Primary resident flag"
+// @Param search query string false "Search user, contact, flat, block, role, or status"
+// @Param limit query int false "Limit" default(20)
+// @Param offset query int false "Offset" default(0)
+// @Success 200 {object} models.FlatResidentsAPIResponse "Residents fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path or query parameter"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Router /v1/societies/{societyId}/flats/{flatId}/residents [get]
+func (h *FlatHandler) ListSocietyFlatResidents(c *gin.Context) {
+	filter, ok := flatResidentFilterFromSocietyFlatPath(c)
+	if !ok {
+		return
+	}
+	result, err := h.flatSvc.ListFlatResidents(c.Request.Context(), filter)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Residents fetched successfully", gin.H{"residents": result})
+}
+
 // ListMyResidences godoc
 // @Summary List my residences
 // @Description [User] Lists flat residences for the authenticated user with joined flat and society data.
@@ -946,7 +975,7 @@ func flatFilterFromQuery(c *gin.Context) (*models.FlatFilter, bool) {
 }
 
 func flatClaimFilterFromQuery(c *gin.Context) (*models.FlatClaimFilter, bool) {
-	filter := &models.FlatClaimFilter{Status: optionalString(c.Query("status")), Search: strings.TrimSpace(c.Query("search"))}
+	filter := &models.FlatClaimFilter{Status: optionalString(c.Query("status")), Search: strings.TrimSpace(c.Query("search")), SearchMode: strings.TrimSpace(c.Query("search_mode"))}
 	if !queryInt64Ptr(c, "id", &filter.ID) || !queryInt64Ptr(c, "society_id", &filter.SocietyID) ||
 		!queryInt64Ptr(c, "flat_id", &filter.FlatID) || !queryInt64Ptr(c, "user_id", &filter.UserID) {
 		return nil, false
@@ -961,7 +990,7 @@ func flatClaimFilterFromQuery(c *gin.Context) (*models.FlatClaimFilter, bool) {
 }
 
 func flatResidentFilterFromQuery(c *gin.Context) (*models.FlatResidentFilter, bool) {
-	filter := &models.FlatResidentFilter{Role: optionalString(c.Query("role")), Status: optionalString(c.Query("status")), Search: strings.TrimSpace(c.Query("search"))}
+	filter := &models.FlatResidentFilter{Role: optionalString(c.Query("role")), Status: optionalString(c.Query("status")), Search: strings.TrimSpace(c.Query("search")), SearchMode: strings.TrimSpace(c.Query("search_mode"))}
 	if !queryInt64Ptr(c, "id", &filter.ID) || !queryInt64Ptr(c, "society_id", &filter.SocietyID) ||
 		!queryInt64Ptr(c, "flat_id", &filter.FlatID) || !queryInt64Ptr(c, "user_id", &filter.UserID) {
 		return nil, false
@@ -1020,4 +1049,33 @@ func parseSocietyFlatResident(c *gin.Context) (int64, int64, int64, bool) {
 	}
 	residentID, ok := parsePathInt64(c, "residentId")
 	return societyID, flatID, residentID, ok
+}
+func flatResidentFilterFromSocietyFlatPath(c *gin.Context) (*models.FlatResidentFilter, bool) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return nil, false
+	}
+	flatID, ok := parsePathInt64(c, "flatId")
+	if !ok {
+		return nil, false
+	}
+	filter := &models.FlatResidentFilter{
+		SocietyID:  &societyID,
+		FlatID:     &flatID,
+		Role:       optionalString(c.Query("role")),
+		Status:     optionalString(c.Query("status")),
+		Search:     strings.TrimSpace(c.Query("search")),
+		SearchMode: strings.TrimSpace(c.Query("search_mode")),
+	}
+	if raw := strings.TrimSpace(c.Query("is_primary")); raw != "" {
+		value := raw == "true" || raw == "1"
+		filter.IsPrimary = &value
+	}
+	limit, offset, ok := paginationQuery(c)
+	if !ok {
+		return nil, false
+	}
+	filter.Limit = limit
+	filter.Offset = offset
+	return filter, true
 }

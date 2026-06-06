@@ -94,6 +94,9 @@ type FlatClaimResponse struct {
 	FlatStatus       *FlatStatus      `json:"flat_status,omitempty"`
 	SocietyName      *string          `json:"society_name,omitempty"`
 	SocietyCode      *string          `json:"society_code,omitempty"`
+	ReviewerName     *string          `json:"reviewer_name,omitempty"`
+	ReviewerEmail    *string          `json:"reviewer_email,omitempty"`
+	ReviewerPhone    *string          `json:"reviewer_phone,omitempty"`
 }
 
 type ApproveFlatClaimResponse struct {

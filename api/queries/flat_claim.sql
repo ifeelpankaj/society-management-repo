@@ -17,9 +17,13 @@ SELECT
     f.floor AS floor,
     f.status AS flat_status,
     s.name AS society_name,
-    s.society_code AS society_code
+    s.society_code AS society_code,
+    reviewer.full_name AS reviewer_name,
+    reviewer.email AS reviewer_email,
+    reviewer.phone_number AS reviewer_phone
 FROM flat_claim_requests fc
 JOIN users u ON u.id = fc.user_id
+LEFT JOIN users reviewer ON reviewer.id = fc.reviewed_by
 JOIN flats f ON f.id = fc.flat_id
 JOIN societies s ON s.id = fc.society_id
 WHERE (sqlc.narg('id')::bigint IS NULL OR fc.id = sqlc.narg('id')::bigint)
@@ -41,9 +45,13 @@ SELECT
     f.floor AS floor,
     f.status AS flat_status,
     s.name AS society_name,
-    s.society_code AS society_code
+    s.society_code AS society_code,
+    reviewer.full_name AS reviewer_name,
+    reviewer.email AS reviewer_email,
+    reviewer.phone_number AS reviewer_phone
 FROM flat_claim_requests fc
 JOIN users u ON u.id = fc.user_id
+LEFT JOIN users reviewer ON reviewer.id = fc.reviewed_by
 JOIN flats f ON f.id = fc.flat_id
 JOIN societies s ON s.id = fc.society_id
 WHERE (sqlc.narg('id')::bigint IS NULL OR fc.id = sqlc.narg('id')::bigint)
@@ -53,12 +61,34 @@ WHERE (sqlc.narg('id')::bigint IS NULL OR fc.id = sqlc.narg('id')::bigint)
   AND (sqlc.narg('status')::flat_claim_status IS NULL OR fc.status = sqlc.narg('status')::flat_claim_status)
   AND (
       sqlc.arg('search')::text = ''
-      OR u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR f.flat_number ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(f.block, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR fc.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'claimant')
+          AND (
+              u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'flat')
+          AND (
+              f.flat_number ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(f.block, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(f.floor, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'reviewer')
+          AND (
+              COALESCE(reviewer.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(reviewer.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(reviewer.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all')
+          AND fc.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      )
   )
 ORDER BY fc.created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');

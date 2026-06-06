@@ -25,8 +25,8 @@ import { FormField } from "@/components/forms/form-field";
 import { SmartForm } from "@/components/forms/smart-form";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { PageShell } from "@/components/shared/page-shell";
 import { SectionCard } from "@/components/shared/section-card";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import { Button } from "@/components/ui/button";
 import { isAdminSetupRole } from "@/features/auth/auth-routing";
 import { RouteGuard } from "@/features/auth/components/route-guard";
@@ -339,161 +339,171 @@ function SocietyOnboardingContent({ societyId }: SocietyOnboardingClientProps) {
 
   if (isLoadingMemberships || isFetchingMemberships) {
     return (
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto flex w-full max-w-4xl items-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-          Checking society access...
-        </main>
-      </PageShell>
+      <WorkspacePage
+        className="min-h-screen py-10"
+        mainClassName="flex w-full items-center gap-3 text-muted-foreground"
+        size="wizard"
+      >
+        <Loader2 className="size-5 animate-spin" />
+        Checking society access...
+      </WorkspacePage>
     );
   }
 
   if (!membership || !hasSetupAccess) {
     return (
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto w-full max-w-4xl">
-          <EmptyState
-            title="Society is not ready"
-            description="Open onboarding from an owner or admin account once this society is active."
-            action={
-              <Button asChild>
-                <Link href="/select-society">Back to societies</Link>
-              </Button>
-            }
-          />
-        </main>
-      </PageShell>
+      <WorkspacePage
+        className="min-h-screen py-10"
+        mainClassName="space-y-0"
+        size="wizard"
+      >
+        <EmptyState
+          title="Society is not ready"
+          description="Open onboarding from an owner or admin account once this society is active."
+          action={
+            <Button asChild>
+              <Link href="/select-society">Back to societies</Link>
+            </Button>
+          }
+        />
+      </WorkspacePage>
     );
   }
 
   if (isPendingSociety) {
     return (
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto w-full max-w-4xl">
-          <EmptyState
-            title="Society is in verification stage"
-            description="Your society request is being reviewed. Onboarding will open once it is approved."
-            action={
-              <Button asChild>
-                <Link href="/select-society">Back to societies</Link>
-              </Button>
-            }
-          />
-        </main>
-      </PageShell>
+      <WorkspacePage
+        className="min-h-screen py-10"
+        mainClassName="space-y-0"
+        size="wizard"
+      >
+        <EmptyState
+          title="Society is in verification stage"
+          description="Your society request is being reviewed. Onboarding will open once it is approved."
+          action={
+            <Button asChild>
+              <Link href="/select-society">Back to societies</Link>
+            </Button>
+          }
+        />
+      </WorkspacePage>
     );
   }
 
   if (isLoadingDashboard || isFetchingDashboard) {
     return (
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto flex w-full max-w-4xl items-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-          Checking subscription...
-        </main>
-      </PageShell>
+      <WorkspacePage
+        className="min-h-screen py-10"
+        mainClassName="flex w-full items-center gap-3 text-muted-foreground"
+        size="wizard"
+      >
+        <Loader2 className="size-5 animate-spin" />
+        Checking subscription...
+      </WorkspacePage>
     );
   }
 
   if (!hasActiveSubscription) {
     return (
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto w-full max-w-4xl">
-          <EmptyState
-            title="We are finding the best subscription plan for your society"
-            description="Onboarding will open once a subscription is assigned and activated."
-            action={
-              <Button asChild>
-                <Link href="/select-society">Back to societies</Link>
-              </Button>
-            }
-          />
-        </main>
-      </PageShell>
+      <WorkspacePage
+        className="min-h-screen py-10"
+        mainClassName="space-y-0"
+        size="wizard"
+      >
+        <EmptyState
+          title="We are finding the best subscription plan for your society"
+          description="Onboarding will open once a subscription is assigned and activated."
+          action={
+            <Button asChild>
+              <Link href="/select-society">Back to societies</Link>
+            </Button>
+          }
+        />
+      </WorkspacePage>
     );
   }
 
   if (isLoading) {
     return (
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto flex w-full max-w-4xl items-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-          Loading onboarding...
-        </main>
-      </PageShell>
+      <WorkspacePage
+        className="min-h-screen py-10"
+        mainClassName="flex w-full items-center gap-3 text-muted-foreground"
+        size="wizard"
+      >
+        <Loader2 className="size-5 animate-spin" />
+        Loading onboarding...
+      </WorkspacePage>
     );
   }
 
   return (
-    <PageShell background="tinted" className="min-h-screen py-10">
-      <main className="mx-auto w-full max-w-4xl space-y-6">
-        <PageHeader
-          actions={
-            <Button asChild variant="outline">
-              <Link href="/select-society">Switch society</Link>
+    <WorkspacePage className="min-h-screen py-10" size="wizard">
+      <PageHeader
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/select-society">Switch society</Link>
+          </Button>
+        }
+        description="Add the required flats and guard staff before opening the dashboard."
+        eyebrow="Society onboarding"
+        title={onboarding?.society?.name ?? "Complete setup"}
+      />
+
+      {onboarding?.is_onboarded ? (
+        <EmptyState
+          title="Onboarding complete"
+          description="This society has active flats and staff."
+          action={
+            <Button onClick={() => router.replace(dashboardPath)}>
+              Open dashboard
+              <CheckCircle2 className="size-4" />
             </Button>
           }
-          description="Add the required flats and guard staff before opening the dashboard."
-          eyebrow="Society onboarding"
-          title={onboarding?.society?.name ?? "Complete setup"}
         />
+      ) : null}
 
-        {onboarding?.is_onboarded ? (
-          <EmptyState
-            title="Onboarding complete"
-            description="This society has active flats and staff."
-            action={
-              <Button onClick={() => router.replace(dashboardPath)}>
-                Open dashboard
-                <CheckCircle2 className="size-4" />
+      {missingSteps.has("flats") ? (
+        <SectionCard
+          description="Add at least one active flat to start the society workspace."
+          title="Create first flat"
+        >
+          <SmartForm<FlatFormValues>
+            defaultValues={flatDefaults}
+            formOptions={{ mode: "onChange" }}
+            onSubmit={submitFlat}
+            actions={
+              <Button disabled={isCreatingFlat || isFetching} type="submit">
+                {isCreatingFlat ? "Creating..." : "Create flat"}
+                <Home className="size-4" />
               </Button>
             }
-          />
-        ) : null}
-
-        {missingSteps.has("flats") ? (
-          <SectionCard
-            description="Add at least one active flat to start the society workspace."
-            title="Create first flat"
           >
-            <SmartForm<FlatFormValues>
-              defaultValues={flatDefaults}
-              formOptions={{ mode: "onChange" }}
-              onSubmit={submitFlat}
-              actions={
-                <Button disabled={isCreatingFlat || isFetching} type="submit">
-                  {isCreatingFlat ? "Creating..." : "Create flat"}
-                  <Home className="size-4" />
-                </Button>
-              }
-            >
-              {(form) => <FlatFields form={form} />}
-            </SmartForm>
-          </SectionCard>
-        ) : null}
+            {(form) => <FlatFields form={form} />}
+          </SmartForm>
+        </SectionCard>
+      ) : null}
 
-        {missingSteps.has("staff") ? (
-          <SectionCard
-            description="Create one active staff account for gate operations."
-            title="Create guard"
+      {missingSteps.has("staff") ? (
+        <SectionCard
+          description="Create one active staff account for gate operations."
+          title="Create guard"
+        >
+          <SmartForm<GuardFormValues>
+            defaultValues={guardDefaults}
+            formOptions={{ mode: "onChange" }}
+            onSubmit={submitGuard}
+            actions={
+              <Button disabled={isCreatingGuard || isFetching} type="submit">
+                {isCreatingGuard ? "Creating..." : "Create guard"}
+                <Shield className="size-4" />
+              </Button>
+            }
           >
-            <SmartForm<GuardFormValues>
-              defaultValues={guardDefaults}
-              formOptions={{ mode: "onChange" }}
-              onSubmit={submitGuard}
-              actions={
-                <Button disabled={isCreatingGuard || isFetching} type="submit">
-                  {isCreatingGuard ? "Creating..." : "Create guard"}
-                  <Shield className="size-4" />
-                </Button>
-              }
-            >
-              {(form) => <GuardFields form={form} />}
-            </SmartForm>
-          </SectionCard>
-        ) : null}
-      </main>
-    </PageShell>
+            {(form) => <GuardFields form={form} />}
+          </SmartForm>
+        </SectionCard>
+      ) : null}
+    </WorkspacePage>
   );
 }
 

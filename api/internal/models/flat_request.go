@@ -137,7 +137,8 @@ type FlatFilter struct {
 	Status     *string
 	IsActive   *bool
 
-	Search string
+	Search     string
+	SearchMode string
 
 	Limit  int32
 	Offset int32
@@ -153,7 +154,8 @@ type FlatResidentFilter struct {
 	Status    *string
 	IsPrimary *bool
 
-	Search string
+	Search     string
+	SearchMode string
 
 	Limit  int32
 	Offset int32
@@ -167,7 +169,8 @@ type FlatClaimFilter struct {
 
 	Status *string
 
-	Search string
+	Search     string
+	SearchMode string
 
 	Limit  int32
 	Offset int32

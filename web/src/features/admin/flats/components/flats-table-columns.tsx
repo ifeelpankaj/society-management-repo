@@ -1,15 +1,14 @@
 "use client";
 
 import { Eye } from "lucide-react";
-import { useMemo } from "react";
-
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo } from "react";
 import type { SmartTableColumn } from "@/components/tables/smart-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FlatStatusBadge } from "@/features/admin/flats/components/flat-status-badge";
 import type { ModelsFlatResponse } from "@/lib/api/generated-api";
 import { formatShortDateIN } from "@/lib/format";
-import { useRouter } from "next/navigation";
 
 export function flatLabel(flat: ModelsFlatResponse) {
   return flat.flat_number ?? `Flat #${flat.id}`;
@@ -17,21 +16,18 @@ export function flatLabel(flat: ModelsFlatResponse) {
 
 type UseFlatsTableColumnsOptions = {
   actionInProgress: boolean;
-  onBlockToggle: (flat: ModelsFlatResponse) => void;
-  onDeactivate: (flat: ModelsFlatResponse) => void;
-  onEdit: (flat: ModelsFlatResponse) => void;
 };
 
 export function useFlatsTableColumns({
   actionInProgress,
-  onBlockToggle,
-  onDeactivate,
-  onEdit,
 }: UseFlatsTableColumnsOptions) {
   const router = useRouter();
-  const handleDetails = (flat: ModelsFlatResponse) => {
-    router.push(`flats/${flat.id}`);
-  };
+  const handleDetails = useCallback(
+    (flat: ModelsFlatResponse) => {
+      router.push(`flats/${flat.id}`);
+    },
+    [router],
+  );
   return useMemo<SmartTableColumn<ModelsFlatResponse>[]>(
     () => [
       {
@@ -98,6 +94,6 @@ export function useFlatsTableColumns({
         },
       },
     ],
-    [actionInProgress, onBlockToggle, onDeactivate, onEdit],
+    [actionInProgress, handleDetails],
   );
 }

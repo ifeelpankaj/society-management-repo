@@ -126,6 +126,7 @@ func flatClaimFromGetRow(row db.GetFlatClaimRow) *models.FlatClaim {
 		row.Status, row.Note, row.RejectionReason, row.ReviewedBy, row.ReviewedAt, row.CancelledAt,
 		row.Metadata, row.CreatedAt, row.UpdatedAt, row.UserName, row.UserEmail, row.UserPhone,
 		row.FlatNumber, row.Block, row.Floor, row.FlatStatus, row.SocietyName, row.SocietyCode,
+		row.ReviewerName, row.ReviewerEmail, row.ReviewerPhone,
 	)
 }
 
@@ -135,10 +136,11 @@ func flatClaimFromListRow(row db.ListFlatClaimsRow) *models.FlatClaim {
 		row.Status, row.Note, row.RejectionReason, row.ReviewedBy, row.ReviewedAt, row.CancelledAt,
 		row.Metadata, row.CreatedAt, row.UpdatedAt, row.UserName, row.UserEmail, row.UserPhone,
 		row.FlatNumber, row.Block, row.Floor, row.FlatStatus, row.SocietyName, row.SocietyCode,
+		row.ReviewerName, row.ReviewerEmail, row.ReviewerPhone,
 	)
 }
 
-func flatClaimFromParts(id, societyID, flatID, userID int64, role db.FlatResidentRole, requestedPrimary bool, status db.FlatClaimStatus, note, rejectionReason *string, reviewedBy *int64, reviewedAt, cancelledAt pgtype.Timestamptz, rawMetadata []byte, createdAt, updatedAt pgtype.Timestamptz, userName string, userEmail, userPhone *string, flatNumber string, block, floor *string, flatStatus db.FlatStatus, societyName, societyCode string) *models.FlatClaim {
+func flatClaimFromParts(id, societyID, flatID, userID int64, role db.FlatResidentRole, requestedPrimary bool, status db.FlatClaimStatus, note, rejectionReason *string, reviewedBy *int64, reviewedAt, cancelledAt pgtype.Timestamptz, rawMetadata []byte, createdAt, updatedAt pgtype.Timestamptz, userName string, userEmail, userPhone *string, flatNumber string, block, floor *string, flatStatus db.FlatStatus, societyName, societyCode string, reviewerName, reviewerEmail, reviewerPhone *string) *models.FlatClaim {
 	userNameCopy, flatNumberCopy, societyNameCopy, societyCodeCopy := userName, flatNumber, societyName, societyCode
 	modelFlatStatus := models.FlatStatus(flatStatus)
 	return &models.FlatClaim{
@@ -149,6 +151,7 @@ func flatClaimFromParts(id, societyID, flatID, userID int64, role db.FlatResiden
 		Metadata: metadataFromJSON(rawMetadata), CreatedAt: pgTimestamptzToTime(createdAt), UpdatedAt: pgTimestamptzToTime(updatedAt),
 		UserName: &userNameCopy, UserEmail: userEmail, UserPhone: userPhone, FlatNumber: &flatNumberCopy,
 		Block: block, Floor: floor, FlatStatus: &modelFlatStatus, SocietyName: &societyNameCopy, SocietyCode: &societyCodeCopy,
+		ReviewerName: reviewerName, ReviewerEmail: reviewerEmail, ReviewerPhone: reviewerPhone,
 	}
 }
 
@@ -163,7 +166,9 @@ func claimListParams(filter *models.FlatClaimFilter) db.ListFlatClaimsParams {
 	return db.ListFlatClaimsParams{
 		ID: claimID(filter), SocietyID: claimSocietyID(filter), FlatID: claimFlatID(filter),
 		UserID: claimUserID(filter), Status: dbClaimStatusPtr(claimStatus(filter)),
-		Search: claimSearch(filter), Limit: normalizeLimit(claimLimit(filter)), Offset: normalizeOffset(claimOffset(filter)),
+		Search:     claimSearch(filter),
+		SearchMode: normalizeSearchMode(claimSearchMode(filter), "claimant", "flat", "reviewer"),
+		Limit:      normalizeLimit(claimLimit(filter)), Offset: normalizeOffset(claimOffset(filter)),
 	}
 }
 
@@ -207,6 +212,13 @@ func claimSearch(filter *models.FlatClaimFilter) string {
 		return ""
 	}
 	return filter.Search
+}
+
+func claimSearchMode(filter *models.FlatClaimFilter) string {
+	if filter == nil {
+		return ""
+	}
+	return filter.SearchMode
 }
 
 func claimLimit(filter *models.FlatClaimFilter) int32 {

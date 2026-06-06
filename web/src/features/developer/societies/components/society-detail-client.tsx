@@ -17,8 +17,8 @@ import { AsyncPanel } from "@/components/shared/async-panel";
 import { BackLink } from "@/components/shared/back-link";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { PageShell } from "@/components/shared/page-shell";
 import { RefreshButton } from "@/components/shared/refresh-button";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -519,559 +519,553 @@ export function SocietyDetailClient({ societyId }: SocietyDetailClientProps) {
   };
 
   return (
-    <PageShell background="tinted" className="min-h-full py-8">
-      <main className="mx-auto w-full max-w-6xl space-y-6">
-        <BackLink href="/developer/societies" label="Back to societies" />
-        <PageHeader
-          actions={
-            <RefreshButton
-              loading={societyQuery.isFetching || subscriptionsQuery.isFetching}
-              onClick={refetchAll}
-            />
-          }
-          description="Manage society profile, status, and subscriptions from one developer workspace."
-          title={
-            <span className="flex flex-wrap items-center gap-3">
-              {society?.name ?? "Society details"}
-              <SocietyStatusBadge status={society?.status} />
-            </span>
-          }
-        />
+    <WorkspacePage>
+      <BackLink href="/developer/societies" label="Back to societies" />
+      <PageHeader
+        actions={
+          <RefreshButton
+            loading={societyQuery.isFetching || subscriptionsQuery.isFetching}
+            onClick={refetchAll}
+          />
+        }
+        description="Manage society profile, status, and subscriptions from one developer workspace."
+        title={
+          <span className="flex flex-wrap items-center gap-3">
+            {society?.name ?? "Society details"}
+            <SocietyStatusBadge status={society?.status} />
+          </span>
+        }
+      />
 
-        <AsyncPanel
-          error={
-            !societyQuery.isLoading && !society
-              ? "Refresh the page or open another society from the directory."
-              : null
-          }
-          loading={societyQuery.isLoading}
-          loadingDescription="Loading society profile and subscription data."
-          loadingLabel="Loading society"
-          onRetry={refetchAll}
-        >
-          {society ? (
-            <div className="space-y-6">
-              <section className="grid gap-4 md:grid-cols-4">
-                <Card size="sm">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {formatNumberIN(society.total_flats)}
-                    </CardTitle>
-                    <CardDescription>Flats</CardDescription>
-                  </CardHeader>
-                </Card>
-                <Card size="sm">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {formatNumberIN(society.total_blocks)}
-                    </CardTitle>
-                    <CardDescription>Blocks</CardDescription>
-                  </CardHeader>
-                </Card>
-                <Card size="sm">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {formatNumberIN(society.members_count)}
-                    </CardTitle>
-                    <CardDescription>Members</CardDescription>
-                  </CardHeader>
-                </Card>
-                <Card size="sm">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {activeSubscription?.status
-                        ? titleCaseFromSnake(activeSubscription.status)
-                        : "None"}
-                    </CardTitle>
-                    <CardDescription>Subscription</CardDescription>
-                  </CardHeader>
-                </Card>
-              </section>
-
-              <Card>
-                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <CardTitle>Society Details</CardTitle>
-                    <CardDescription>
-                      {society.society_code ?? "Code not generated"} - created{" "}
-                      {formatShortDateIN(society.created_at)}
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setIsEditing((current) => !current);
-                      setFormState(toSocietyFormState(society));
-                    }}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Edit3 className="size-4" />
-                    {isEditing ? "Cancel edit" : "Edit"}
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <form className="space-y-4" onSubmit={handleUpdateSociety}>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Society name"
-                        value={formState.name}
-                        onChange={(event) =>
-                          updateField("name", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Email"
-                        value={formState.email}
-                        onChange={(event) =>
-                          updateField("email", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Phone number"
-                        value={formState.phone_number}
-                        onChange={(event) =>
-                          updateField("phone_number", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Address line 1"
-                        value={formState.address_line1}
-                        onChange={(event) =>
-                          updateField("address_line1", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Address line 2"
-                        value={formState.address_line2}
-                        onChange={(event) =>
-                          updateField("address_line2", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Landmark"
-                        value={formState.landmark}
-                        onChange={(event) =>
-                          updateField("landmark", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="City"
-                        value={formState.city}
-                        onChange={(event) =>
-                          updateField("city", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="State"
-                        value={formState.state}
-                        onChange={(event) =>
-                          updateField("state", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Country"
-                        value={formState.country}
-                        onChange={(event) =>
-                          updateField("country", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        placeholder="Pincode"
-                        value={formState.pincode}
-                        onChange={(event) =>
-                          updateField("pincode", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        min={0}
-                        placeholder="Total blocks"
-                        type="number"
-                        value={formState.total_blocks}
-                        onChange={(event) =>
-                          updateField("total_blocks", event.target.value)
-                        }
-                      />
-                      <Input
-                        disabled={!isEditing}
-                        min={0}
-                        placeholder="Total flats"
-                        type="number"
-                        value={formState.total_flats}
-                        onChange={(event) =>
-                          updateField("total_flats", event.target.value)
-                        }
-                      />
-                    </div>
-                    {isEditing ? (
-                      <div className="flex justify-end">
-                        <Button disabled={isUpdating} type="submit">
-                          <Save className="size-4" />
-                          Save changes
-                        </Button>
-                      </div>
-                    ) : null}
-                  </form>
-                </CardContent>
-              </Card>
-
-              <Card>
+      <AsyncPanel
+        error={
+          !societyQuery.isLoading && !society
+            ? "Refresh the page or open another society from the directory."
+            : null
+        }
+        loading={societyQuery.isLoading}
+        loadingDescription="Loading society profile and subscription data."
+        loadingLabel="Loading society"
+        onRetry={refetchAll}
+      >
+        {society ? (
+          <div className="space-y-6">
+            <section className="grid gap-4 md:grid-cols-4">
+              <Card size="sm">
                 <CardHeader>
-                  <CardTitle>Lifecycle</CardTitle>
-                  <CardDescription>
-                    Approve, reject, suspend, reactivate, delete, or restore
-                    this society.
-                  </CardDescription>
+                  <CardTitle className="text-base">
+                    {formatNumberIN(society.total_flats)}
+                  </CardTitle>
+                  <CardDescription>Flats</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={lifecycleLoading || society.status === "active"}
-                    onClick={() =>
-                      runLifecycleAction("Approving society", () =>
-                        approveSociety({ societyId }).unwrap(),
-                      )
-                    }
-                    type="button"
-                  >
-                    <CheckCircle2 className="size-4" />
-                    Approve
-                  </Button>
-                  <Button
-                    disabled={lifecycleLoading || society.status === "rejected"}
-                    onClick={() => setReasonAction("reject")}
-                    type="button"
-                    variant="outline"
-                  >
-                    <XCircle className="size-4" />
-                    Reject
-                  </Button>
-                  <Button
-                    disabled={
-                      lifecycleLoading || society.status === "suspended"
-                    }
-                    onClick={() => setReasonAction("suspend")}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Ban className="size-4" />
-                    Suspend
-                  </Button>
-                  <Button
-                    disabled={lifecycleLoading || society.status === "active"}
-                    onClick={() =>
-                      runLifecycleAction("Reactivating society", () =>
-                        reactivateSociety({ societyId }).unwrap(),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    <RotateCcw className="size-4" />
-                    Reactivate
-                  </Button>
-                  <Button
-                    disabled={lifecycleLoading}
-                    onClick={() =>
-                      runLifecycleAction("Deleting society", () =>
-                        deleteSociety({ societyId }).unwrap(),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    <Trash2 className="size-4" />
-                    Soft delete
-                  </Button>
-                  <Button
-                    disabled={lifecycleLoading}
-                    onClick={() =>
-                      runLifecycleAction("Restoring society", () =>
-                        restoreSociety({ societyId }).unwrap(),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    <RotateCcw className="size-4" />
-                    Restore
-                  </Button>
-                </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <CardTitle>Subscriptions</CardTitle>
-                    <CardDescription>
-                      Create, activate, renew, change, expire, or cancel
-                      subscriptions for this society.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    disabled={plansQuery.isLoading}
-                    onClick={() => openSubscriptionDialog("create")}
-                    type="button"
-                  >
-                    <CreditCard className="size-4" />
-                    Create and activate
-                  </Button>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {formatNumberIN(society.total_blocks)}
+                  </CardTitle>
+                  <CardDescription>Blocks</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  {subscriptions.length > 0 ? (
-                    <div className="divide-y divide-border rounded-lg border border-border">
-                      {subscriptions.map((subscription) => (
-                        <div
-                          className="grid gap-3 p-4 lg:grid-cols-[1fr_auto]"
-                          key={subscription.id}
-                        >
-                          <div className="min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <CreditCard className="size-4 text-muted-foreground" />
-                              <p className="truncate font-medium">
-                                {subscription.plan_name ?? "Unnamed plan"}
-                              </p>
-                              <Badge variant="secondary">
-                                {titleCaseFromSnake(subscription.status)}
-                              </Badge>
-                            </div>
-                            <p className="text-muted-foreground text-sm">
-                              {subscription.plan_code ?? "No plan code"} -{" "}
-                              {formatMoney(
-                                subscription.price_amount_paise,
-                                subscription.currency,
-                              )}{" "}
-                              - {formatShortDateIN(subscription.starts_at)} to{" "}
-                              {formatShortDateIN(subscription.ends_at)}
+              </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {formatNumberIN(society.members_count)}
+                  </CardTitle>
+                  <CardDescription>Members</CardDescription>
+                </CardHeader>
+              </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {activeSubscription?.status
+                      ? titleCaseFromSnake(activeSubscription.status)
+                      : "None"}
+                  </CardTitle>
+                  <CardDescription>Subscription</CardDescription>
+                </CardHeader>
+              </Card>
+            </section>
+
+            <Card>
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle>Society Details</CardTitle>
+                  <CardDescription>
+                    {society.society_code ?? "Code not generated"} - created{" "}
+                    {formatShortDateIN(society.created_at)}
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => {
+                    setIsEditing((current) => !current);
+                    setFormState(toSocietyFormState(society));
+                  }}
+                  type="button"
+                  variant="outline"
+                >
+                  <Edit3 className="size-4" />
+                  {isEditing ? "Cancel edit" : "Edit"}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-4" onSubmit={handleUpdateSociety}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Society name"
+                      value={formState.name}
+                      onChange={(event) =>
+                        updateField("name", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Email"
+                      value={formState.email}
+                      onChange={(event) =>
+                        updateField("email", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Phone number"
+                      value={formState.phone_number}
+                      onChange={(event) =>
+                        updateField("phone_number", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Address line 1"
+                      value={formState.address_line1}
+                      onChange={(event) =>
+                        updateField("address_line1", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Address line 2"
+                      value={formState.address_line2}
+                      onChange={(event) =>
+                        updateField("address_line2", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Landmark"
+                      value={formState.landmark}
+                      onChange={(event) =>
+                        updateField("landmark", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="City"
+                      value={formState.city}
+                      onChange={(event) =>
+                        updateField("city", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="State"
+                      value={formState.state}
+                      onChange={(event) =>
+                        updateField("state", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Country"
+                      value={formState.country}
+                      onChange={(event) =>
+                        updateField("country", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      placeholder="Pincode"
+                      value={formState.pincode}
+                      onChange={(event) =>
+                        updateField("pincode", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      min={0}
+                      placeholder="Total blocks"
+                      type="number"
+                      value={formState.total_blocks}
+                      onChange={(event) =>
+                        updateField("total_blocks", event.target.value)
+                      }
+                    />
+                    <Input
+                      disabled={!isEditing}
+                      min={0}
+                      placeholder="Total flats"
+                      type="number"
+                      value={formState.total_flats}
+                      onChange={(event) =>
+                        updateField("total_flats", event.target.value)
+                      }
+                    />
+                  </div>
+                  {isEditing ? (
+                    <div className="flex justify-end">
+                      <Button disabled={isUpdating} type="submit">
+                        <Save className="size-4" />
+                        Save changes
+                      </Button>
+                    </div>
+                  ) : null}
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Lifecycle</CardTitle>
+                <CardDescription>
+                  Approve, reject, suspend, reactivate, delete, or restore this
+                  society.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Button
+                  disabled={lifecycleLoading || society.status === "active"}
+                  onClick={() =>
+                    runLifecycleAction("Approving society", () =>
+                      approveSociety({ societyId }).unwrap(),
+                    )
+                  }
+                  type="button"
+                >
+                  <CheckCircle2 className="size-4" />
+                  Approve
+                </Button>
+                <Button
+                  disabled={lifecycleLoading || society.status === "rejected"}
+                  onClick={() => setReasonAction("reject")}
+                  type="button"
+                  variant="outline"
+                >
+                  <XCircle className="size-4" />
+                  Reject
+                </Button>
+                <Button
+                  disabled={lifecycleLoading || society.status === "suspended"}
+                  onClick={() => setReasonAction("suspend")}
+                  type="button"
+                  variant="outline"
+                >
+                  <Ban className="size-4" />
+                  Suspend
+                </Button>
+                <Button
+                  disabled={lifecycleLoading || society.status === "active"}
+                  onClick={() =>
+                    runLifecycleAction("Reactivating society", () =>
+                      reactivateSociety({ societyId }).unwrap(),
+                    )
+                  }
+                  type="button"
+                  variant="outline"
+                >
+                  <RotateCcw className="size-4" />
+                  Reactivate
+                </Button>
+                <Button
+                  disabled={lifecycleLoading}
+                  onClick={() =>
+                    runLifecycleAction("Deleting society", () =>
+                      deleteSociety({ societyId }).unwrap(),
+                    )
+                  }
+                  type="button"
+                  variant="outline"
+                >
+                  <Trash2 className="size-4" />
+                  Soft delete
+                </Button>
+                <Button
+                  disabled={lifecycleLoading}
+                  onClick={() =>
+                    runLifecycleAction("Restoring society", () =>
+                      restoreSociety({ societyId }).unwrap(),
+                    )
+                  }
+                  type="button"
+                  variant="outline"
+                >
+                  <RotateCcw className="size-4" />
+                  Restore
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle>Subscriptions</CardTitle>
+                  <CardDescription>
+                    Create, activate, renew, change, expire, or cancel
+                    subscriptions for this society.
+                  </CardDescription>
+                </div>
+                <Button
+                  disabled={plansQuery.isLoading}
+                  onClick={() => openSubscriptionDialog("create")}
+                  type="button"
+                >
+                  <CreditCard className="size-4" />
+                  Create and activate
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {subscriptions.length > 0 ? (
+                  <div className="divide-y divide-border rounded-lg border border-border">
+                    {subscriptions.map((subscription) => (
+                      <div
+                        className="grid gap-3 p-4 lg:grid-cols-[1fr_auto]"
+                        key={subscription.id}
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <CreditCard className="size-4 text-muted-foreground" />
+                            <p className="truncate font-medium">
+                              {subscription.plan_name ?? "Unnamed plan"}
                             </p>
-                            <div className="flex flex-wrap gap-3 text-muted-foreground text-sm">
-                              <span>
-                                {formatNumberIN(subscription.max_flats)} flats
-                              </span>
-                              <span>
-                                {formatNumberIN(subscription.max_residents)}{" "}
-                                residents
-                              </span>
-                              <span>
-                                {formatNumberIN(subscription.max_admins)} admins
-                              </span>
-                              <span>
-                                {formatNumberIN(subscription.max_staff)} staff
-                              </span>
-                            </div>
+                            <Badge variant="secondary">
+                              {titleCaseFromSnake(subscription.status)}
+                            </Badge>
                           </div>
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <Button
-                              disabled={
-                                !subscription.id ||
-                                subscription.status === "active" ||
-                                subscriptionLoading
-                              }
-                              onClick={() =>
-                                openSubscriptionDialog("activate", subscription)
-                              }
-                              size="sm"
-                              type="button"
-                            >
-                              Activate
-                            </Button>
-                            <Button
-                              disabled={!subscription.id || subscriptionLoading}
-                              onClick={() =>
-                                openSubscriptionDialog("renew", subscription)
-                              }
-                              size="sm"
-                              type="button"
-                              variant="outline"
-                            >
-                              Renew
-                            </Button>
-                            <Button
-                              disabled={!subscription.id || subscriptionLoading}
-                              onClick={() =>
-                                openSubscriptionDialog("change", subscription)
-                              }
-                              size="sm"
-                              type="button"
-                              variant="outline"
-                            >
-                              Change plan
-                            </Button>
-                            <Button
-                              disabled={!subscription.id || subscriptionLoading}
-                              onClick={() => handleExpire(subscription)}
-                              size="sm"
-                              type="button"
-                              variant="outline"
-                            >
-                              Expire
-                            </Button>
-                            <Button
-                              disabled={!subscription.id || subscriptionLoading}
-                              onClick={() =>
-                                openSubscriptionDialog("cancel", subscription)
-                              }
-                              size="sm"
-                              type="button"
-                              variant="outline"
-                            >
-                              Cancel
-                            </Button>
+                          <p className="text-muted-foreground text-sm">
+                            {subscription.plan_code ?? "No plan code"} -{" "}
+                            {formatMoney(
+                              subscription.price_amount_paise,
+                              subscription.currency,
+                            )}{" "}
+                            - {formatShortDateIN(subscription.starts_at)} to{" "}
+                            {formatShortDateIN(subscription.ends_at)}
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-muted-foreground text-sm">
+                            <span>
+                              {formatNumberIN(subscription.max_flats)} flats
+                            </span>
+                            <span>
+                              {formatNumberIN(subscription.max_residents)}{" "}
+                              residents
+                            </span>
+                            <span>
+                              {formatNumberIN(subscription.max_admins)} admins
+                            </span>
+                            <span>
+                              {formatNumberIN(subscription.max_staff)} staff
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      title="No subscriptions found"
-                      description="Create and activate a subscription for this society."
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          ) : null}
-        </AsyncPanel>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button
+                            disabled={
+                              !subscription.id ||
+                              subscription.status === "active" ||
+                              subscriptionLoading
+                            }
+                            onClick={() =>
+                              openSubscriptionDialog("activate", subscription)
+                            }
+                            size="sm"
+                            type="button"
+                          >
+                            Activate
+                          </Button>
+                          <Button
+                            disabled={!subscription.id || subscriptionLoading}
+                            onClick={() =>
+                              openSubscriptionDialog("renew", subscription)
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            Renew
+                          </Button>
+                          <Button
+                            disabled={!subscription.id || subscriptionLoading}
+                            onClick={() =>
+                              openSubscriptionDialog("change", subscription)
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            Change plan
+                          </Button>
+                          <Button
+                            disabled={!subscription.id || subscriptionLoading}
+                            onClick={() => handleExpire(subscription)}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            Expire
+                          </Button>
+                          <Button
+                            disabled={!subscription.id || subscriptionLoading}
+                            onClick={() =>
+                              openSubscriptionDialog("cancel", subscription)
+                            }
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No subscriptions found"
+                    description="Create and activate a subscription for this society."
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+      </AsyncPanel>
 
-        <Dialog
-          open={!!reasonAction}
-          onOpenChange={(open) => {
-            if (!open) {
-              setReasonAction(null);
-              setReason("");
-            }
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {reasonAction === "reject"
-                  ? "Reject Society"
-                  : "Suspend Society"}
-              </DialogTitle>
-              <DialogDescription>
-                A reason is required for this lifecycle action.
-              </DialogDescription>
-            </DialogHeader>
-            <form className="space-y-4" onSubmit={handleReasonAction}>
+      <Dialog
+        open={!!reasonAction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReasonAction(null);
+            setReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {reasonAction === "reject" ? "Reject Society" : "Suspend Society"}
+            </DialogTitle>
+            <DialogDescription>
+              A reason is required for this lifecycle action.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleReasonAction}>
+            <Input
+              autoFocus
+              placeholder="Reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setReasonAction(null);
+                  setReason("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button disabled={isRejecting || isSuspending} type="submit">
+                Confirm
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!subscriptionDialog}
+        onOpenChange={(open) => {
+          if (!open) closeSubscriptionDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {subscriptionDialog?.action === "create"
+                ? "Create and Activate Subscription"
+                : subscriptionDialog?.action === "activate"
+                  ? "Activate Subscription"
+                  : subscriptionDialog?.action === "renew"
+                    ? "Renew Subscription"
+                    : subscriptionDialog?.action === "change"
+                      ? "Change Plan"
+                      : "Cancel Subscription"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedSubscription?.plan_name ??
+                "Choose the plan and subscription dates."}
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleSubscriptionSubmit}>
+            {subscriptionDialog?.action === "create" ||
+            subscriptionDialog?.action === "change" ? (
+              <select
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/20"
+                value={selectedPlanId}
+                onChange={(event) => setSelectedPlanId(event.target.value)}
+              >
+                <option value="">Select plan</option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {planLabel(plan)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+
+            {subscriptionDialog?.action === "create" ||
+            subscriptionDialog?.action === "activate" ||
+            subscriptionDialog?.action === "renew" ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  type="date"
+                  value={startsAt}
+                  onChange={(event) => setStartsAt(event.target.value)}
+                />
+                <Input
+                  type="date"
+                  value={endsAt}
+                  onChange={(event) => setEndsAt(event.target.value)}
+                />
+              </div>
+            ) : null}
+
+            {subscriptionDialog?.action === "cancel" ? (
               <Input
                 autoFocus
-                placeholder="Reason"
+                placeholder="Cancellation reason"
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
               />
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setReasonAction(null);
-                    setReason("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button disabled={isRejecting || isSuspending} type="submit">
-                  Confirm
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            ) : null}
 
-        <Dialog
-          open={!!subscriptionDialog}
-          onOpenChange={(open) => {
-            if (!open) closeSubscriptionDialog();
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {subscriptionDialog?.action === "create"
-                  ? "Create and Activate Subscription"
-                  : subscriptionDialog?.action === "activate"
-                    ? "Activate Subscription"
-                    : subscriptionDialog?.action === "renew"
-                      ? "Renew Subscription"
-                      : subscriptionDialog?.action === "change"
-                        ? "Change Plan"
-                        : "Cancel Subscription"}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedSubscription?.plan_name ??
-                  "Choose the plan and subscription dates."}
-              </DialogDescription>
-            </DialogHeader>
-            <form className="space-y-4" onSubmit={handleSubscriptionSubmit}>
-              {subscriptionDialog?.action === "create" ||
-              subscriptionDialog?.action === "change" ? (
-                <select
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/20"
-                  value={selectedPlanId}
-                  onChange={(event) => setSelectedPlanId(event.target.value)}
-                >
-                  <option value="">Select plan</option>
-                  {plans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {planLabel(plan)}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-
-              {subscriptionDialog?.action === "create" ||
-              subscriptionDialog?.action === "activate" ||
-              subscriptionDialog?.action === "renew" ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input
-                    type="date"
-                    value={startsAt}
-                    onChange={(event) => setStartsAt(event.target.value)}
-                  />
-                  <Input
-                    type="date"
-                    value={endsAt}
-                    onChange={(event) => setEndsAt(event.target.value)}
-                  />
-                </div>
-              ) : null}
-
-              {subscriptionDialog?.action === "cancel" ? (
-                <Input
-                  autoFocus
-                  placeholder="Cancellation reason"
-                  value={reason}
-                  onChange={(event) => setReason(event.target.value)}
-                />
-              ) : null}
-
-              <DialogFooter>
-                <Button
-                  disabled={subscriptionLoading}
-                  type="button"
-                  variant="outline"
-                  onClick={closeSubscriptionDialog}
-                >
-                  Cancel
-                </Button>
-                <Button disabled={subscriptionLoading} type="submit">
-                  Confirm
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </main>
-    </PageShell>
+            <DialogFooter>
+              <Button
+                disabled={subscriptionLoading}
+                type="button"
+                variant="outline"
+                onClick={closeSubscriptionDialog}
+              >
+                Cancel
+              </Button>
+              <Button disabled={subscriptionLoading} type="submit">
+                Confirm
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </WorkspacePage>
   );
 }

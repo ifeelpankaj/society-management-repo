@@ -35,21 +35,27 @@ type SocietyService interface {
 	GetSocietyMemberDetail(ctx context.Context, filter models.GetSocietyMemberFilter) (*models.SocietyMemberDetailResponse, error)
 	GetSocietyMemberSummary(ctx context.Context, societyID int64) (*models.SocietyMemberSummaryResponse, error)
 	ListSocietyMembers(ctx context.Context, filter models.ListSocietyMembersFilter) (*models.PaginatedMembersResponse, error)
+	ListAllSocietyMember(ctx context.Context, filter models.ListSocietyMembersFilter) (*models.PaginatedMembersResponse, error)
 	EnsureActiveSociety(ctx context.Context, societyID int64) error
 	EnsureActiveMember(ctx context.Context, societyID int64, userID int64) (*models.SocietyMemberResponse, error)
 	EnsureRole(ctx context.Context, societyID int64, userID int64, roles ...string) error
 }
 
 type SocietySvc struct {
-	societyRepo      repository.SocietyRepository
-	memberRepo       repository.SocietyMemberRepository
-	flatRepo         repository.FlatRepository
-	flatResidentRepo repository.FlatResidentRepository
-	flatClaimRepo    repository.FlatClaimRepository
-	userRepo         repository.UserRepository
-	txManager        repository.TransactionManager
-	planSvc          societyPlanQuery
-	subscriptionSvc  societySubscriptionDashboard
+	societyRepo       repository.SocietyRepository
+	memberRepo        repository.SocietyMemberRepository
+	flatRepo          repository.FlatRepository
+	flatResidentRepo  repository.FlatResidentRepository
+	flatClaimRepo     repository.FlatClaimRepository
+	userRepo          repository.UserRepository
+	txManager         repository.TransactionManager
+	planSvc           societyPlanQuery
+	subscriptionSvc   societySubscriptionDashboard
+	visitorSettingSvc societyVisitorSettingDefaults
+}
+
+type societyVisitorSettingDefaults interface {
+	CreateDefaultSocietySettings(ctx context.Context, societyID int64, actorUserID int64) error
 }
 
 type societySubscriptionQuota interface {
@@ -87,6 +93,8 @@ func NewSocietyService(
 			svc.planSvc = value
 		case societySubscriptionDashboard:
 			svc.subscriptionSvc = value
+		case societyVisitorSettingDefaults:
+			svc.visitorSettingSvc = value
 		}
 	}
 	return svc

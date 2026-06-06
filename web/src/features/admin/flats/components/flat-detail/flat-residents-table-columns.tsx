@@ -1,6 +1,7 @@
 "use client";
 
-import { Crown, LogOut, Trash2, UserCog } from "lucide-react";
+import { Eye } from "lucide-react";
+import Link from "next/link";
 import { useMemo } from "react";
 import { RoleBadge } from "@/components/shared/role-badge";
 import type { SmartTableColumn } from "@/components/tables/smart-table";
@@ -13,19 +14,11 @@ import { formatShortDateIN, titleCaseFromSnake } from "@/lib/format";
 import { residentName } from "./flat-detail-utils";
 
 type UseFlatResidentsTableColumnsOptions = {
-  busy: boolean;
-  onEditRole: (resident: ModelsFlatResidentResponse) => void;
-  onMoveOut: (resident: ModelsFlatResidentResponse) => void;
-  onRemove: (resident: ModelsFlatResidentResponse) => void;
-  onSetPrimary: (residentId: number) => void;
+  buildResidentDetailHref: (residentId: number) => string;
 };
 
 export function useFlatResidentsTableColumns({
-  busy,
-  onEditRole,
-  onMoveOut,
-  onRemove,
-  onSetPrimary,
+  buildResidentDetailHref,
 }: UseFlatResidentsTableColumnsOptions) {
   return useMemo<SmartTableColumn<ModelsFlatResidentResponse>[]>(
     () => [
@@ -39,10 +32,7 @@ export function useFlatResidentsTableColumns({
               <div className="flex items-center gap-2">
                 <p className="truncate font-medium">{residentName(resident)}</p>
                 {resident.is_primary ? (
-                  <Badge variant="secondary">
-                    <Crown className="size-3" />
-                    Primary
-                  </Badge>
+                  <Badge variant="secondary">Primary</Badge>
                 ) : null}
               </div>
               <p className="text-muted-foreground text-xs">
@@ -99,56 +89,22 @@ export function useFlatResidentsTableColumns({
         meta: { headerClassName: "text-right", className: "text-right" },
         cell: ({ row }) => {
           const resident = row.original;
-          const active = resident.status === "active";
+          if (!resident.id) {
+            return null;
+          }
           return (
-            <div className="flex justify-end gap-1.5">
-              <Button
-                disabled={!resident.id || !active || busy}
-                onClick={() => onEditRole(resident)}
-                size="icon-sm"
-                title="Update resident role"
-                type="button"
-                variant="outline"
-              >
-                <UserCog className="size-4" />
-              </Button>
-              <Button
-                disabled={
-                  !resident.id || !active || resident.is_primary || busy
-                }
-                onClick={() => onSetPrimary(resident.id ?? 0)}
-                size="icon-sm"
-                title="Set primary resident"
-                type="button"
-                variant="outline"
-              >
-                <Crown className="size-4" />
-              </Button>
-              <Button
-                disabled={!resident.id || !active || busy}
-                onClick={() => onMoveOut(resident)}
-                size="icon-sm"
-                title="Move out resident"
-                type="button"
-                variant="outline"
-              >
-                <LogOut className="size-4" />
-              </Button>
-              <Button
-                disabled={!resident.id || !active || busy}
-                onClick={() => onRemove(resident)}
-                size="icon-sm"
-                title="Remove resident"
-                type="button"
-                variant="destructive"
-              >
-                <Trash2 className="size-4" />
+            <div className="flex justify-end">
+              <Button asChild size="sm" type="button" variant="outline">
+                <Link href={buildResidentDetailHref(resident.id)}>
+                  <Eye className="size-4" />
+                  View
+                </Link>
               </Button>
             </div>
           );
         },
       },
     ],
-    [busy, onEditRole, onMoveOut, onRemove, onSetPrimary],
+    [buildResidentDetailHref],
   );
 }

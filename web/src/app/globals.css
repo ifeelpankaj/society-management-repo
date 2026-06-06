@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-serif);
+  --font-heading: var(--font-heading-family);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -123,24 +123,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in oklch, var(--primary) 12%, transparent) 0%,
-        transparent 32%
-      ),
-      linear-gradient(
-        225deg,
-        color-mix(in oklch, var(--accent) 18%, transparent) 0%,
-        transparent 34%
-      ),
-      linear-gradient(
-        180deg,
-        color-mix(in oklch, var(--background) 96%, white) 0%,
-        var(--background) 44%,
-        color-mix(in oklch, var(--secondary) 34%, var(--background)) 100%
-      );
-    background-attachment: fixed;
   }
   html {
     @apply font-sans;
@@ -158,25 +140,10 @@
   [data-slot="card"],
   [data-slot="dialog-content"],
   [data-slot="popover-content"] {
-    border-color: color-mix(in oklch, var(--border) 82%, white);
-    box-shadow:
-      0 1px 0 color-mix(in oklch, white 65%, transparent) inset,
-      0 18px 45px color-mix(in oklch, var(--foreground) 9%, transparent);
-    backdrop-filter: blur(14px);
-  }
-  [data-slot="button"][data-variant="default"] {
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--primary) 92%, white) 0%,
-      var(--primary) 52%,
-      color-mix(in oklch, var(--primary) 82%, black) 100%
-    );
-    box-shadow:
-      0 1px 0 color-mix(in oklch, white 34%, transparent) inset,
-      0 10px 24px color-mix(in oklch, var(--primary) 24%, transparent);
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 6%, transparent);
   }
   [data-slot="button"][data-variant="default"]:hover {
-    filter: saturate(1.08) brightness(1.03);
+    filter: brightness(1.03);
   }
   [data-slot="input"] {
     background: color-mix(in oklch, var(--card) 74%, var(--background));

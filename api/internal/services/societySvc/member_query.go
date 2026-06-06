@@ -96,14 +96,30 @@ func (s *SocietySvc) GetSocietyMemberSummary(ctx context.Context, societyID int6
 		return nil, err
 	}
 	summary := &models.SocietyMemberSummaryResponse{TotalMembers: total}
-	if summary.ActiveMembers, err = count(nil, &active); err != nil { return nil, err }
-	if summary.PendingMembers, err = count(nil, &pending); err != nil { return nil, err }
-	if summary.SuspendedMembers, err = count(nil, &suspended); err != nil { return nil, err }
-	if summary.RemovedMembers, err = count(nil, &removed); err != nil { return nil, err }
-	if summary.Owners, err = count(&owner, &active); err != nil { return nil, err }
-	if summary.Admins, err = count(&admin, &active); err != nil { return nil, err }
-	if summary.Staff, err = count(&staff, &active); err != nil { return nil, err }
-	if summary.Residents, err = count(&resident, &active); err != nil { return nil, err }
+	if summary.ActiveMembers, err = count(nil, &active); err != nil {
+		return nil, err
+	}
+	if summary.PendingMembers, err = count(nil, &pending); err != nil {
+		return nil, err
+	}
+	if summary.SuspendedMembers, err = count(nil, &suspended); err != nil {
+		return nil, err
+	}
+	if summary.RemovedMembers, err = count(nil, &removed); err != nil {
+		return nil, err
+	}
+	if summary.Owners, err = count(&owner, &active); err != nil {
+		return nil, err
+	}
+	if summary.Admins, err = count(&admin, &active); err != nil {
+		return nil, err
+	}
+	if summary.Staff, err = count(&staff, &active); err != nil {
+		return nil, err
+	}
+	if summary.Residents, err = count(&resident, &active); err != nil {
+		return nil, err
+	}
 	return summary, nil
 }
 
@@ -131,6 +147,10 @@ func (s *SocietySvc) ListSocietyMembers(ctx context.Context, filter models.ListS
 		Limit:  normalizeResponseLimit(filter.Limit),
 		Offset: normalizeResponseOffset(filter.Offset),
 	}, nil
+}
+
+func (s *SocietySvc) ListAllSocietyMember(ctx context.Context, filter models.ListSocietyMembersFilter) (*models.PaginatedMembersResponse, error) {
+	return s.ListSocietyMembers(ctx, filter)
 }
 
 func (s *SocietySvc) ListMyMemberships(ctx context.Context, userID int64) ([]*models.SocietyMemberResponse, error) {

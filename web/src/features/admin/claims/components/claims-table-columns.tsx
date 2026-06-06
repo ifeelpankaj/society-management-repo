@@ -1,4 +1,4 @@
-import { CheckCircle2, Eye, XCircle } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useMemo } from "react";
 
 import type { SmartTableColumn } from "@/components/tables/smart-table";
@@ -19,16 +19,10 @@ export function flatLabel(claim?: ModelsFlatClaimResponse | null) {
 }
 
 type UseClaimsTableColumnsOptions = {
-  actionInProgress: boolean;
-  onApprove: (claim: ModelsFlatClaimResponse) => void;
-  onReject: (claim: ModelsFlatClaimResponse) => void;
   onView: (claimId: number | null) => void;
 };
 
 export function useClaimsTableColumns({
-  actionInProgress,
-  onApprove,
-  onReject,
   onView,
 }: UseClaimsTableColumnsOptions) {
   return useMemo<SmartTableColumn<ModelsFlatClaimResponse>[]>(
@@ -91,61 +85,28 @@ export function useClaimsTableColumns({
         meta: { headerClassName: "text-right", className: "text-right" },
         cell: ({ row }) => {
           const claim = row.original;
-          const isPending = claim.status === "pending";
+          const isPendingReview = claim.status === "pending";
 
           return (
             <div className="flex justify-end gap-1.5">
               <Button
-                aria-label={`View ${claimLabel(claim)}`}
                 disabled={!claim.id}
                 onClick={(event) => {
                   event.stopPropagation();
                   onView(claim.id ?? null);
                 }}
-                size="icon-sm"
-                title="View claim"
+                size="sm"
                 type="button"
-                variant="ghost"
+                variant="outline"
               >
                 <Eye className="size-4" />
+                {isPendingReview ? "Review claim" : "View"}
               </Button>
-              {isPending ? (
-                <>
-                  <Button
-                    aria-label={`Approve ${claimLabel(claim)}`}
-                    disabled={!claim.id || actionInProgress}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onApprove(claim);
-                    }}
-                    size="icon-sm"
-                    title="Approve claim"
-                    type="button"
-                    variant="outline"
-                  >
-                    <CheckCircle2 className="size-4" />
-                  </Button>
-                  <Button
-                    aria-label={`Reject ${claimLabel(claim)}`}
-                    disabled={!claim.id || actionInProgress}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onReject(claim);
-                    }}
-                    size="icon-sm"
-                    title="Reject claim"
-                    type="button"
-                    variant="destructive"
-                  >
-                    <XCircle className="size-4" />
-                  </Button>
-                </>
-              ) : null}
             </div>
           );
         },
       },
     ],
-    [actionInProgress, onApprove, onReject, onView],
+    [onView],
   );
 }

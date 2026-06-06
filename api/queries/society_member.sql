@@ -29,6 +29,8 @@ SELECT
     u.phone_number AS user_phone
 FROM society_members sm
 JOIN users u ON u.id = sm.user_id
+LEFT JOIN users invited_user ON invited_user.id = sm.invited_by
+LEFT JOIN users removed_user ON removed_user.id = sm.removed_by
 WHERE sm.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('role')::society_member_role IS NULL OR sm.role = sqlc.narg('role')::society_member_role)
   AND (sqlc.narg('status')::society_member_status IS NULL OR sm.status = sqlc.narg('status')::society_member_status)
@@ -39,11 +41,37 @@ WHERE sm.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('joined_to')::timestamptz IS NULL OR sm.joined_at <= sqlc.narg('joined_to')::timestamptz)
   AND (
       sqlc.arg('search')::text = ''
-      OR u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR sm.role::text ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR sm.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'resident')
+          AND (
+              u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'invited_by')
+          AND (
+              COALESCE(invited_user.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(invited_user.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(invited_user.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'removed_by')
+          AND (
+              COALESCE(removed_user.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(removed_user.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(removed_user.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all')
+          AND (
+              sm.role::text ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR sm.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
   )
 ORDER BY
     CASE WHEN sqlc.arg('sort_by') = 'role' AND sqlc.arg('sort_order') = 'asc' THEN sm.role END ASC,
@@ -58,6 +86,8 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT COUNT(*)
 FROM society_members sm
 JOIN users u ON u.id = sm.user_id
+LEFT JOIN users invited_user ON invited_user.id = sm.invited_by
+LEFT JOIN users removed_user ON removed_user.id = sm.removed_by
 WHERE sm.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('role')::society_member_role IS NULL OR sm.role = sqlc.narg('role')::society_member_role)
   AND (sqlc.narg('status')::society_member_status IS NULL OR sm.status = sqlc.narg('status')::society_member_status)
@@ -68,11 +98,37 @@ WHERE sm.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('joined_to')::timestamptz IS NULL OR sm.joined_at <= sqlc.narg('joined_to')::timestamptz)
   AND (
       sqlc.arg('search')::text = ''
-      OR u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR sm.role::text ILIKE '%' || sqlc.arg('search')::text || '%'
-      OR sm.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'resident')
+          AND (
+              u.full_name ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'invited_by')
+          AND (
+              COALESCE(invited_user.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(invited_user.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(invited_user.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all', 'removed_by')
+          AND (
+              COALESCE(removed_user.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(removed_user.email, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR COALESCE(removed_user.phone_number, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
+      OR (
+          sqlc.arg('search_mode')::text IN ('', 'all')
+          AND (
+              sm.role::text ILIKE '%' || sqlc.arg('search')::text || '%'
+              OR sm.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+          )
+      )
   );
 
 -- name: ListSocietyMembershipsByUser :many

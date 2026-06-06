@@ -182,7 +182,9 @@ func residentListParams(filter *models.FlatResidentFilter) db.ListFlatResidentsP
 		ID: residentID(filter), SocietyID: residentSocietyID(filter), FlatID: residentFlatID(filter),
 		UserID: residentUserID(filter), Role: dbResidentRolePtr(residentRole(filter)),
 		Status: dbResidentStatusPtr(residentStatus(filter)), IsPrimary: residentIsPrimary(filter),
-		Search: residentSearch(filter), Limit: normalizeLimit(residentLimit(filter)), Offset: normalizeOffset(residentOffset(filter)),
+		Search:     residentSearch(filter),
+		SearchMode: normalizeSearchMode(residentSearchMode(filter), "resident", "society", "flat"),
+		Limit:      normalizeLimit(residentLimit(filter)), Offset: normalizeOffset(residentOffset(filter)),
 	}
 }
 
@@ -240,6 +242,13 @@ func residentSearch(filter *models.FlatResidentFilter) string {
 		return ""
 	}
 	return filter.Search
+}
+
+func residentSearchMode(filter *models.FlatResidentFilter) string {
+	if filter == nil {
+		return ""
+	}
+	return filter.SearchMode
 }
 
 func residentLimit(filter *models.FlatResidentFilter) int32 {

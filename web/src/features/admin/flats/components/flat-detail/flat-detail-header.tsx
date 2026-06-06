@@ -15,27 +15,31 @@ type FlatDetailHeaderProps = {
   busy: boolean;
   flat: ModelsFlatResponse;
   flatsHref: string;
+  backLabel?: string;
   isFetching: boolean;
   onDeactivate: () => void;
   onEdit: () => void;
   onBlockToggle: () => void;
   onRefetch: () => void;
+  readOnly?: boolean;
 };
 
 export function FlatDetailHeader({
   busy,
   flat,
   flatsHref,
+  backLabel = "Back to flats",
   isFetching,
   onDeactivate,
   onEdit,
   onBlockToggle,
   onRefetch,
+  readOnly = false,
 }: FlatDetailHeaderProps) {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-3">
-        <BackLink href={flatsHref} label="Back to flats" />
+        <BackLink href={flatsHref} label={backLabel} />
         <div className="space-y-2">
           <p className="font-medium text-muted-foreground text-sm">
             Flat details
@@ -53,22 +57,30 @@ export function FlatDetailHeader({
       </div>
       <div className="flex flex-wrap gap-2">
         <RefreshButton loading={isFetching} onClick={onRefetch} />
-        <Button disabled={busy} onClick={onEdit} variant="outline">
-          <Pencil className="size-4" />
-          Edit
-        </Button>
-        <Button disabled={busy} onClick={onBlockToggle} variant="outline">
-          {flat.status === "blocked" ? (
-            <CheckCircle2 className="size-4" />
-          ) : (
-            <Ban className="size-4" />
-          )}
-          {flat.status === "blocked" ? "Unblock" : "Block"}
-        </Button>
-        <Button disabled={busy} onClick={onDeactivate} variant="destructive">
-          <Trash2 className="size-4" />
-          Deactivate
-        </Button>
+        {!readOnly ? (
+          <>
+            <Button disabled={busy} onClick={onEdit} variant="outline">
+              <Pencil className="size-4" />
+              Edit
+            </Button>
+            <Button disabled={busy} onClick={onBlockToggle} variant="outline">
+              {flat.status === "blocked" ? (
+                <CheckCircle2 className="size-4" />
+              ) : (
+                <Ban className="size-4" />
+              )}
+              {flat.status === "blocked" ? "Unblock" : "Block"}
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={onDeactivate}
+              variant="destructive"
+            >
+              <Trash2 className="size-4" />
+              Deactivate
+            </Button>
+          </>
+        ) : null}
       </div>
     </header>
   );

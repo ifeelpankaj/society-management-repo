@@ -33,6 +33,7 @@ type ClaimReviewDetailsProps = {
   claim: ModelsFlatClaimResponse;
   onApprove: (claim: ModelsFlatClaimResponse) => void;
   onStartReject: (claim: ModelsFlatClaimResponse) => void;
+  showActions?: boolean;
 };
 
 export function ClaimReviewDetails({
@@ -40,6 +41,7 @@ export function ClaimReviewDetails({
   claim,
   onApprove,
   onStartReject,
+  showActions = true,
 }: ClaimReviewDetailsProps) {
   return (
     <div className="space-y-5">
@@ -61,7 +63,15 @@ export function ClaimReviewDetails({
             label="Reviewed"
             value={formatShortDateIN(claim.reviewed_at)}
           />
-          <DetailRow label="Reviewed by" value={claim.reviewed_by} />
+          <DetailRow
+            label="Reviewed by"
+            value={
+              claim.reviewer_name ??
+              claim.reviewer_email ??
+              claim.reviewer_phone ??
+              "Not set"
+            }
+          />
         </div>
       </section>
 
@@ -69,7 +79,6 @@ export function ClaimReviewDetails({
         <h2 className="font-semibold text-sm">Claimant</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <DetailRow label="Name" value={claim.user_name} />
-          <DetailRow label="User ID" value={claim.user_id} />
           <DetailRow label="Email" value={claim.user_email} />
           <DetailRow label="Phone" value={claim.user_phone} />
         </div>
@@ -112,7 +121,7 @@ export function ClaimReviewDetails({
         </div>
       </section>
 
-      {claim.status === "pending" ? (
+      {showActions && claim.status === "pending" ? (
         <DialogFooter className="mx-0 mb-0 rounded-lg">
           <Button
             disabled={actionInProgress || !claim.id}

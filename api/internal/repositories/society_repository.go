@@ -106,6 +106,7 @@ func (r *societyRepository) Count(ctx context.Context, filter models.ListSocieti
 		RejectedBy: params.RejectedBy, SuspendedBy: params.SuspendedBy, CreatedFrom: params.CreatedFrom,
 		CreatedTo: params.CreatedTo, Code: params.Code, Name: params.Name, City: params.City,
 		State: params.State, Country: params.Country, Pincode: params.Pincode, Search: params.Search,
+		SearchMode: params.SearchMode,
 	})
 }
 
@@ -201,7 +202,8 @@ func listSocietiesParams(filter models.ListSocietiesFilter) db.ListSocietiesPara
 		RejectedBy: filter.RejectedBy, SuspendedBy: filter.SuspendedBy, CreatedFrom: timePtrToPgTimestamptz(filter.CreatedFrom),
 		CreatedTo: timePtrToPgTimestamptz(filter.CreatedTo), Code: filter.Code, Name: filter.Name, City: filter.City,
 		State: filter.State, Country: filter.Country, Pincode: filter.Pincode, Search: filter.Search,
-		SortBy: normalizeSocietySort(filter.SortBy), SortOrder: normalizeSortOrder(filter.SortOrder),
+		SearchMode: normalizeSearchMode(filter.SearchMode, "created_by", "approved_by", "rejected_by", "suspended_by"),
+		SortBy:     normalizeSocietySort(filter.SortBy), SortOrder: normalizeSortOrder(filter.SortOrder),
 		Limit: normalizeLimit(filter.Limit), Offset: normalizeOffset(filter.Offset),
 	}
 }

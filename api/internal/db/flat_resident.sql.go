@@ -234,29 +234,53 @@ WHERE ($1::bigint IS NULL OR fr.id = $1::bigint)
   AND ($7::bool IS NULL OR fr.is_primary = $7::bool)
   AND (
       $8::text = ''
-      OR u.full_name ILIKE '%' || $8::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || $8::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || $8::text || '%'
-      OR f.flat_number ILIKE '%' || $8::text || '%'
-      OR COALESCE(f.block, '') ILIKE '%' || $8::text || '%'
-      OR fr.role::text ILIKE '%' || $8::text || '%'
-      OR fr.status::text ILIKE '%' || $8::text || '%'
+      OR (
+          $9::text IN ('', 'all', 'resident')
+          AND (
+              u.full_name ILIKE '%' || $8::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || $8::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || $8::text || '%'
+          )
+      )
+      OR (
+          $9::text IN ('', 'all', 'society')
+          AND (
+              s.name ILIKE '%' || $8::text || '%'
+              OR s.society_code ILIKE '%' || $8::text || '%'
+          )
+      )
+      OR (
+          $9::text IN ('', 'all', 'flat')
+          AND (
+              f.flat_number ILIKE '%' || $8::text || '%'
+              OR COALESCE(f.block, '') ILIKE '%' || $8::text || '%'
+              OR COALESCE(f.floor, '') ILIKE '%' || $8::text || '%'
+          )
+      )
+      OR (
+          $9::text IN ('', 'all')
+          AND (
+              fr.role::text ILIKE '%' || $8::text || '%'
+              OR fr.status::text ILIKE '%' || $8::text || '%'
+          )
+      )
   )
 ORDER BY fr.moved_in_at DESC
-LIMIT $10 OFFSET $9
+LIMIT $11 OFFSET $10
 `
 
 type ListFlatResidentsParams struct {
-	ID        *int64              `db:"id" json:"id"`
-	SocietyID *int64              `db:"society_id" json:"society_id"`
-	FlatID    *int64              `db:"flat_id" json:"flat_id"`
-	UserID    *int64              `db:"user_id" json:"user_id"`
-	Role      *FlatResidentRole   `db:"role" json:"role"`
-	Status    *FlatResidentStatus `db:"status" json:"status"`
-	IsPrimary *bool               `db:"is_primary" json:"is_primary"`
-	Search    string              `db:"search" json:"search"`
-	Offset    int32               `db:"offset" json:"offset"`
-	Limit     int32               `db:"limit" json:"limit"`
+	ID         *int64              `db:"id" json:"id"`
+	SocietyID  *int64              `db:"society_id" json:"society_id"`
+	FlatID     *int64              `db:"flat_id" json:"flat_id"`
+	UserID     *int64              `db:"user_id" json:"user_id"`
+	Role       *FlatResidentRole   `db:"role" json:"role"`
+	Status     *FlatResidentStatus `db:"status" json:"status"`
+	IsPrimary  *bool               `db:"is_primary" json:"is_primary"`
+	Search     string              `db:"search" json:"search"`
+	SearchMode string              `db:"search_mode" json:"search_mode"`
+	Offset     int32               `db:"offset" json:"offset"`
+	Limit      int32               `db:"limit" json:"limit"`
 }
 
 type ListFlatResidentsRow struct {
@@ -293,6 +317,7 @@ func (q *Queries) ListFlatResidents(ctx context.Context, arg ListFlatResidentsPa
 		arg.Status,
 		arg.IsPrimary,
 		arg.Search,
+		arg.SearchMode,
 		arg.Offset,
 		arg.Limit,
 	)

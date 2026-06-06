@@ -66,6 +66,11 @@ func (s *SocietySvc) CreateSocietyRequest(ctx context.Context, req models.Create
 		if err := s.memberRepo.Add(txCtx, creator); err != nil {
 			return ErrMemberConflict.WithCause(err)
 		}
+		if s.visitorSettingSvc != nil {
+			if err := s.visitorSettingSvc.CreateDefaultSocietySettings(txCtx, society.ID, requestedBy); err != nil {
+				return err
+			}
+		}
 		return nil
 	}); err != nil {
 		return nil, err

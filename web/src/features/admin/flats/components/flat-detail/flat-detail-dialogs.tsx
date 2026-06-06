@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import type { FormEvent } from "react";
 
 import type {
-  ModelsFlatResidentResponse,
   ModelsFlatResidentRole,
   ModelsFlatStatus,
   ModelsSocietyMemberResponse,
@@ -26,14 +25,6 @@ const AddResidentDialog = dynamic(
   { ssr: false },
 );
 
-const EditResidentRoleDialog = dynamic(
-  () =>
-    import("./edit-resident-role-dialog").then((module) => ({
-      default: module.EditResidentRoleDialog,
-    })),
-  { ssr: false },
-);
-
 type FlatDetailDialogsProps = {
   addOpen: boolean;
   addPrimary: boolean;
@@ -46,11 +37,9 @@ type FlatDetailDialogsProps = {
   editStatus: ModelsFlatStatus;
   isAddingResident: boolean;
   isUpdating: boolean;
-  isUpdatingResidentRole: boolean;
   memberSearch: string;
   members: ModelsSocietyMemberResponse[];
   membersQuery: { isFetching: boolean };
-  nextResidentRole: ModelsFlatResidentRole;
   onAddPrimaryChange: (value: boolean) => void;
   onAddResident: (
     event: FormEvent<HTMLFormElement>,
@@ -81,17 +70,8 @@ type FlatDetailDialogsProps = {
     },
     onComplete?: () => void,
   ) => void;
-  onUpdateRole: (
-    event: FormEvent<HTMLFormElement>,
-    resident: ModelsFlatResidentResponse,
-    role: ModelsFlatResidentRole,
-    onComplete?: () => void,
-  ) => void;
-  roleResident: ModelsFlatResidentResponse | null;
   selectedUserId: string;
   setAddOpen: (open: boolean) => void;
-  setRoleResident: (resident: ModelsFlatResidentResponse | null) => void;
-  setNextResidentRole: (role: ModelsFlatResidentRole) => void;
 };
 
 export function FlatDetailDialogs(props: FlatDetailDialogsProps) {
@@ -146,26 +126,6 @@ export function FlatDetailDialogs(props: FlatDetailDialogsProps) {
           }
           open={props.addOpen}
           selectedUserId={props.selectedUserId}
-        />
-      ) : null}
-
-      {props.roleResident ? (
-        <EditResidentRoleDialog
-          isUpdating={props.isUpdatingResidentRole}
-          onOpenChange={(open) => {
-            if (!open) props.setRoleResident(null);
-          }}
-          onRoleChange={props.setNextResidentRole}
-          onSubmit={(event) => {
-            const resident = props.roleResident;
-            if (!resident) return;
-            props.onUpdateRole(event, resident, props.nextResidentRole, () =>
-              props.setRoleResident(null),
-            );
-          }}
-          open={Boolean(props.roleResident)}
-          resident={props.roleResident}
-          role={props.nextResidentRole}
         />
       ) : null}
     </>

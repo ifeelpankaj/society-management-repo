@@ -38,6 +38,7 @@ export function useFlatDetail({
     societyId,
     flatId,
   });
+
   const residentsQuery = useGetV1SocietyFlatResidentsQuery({
     societyId,
     flatId,

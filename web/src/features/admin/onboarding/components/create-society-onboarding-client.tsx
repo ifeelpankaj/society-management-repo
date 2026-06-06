@@ -21,8 +21,8 @@ import { toast } from "sonner";
 import { FormField } from "@/components/forms/form-field";
 import { SmartForm } from "@/components/forms/smart-form";
 import { PageHeader } from "@/components/shared/page-header";
-import { PageShell } from "@/components/shared/page-shell";
 import { SectionCard } from "@/components/shared/section-card";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import { Button } from "@/components/ui/button";
 import { RouteGuard } from "@/features/auth/components/route-guard";
 import {
@@ -440,34 +440,32 @@ export function CreateSocietyOnboardingClient() {
 
   return (
     <RouteGuard mode="authenticated">
-      <PageShell background="tinted" className="min-h-screen py-10">
-        <main className="mx-auto w-full max-w-4xl space-y-6">
-          <PageHeader
-            description="Create a society request. Once it is active, you can open it from the society selector."
-            eyebrow="Setup required"
-            title="Complete society onboarding"
-          />
+      <WorkspacePage className="min-h-screen py-10" size="wizard">
+        <PageHeader
+          description="Create a society request. Once it is active, you can open it from the society selector."
+          eyebrow="Setup required"
+          title="Complete society onboarding"
+        />
 
-          <SectionCard
-            description="Enter the details your team will use to identify this workspace."
-            title="Create society"
+        <SectionCard
+          description="Enter the details your team will use to identify this workspace."
+          title="Create society"
+        >
+          <SmartForm<CreateSocietyFormValues>
+            defaultValues={defaultValues}
+            formOptions={{ mode: "onChange" }}
+            onSubmit={submitSociety}
+            actions={
+              <Button disabled={isLoading} type="submit">
+                {isLoading ? "Creating..." : "Create society"}
+                <Plus className="size-4" />
+              </Button>
+            }
           >
-            <SmartForm<CreateSocietyFormValues>
-              defaultValues={defaultValues}
-              formOptions={{ mode: "onChange" }}
-              onSubmit={submitSociety}
-              actions={
-                <Button disabled={isLoading} type="submit">
-                  {isLoading ? "Creating..." : "Create society"}
-                  <Plus className="size-4" />
-                </Button>
-              }
-            >
-              {(form) => <CreateSocietyFields form={form} />}
-            </SmartForm>
-          </SectionCard>
-        </main>
-      </PageShell>
+            {(form) => <CreateSocietyFields form={form} />}
+          </SmartForm>
+        </SectionCard>
+      </WorkspacePage>
     </RouteGuard>
   );
 }

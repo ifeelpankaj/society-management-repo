@@ -29,7 +29,7 @@ Client components should compose shared UI + feature hook return values; avoid l
 ## Routing and auth
 
 - **`lib/routes/paths.ts`** — typed path helpers (prefer over string templates).
-- **`middleware.ts`** — coarse check: access-token cookie on protected prefixes.
+- **`proxy.ts`** — coarse check: access-token cookie on protected prefixes.
 - **`RouteGuard`** (layouts) — fine-grained role and society membership.
 
 ## Code splitting

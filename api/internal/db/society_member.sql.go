@@ -103,6 +103,8 @@ const countSocietyMembers = `-- name: CountSocietyMembers :one
 SELECT COUNT(*)
 FROM society_members sm
 JOIN users u ON u.id = sm.user_id
+LEFT JOIN users invited_user ON invited_user.id = sm.invited_by
+LEFT JOIN users removed_user ON removed_user.id = sm.removed_by
 WHERE sm.society_id = $1
   AND ($2::society_member_role IS NULL OR sm.role = $2::society_member_role)
   AND ($3::society_member_status IS NULL OR sm.status = $3::society_member_status)
@@ -113,11 +115,37 @@ WHERE sm.society_id = $1
   AND ($8::timestamptz IS NULL OR sm.joined_at <= $8::timestamptz)
   AND (
       $9::text = ''
-      OR u.full_name ILIKE '%' || $9::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || $9::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || $9::text || '%'
-      OR sm.role::text ILIKE '%' || $9::text || '%'
-      OR sm.status::text ILIKE '%' || $9::text || '%'
+      OR (
+          $10::text IN ('', 'all', 'resident')
+          AND (
+              u.full_name ILIKE '%' || $9::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || $9::text || '%'
+          )
+      )
+      OR (
+          $10::text IN ('', 'all', 'invited_by')
+          AND (
+              COALESCE(invited_user.full_name, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(invited_user.email, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(invited_user.phone_number, '') ILIKE '%' || $9::text || '%'
+          )
+      )
+      OR (
+          $10::text IN ('', 'all', 'removed_by')
+          AND (
+              COALESCE(removed_user.full_name, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(removed_user.email, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(removed_user.phone_number, '') ILIKE '%' || $9::text || '%'
+          )
+      )
+      OR (
+          $10::text IN ('', 'all')
+          AND (
+              sm.role::text ILIKE '%' || $9::text || '%'
+              OR sm.status::text ILIKE '%' || $9::text || '%'
+          )
+      )
   )
 `
 
@@ -131,6 +159,7 @@ type CountSocietyMembersParams struct {
 	JoinedFrom pgtype.Timestamptz   `db:"joined_from" json:"joined_from"`
 	JoinedTo   pgtype.Timestamptz   `db:"joined_to" json:"joined_to"`
 	Search     string               `db:"search" json:"search"`
+	SearchMode string               `db:"search_mode" json:"search_mode"`
 }
 
 func (q *Queries) CountSocietyMembers(ctx context.Context, arg CountSocietyMembersParams) (int64, error) {
@@ -144,6 +173,7 @@ func (q *Queries) CountSocietyMembers(ctx context.Context, arg CountSocietyMembe
 		arg.JoinedFrom,
 		arg.JoinedTo,
 		arg.Search,
+		arg.SearchMode,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -254,6 +284,8 @@ SELECT
     u.phone_number AS user_phone
 FROM society_members sm
 JOIN users u ON u.id = sm.user_id
+LEFT JOIN users invited_user ON invited_user.id = sm.invited_by
+LEFT JOIN users removed_user ON removed_user.id = sm.removed_by
 WHERE sm.society_id = $1
   AND ($2::society_member_role IS NULL OR sm.role = $2::society_member_role)
   AND ($3::society_member_status IS NULL OR sm.status = $3::society_member_status)
@@ -264,20 +296,46 @@ WHERE sm.society_id = $1
   AND ($8::timestamptz IS NULL OR sm.joined_at <= $8::timestamptz)
   AND (
       $9::text = ''
-      OR u.full_name ILIKE '%' || $9::text || '%'
-      OR COALESCE(u.email, '') ILIKE '%' || $9::text || '%'
-      OR COALESCE(u.phone_number, '') ILIKE '%' || $9::text || '%'
-      OR sm.role::text ILIKE '%' || $9::text || '%'
-      OR sm.status::text ILIKE '%' || $9::text || '%'
+      OR (
+          $10::text IN ('', 'all', 'resident')
+          AND (
+              u.full_name ILIKE '%' || $9::text || '%'
+              OR COALESCE(u.email, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(u.phone_number, '') ILIKE '%' || $9::text || '%'
+          )
+      )
+      OR (
+          $10::text IN ('', 'all', 'invited_by')
+          AND (
+              COALESCE(invited_user.full_name, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(invited_user.email, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(invited_user.phone_number, '') ILIKE '%' || $9::text || '%'
+          )
+      )
+      OR (
+          $10::text IN ('', 'all', 'removed_by')
+          AND (
+              COALESCE(removed_user.full_name, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(removed_user.email, '') ILIKE '%' || $9::text || '%'
+              OR COALESCE(removed_user.phone_number, '') ILIKE '%' || $9::text || '%'
+          )
+      )
+      OR (
+          $10::text IN ('', 'all')
+          AND (
+              sm.role::text ILIKE '%' || $9::text || '%'
+              OR sm.status::text ILIKE '%' || $9::text || '%'
+          )
+      )
   )
 ORDER BY
-    CASE WHEN $10 = 'role' AND $11 = 'asc' THEN sm.role END ASC,
-    CASE WHEN $10 = 'role' AND $11 = 'desc' THEN sm.role END DESC,
-    CASE WHEN $10 = 'status' AND $11 = 'asc' THEN sm.status END ASC,
-    CASE WHEN $10 = 'status' AND $11 = 'desc' THEN sm.status END DESC,
-    CASE WHEN $10 = 'joined_at' AND $11 = 'asc' THEN sm.joined_at END ASC,
+    CASE WHEN $11 = 'role' AND $12 = 'asc' THEN sm.role END ASC,
+    CASE WHEN $11 = 'role' AND $12 = 'desc' THEN sm.role END DESC,
+    CASE WHEN $11 = 'status' AND $12 = 'asc' THEN sm.status END ASC,
+    CASE WHEN $11 = 'status' AND $12 = 'desc' THEN sm.status END DESC,
+    CASE WHEN $11 = 'joined_at' AND $12 = 'asc' THEN sm.joined_at END ASC,
     sm.joined_at DESC
-LIMIT $13 OFFSET $12
+LIMIT $14 OFFSET $13
 `
 
 type ListSocietyMembersParams struct {
@@ -290,6 +348,7 @@ type ListSocietyMembersParams struct {
 	JoinedFrom pgtype.Timestamptz   `db:"joined_from" json:"joined_from"`
 	JoinedTo   pgtype.Timestamptz   `db:"joined_to" json:"joined_to"`
 	Search     string               `db:"search" json:"search"`
+	SearchMode string               `db:"search_mode" json:"search_mode"`
 	SortBy     interface{}          `db:"sort_by" json:"sort_by"`
 	SortOrder  interface{}          `db:"sort_order" json:"sort_order"`
 	Offset     int32                `db:"offset" json:"offset"`
@@ -326,6 +385,7 @@ func (q *Queries) ListSocietyMembers(ctx context.Context, arg ListSocietyMembers
 		arg.JoinedFrom,
 		arg.JoinedTo,
 		arg.Search,
+		arg.SearchMode,
 		arg.SortBy,
 		arg.SortOrder,
 		arg.Offset,

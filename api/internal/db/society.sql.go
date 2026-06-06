@@ -76,31 +76,72 @@ func (q *Queries) CountPendingSocietiesByCreator(ctx context.Context, createdBy 
 const countSocieties = `-- name: CountSocieties :one
 SELECT COUNT(*)
 FROM societies
-WHERE ($1::bigint IS NULL OR id = $1::bigint)
-  AND ($2::society_status IS NULL OR status = $2::society_status)
-  AND ($3::bigint IS NULL OR created_by = $3::bigint)
-  AND ($4::bigint IS NULL OR approved_by = $4::bigint)
-  AND ($5::bigint IS NULL OR rejected_by = $5::bigint)
-  AND ($6::bigint IS NULL OR suspended_by = $6::bigint)
-  AND ($7::timestamptz IS NULL OR created_at >= $7::timestamptz)
-  AND ($8::timestamptz IS NULL OR created_at <= $8::timestamptz)
-  AND ($9::text = '' OR society_code ILIKE '%' || $9::text || '%')
-  AND ($10::text = '' OR name ILIKE '%' || $10::text || '%')
-  AND ($11::text = '' OR city ILIKE '%' || $11::text || '%')
-  AND ($12::text = '' OR state ILIKE '%' || $12::text || '%')
-  AND ($13::text = '' OR country ILIKE '%' || $13::text || '%')
-  AND ($14::text = '' OR pincode ILIKE '%' || $14::text || '%')
+LEFT JOIN users created_user ON created_user.id = societies.created_by
+LEFT JOIN users approved_user ON approved_user.id = societies.approved_by
+LEFT JOIN users rejected_user ON rejected_user.id = societies.rejected_by
+LEFT JOIN users suspended_user ON suspended_user.id = societies.suspended_by
+WHERE ($1::bigint IS NULL OR societies.id = $1::bigint)
+  AND ($2::society_status IS NULL OR societies.status = $2::society_status)
+  AND ($3::bigint IS NULL OR societies.created_by = $3::bigint)
+  AND ($4::bigint IS NULL OR societies.approved_by = $4::bigint)
+  AND ($5::bigint IS NULL OR societies.rejected_by = $5::bigint)
+  AND ($6::bigint IS NULL OR societies.suspended_by = $6::bigint)
+  AND ($7::timestamptz IS NULL OR societies.created_at >= $7::timestamptz)
+  AND ($8::timestamptz IS NULL OR societies.created_at <= $8::timestamptz)
+  AND ($9::text = '' OR societies.society_code ILIKE '%' || $9::text || '%')
+  AND ($10::text = '' OR societies.name ILIKE '%' || $10::text || '%')
+  AND ($11::text = '' OR societies.city ILIKE '%' || $11::text || '%')
+  AND ($12::text = '' OR societies.state ILIKE '%' || $12::text || '%')
+  AND ($13::text = '' OR societies.country ILIKE '%' || $13::text || '%')
+  AND ($14::text = '' OR societies.pincode ILIKE '%' || $14::text || '%')
   AND (
       $15::text = ''
-      OR name ILIKE '%' || $15::text || '%'
-      OR society_code ILIKE '%' || $15::text || '%'
-      OR COALESCE(email, '') ILIKE '%' || $15::text || '%'
-      OR COALESCE(phone_number, '') ILIKE '%' || $15::text || '%'
-      OR COALESCE(city, '') ILIKE '%' || $15::text || '%'
-      OR COALESCE(state, '') ILIKE '%' || $15::text || '%'
-      OR status::text ILIKE '%' || $15::text || '%'
+      OR (
+          $16::text IN ('', 'all')
+          AND (
+              societies.name ILIKE '%' || $15::text || '%'
+              OR societies.society_code ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.phone_number, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.city, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.state, '') ILIKE '%' || $15::text || '%'
+              OR societies.status::text ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'created_by')
+          AND (
+              COALESCE(created_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(created_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(created_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'approved_by')
+          AND (
+              COALESCE(approved_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(approved_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(approved_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'rejected_by')
+          AND (
+              COALESCE(rejected_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(rejected_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(rejected_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'suspended_by')
+          AND (
+              COALESCE(suspended_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(suspended_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(suspended_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
   )
-  AND deleted_at IS NULL
+  AND societies.deleted_at IS NULL
 `
 
 type CountSocietiesParams struct {
@@ -119,6 +160,7 @@ type CountSocietiesParams struct {
 	Country     string             `db:"country" json:"country"`
 	Pincode     string             `db:"pincode" json:"pincode"`
 	Search      string             `db:"search" json:"search"`
+	SearchMode  string             `db:"search_mode" json:"search_mode"`
 }
 
 func (q *Queries) CountSocieties(ctx context.Context, arg CountSocietiesParams) (int64, error) {
@@ -138,6 +180,7 @@ func (q *Queries) CountSocieties(ctx context.Context, arg CountSocietiesParams) 
 		arg.Country,
 		arg.Pincode,
 		arg.Search,
+		arg.SearchMode,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -290,45 +333,86 @@ func (q *Queries) GetSociety(ctx context.Context, arg GetSocietyParams) (Society
 }
 
 const listSocieties = `-- name: ListSocieties :many
-SELECT id, name, society_code, email, phone_number, address_line1, address_line2, landmark, city, state, pincode, country, total_flats, total_blocks, status, created_by, approved_by, approved_at, rejected_by, rejected_at, rejection_reason, suspended_by, suspended_at, suspension_reason, metadata, created_at, updated_at, deleted_at
+SELECT societies.id, societies.name, societies.society_code, societies.email, societies.phone_number, societies.address_line1, societies.address_line2, societies.landmark, societies.city, societies.state, societies.pincode, societies.country, societies.total_flats, societies.total_blocks, societies.status, societies.created_by, societies.approved_by, societies.approved_at, societies.rejected_by, societies.rejected_at, societies.rejection_reason, societies.suspended_by, societies.suspended_at, societies.suspension_reason, societies.metadata, societies.created_at, societies.updated_at, societies.deleted_at
 FROM societies
-WHERE ($1::bigint IS NULL OR id = $1::bigint)
-  AND ($2::society_status IS NULL OR status = $2::society_status)
-  AND ($3::bigint IS NULL OR created_by = $3::bigint)
-  AND ($4::bigint IS NULL OR approved_by = $4::bigint)
-  AND ($5::bigint IS NULL OR rejected_by = $5::bigint)
-  AND ($6::bigint IS NULL OR suspended_by = $6::bigint)
-  AND ($7::timestamptz IS NULL OR created_at >= $7::timestamptz)
-  AND ($8::timestamptz IS NULL OR created_at <= $8::timestamptz)
-  AND ($9::text = '' OR society_code ILIKE '%' || $9::text || '%')
-  AND ($10::text = '' OR name ILIKE '%' || $10::text || '%')
-  AND ($11::text = '' OR city ILIKE '%' || $11::text || '%')
-  AND ($12::text = '' OR state ILIKE '%' || $12::text || '%')
-  AND ($13::text = '' OR country ILIKE '%' || $13::text || '%')
-  AND ($14::text = '' OR pincode ILIKE '%' || $14::text || '%')
+LEFT JOIN users created_user ON created_user.id = societies.created_by
+LEFT JOIN users approved_user ON approved_user.id = societies.approved_by
+LEFT JOIN users rejected_user ON rejected_user.id = societies.rejected_by
+LEFT JOIN users suspended_user ON suspended_user.id = societies.suspended_by
+WHERE ($1::bigint IS NULL OR societies.id = $1::bigint)
+  AND ($2::society_status IS NULL OR societies.status = $2::society_status)
+  AND ($3::bigint IS NULL OR societies.created_by = $3::bigint)
+  AND ($4::bigint IS NULL OR societies.approved_by = $4::bigint)
+  AND ($5::bigint IS NULL OR societies.rejected_by = $5::bigint)
+  AND ($6::bigint IS NULL OR societies.suspended_by = $6::bigint)
+  AND ($7::timestamptz IS NULL OR societies.created_at >= $7::timestamptz)
+  AND ($8::timestamptz IS NULL OR societies.created_at <= $8::timestamptz)
+  AND ($9::text = '' OR societies.society_code ILIKE '%' || $9::text || '%')
+  AND ($10::text = '' OR societies.name ILIKE '%' || $10::text || '%')
+  AND ($11::text = '' OR societies.city ILIKE '%' || $11::text || '%')
+  AND ($12::text = '' OR societies.state ILIKE '%' || $12::text || '%')
+  AND ($13::text = '' OR societies.country ILIKE '%' || $13::text || '%')
+  AND ($14::text = '' OR societies.pincode ILIKE '%' || $14::text || '%')
   AND (
       $15::text = ''
-      OR name ILIKE '%' || $15::text || '%'
-      OR society_code ILIKE '%' || $15::text || '%'
-      OR COALESCE(email, '') ILIKE '%' || $15::text || '%'
-      OR COALESCE(phone_number, '') ILIKE '%' || $15::text || '%'
-      OR COALESCE(city, '') ILIKE '%' || $15::text || '%'
-      OR COALESCE(state, '') ILIKE '%' || $15::text || '%'
-      OR status::text ILIKE '%' || $15::text || '%'
+      OR (
+          $16::text IN ('', 'all')
+          AND (
+              societies.name ILIKE '%' || $15::text || '%'
+              OR societies.society_code ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.phone_number, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.city, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(societies.state, '') ILIKE '%' || $15::text || '%'
+              OR societies.status::text ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'created_by')
+          AND (
+              COALESCE(created_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(created_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(created_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'approved_by')
+          AND (
+              COALESCE(approved_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(approved_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(approved_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'rejected_by')
+          AND (
+              COALESCE(rejected_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(rejected_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(rejected_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
+      OR (
+          $16::text IN ('', 'all', 'suspended_by')
+          AND (
+              COALESCE(suspended_user.full_name, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(suspended_user.email, '') ILIKE '%' || $15::text || '%'
+              OR COALESCE(suspended_user.phone_number, '') ILIKE '%' || $15::text || '%'
+          )
+      )
   )
-  AND deleted_at IS NULL
+  AND societies.deleted_at IS NULL
 ORDER BY
-    CASE WHEN $16 = 'name' AND $17 = 'asc' THEN name END ASC,
-    CASE WHEN $16 = 'name' AND $17 = 'desc' THEN name END DESC,
-    CASE WHEN $16 = 'city' AND $17 = 'asc' THEN city END ASC,
-    CASE WHEN $16 = 'city' AND $17 = 'desc' THEN city END DESC,
-    CASE WHEN $16 = 'status' AND $17 = 'asc' THEN status END ASC,
-    CASE WHEN $16 = 'status' AND $17 = 'desc' THEN status END DESC,
-    CASE WHEN $16 = 'updated_at' AND $17 = 'asc' THEN updated_at END ASC,
-    CASE WHEN $16 = 'updated_at' AND $17 = 'desc' THEN updated_at END DESC,
-    CASE WHEN $17 = 'asc' THEN created_at END ASC,
-    created_at DESC
-LIMIT $19 OFFSET $18
+    CASE WHEN $17 = 'name' AND $18 = 'asc' THEN societies.name END ASC,
+    CASE WHEN $17 = 'name' AND $18 = 'desc' THEN societies.name END DESC,
+    CASE WHEN $17 = 'city' AND $18 = 'asc' THEN societies.city END ASC,
+    CASE WHEN $17 = 'city' AND $18 = 'desc' THEN societies.city END DESC,
+    CASE WHEN $17 = 'status' AND $18 = 'asc' THEN societies.status END ASC,
+    CASE WHEN $17 = 'status' AND $18 = 'desc' THEN societies.status END DESC,
+    CASE WHEN $17 = 'updated_at' AND $18 = 'asc' THEN societies.updated_at END ASC,
+    CASE WHEN $17 = 'updated_at' AND $18 = 'desc' THEN societies.updated_at END DESC,
+    CASE WHEN $18 = 'asc' THEN societies.created_at END ASC,
+    societies.created_at DESC
+LIMIT $20 OFFSET $19
 `
 
 type ListSocietiesParams struct {
@@ -347,6 +431,7 @@ type ListSocietiesParams struct {
 	Country     string             `db:"country" json:"country"`
 	Pincode     string             `db:"pincode" json:"pincode"`
 	Search      string             `db:"search" json:"search"`
+	SearchMode  string             `db:"search_mode" json:"search_mode"`
 	SortBy      interface{}        `db:"sort_by" json:"sort_by"`
 	SortOrder   interface{}        `db:"sort_order" json:"sort_order"`
 	Offset      int32              `db:"offset" json:"offset"`
@@ -370,6 +455,7 @@ func (q *Queries) ListSocieties(ctx context.Context, arg ListSocietiesParams) ([
 		arg.Country,
 		arg.Pincode,
 		arg.Search,
+		arg.SearchMode,
 		arg.SortBy,
 		arg.SortOrder,
 		arg.Offset,

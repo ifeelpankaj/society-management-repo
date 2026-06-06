@@ -23,6 +23,7 @@ export function useProfilePage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [origin, setOrigin] = useState("");
+  const [host, setHost] = useState("");
 
   const { data, isLoading, isFetching } = useGetV1AuthProfileQuery();
 
@@ -44,20 +45,21 @@ export function useProfilePage() {
 
   const dashboardActionLabel = getDashboardActionLabel(dashboardRoute);
 
-  const onboardingLink = society?.society_code
-    ? `${origin}/onboarding/society/${society.society_code}/flats`
+  const claimLink = society?.society_code
+    ? `${origin}/claim/${society.society_code}`
     : "";
 
   const qrUrl = useMemo(() => {
-    if (!onboardingLink) return "";
+    if (!claimLink) return "";
 
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(
-      onboardingLink,
+      claimLink,
     )}`;
-  }, [onboardingLink]);
+  }, [claimLink]);
 
   useEffect(() => {
     setOrigin(window.location.origin);
+    setHost(window.location.host);
   }, []);
 
   const handleLogout = async () => {
@@ -104,10 +106,10 @@ export function useProfilePage() {
   };
 
   const handleCopyLink = async () => {
-    if (!onboardingLink) return;
+    if (!claimLink) return;
 
-    await navigator.clipboard.writeText(onboardingLink);
-    toast.success("Onboarding link copied.");
+    await navigator.clipboard.writeText(claimLink);
+    toast.success("Claim link copied.");
   };
 
   return {
@@ -115,7 +117,8 @@ export function useProfilePage() {
     society,
     dashboardRoute,
     dashboardActionLabel,
-    onboardingLink,
+    claimLink,
+    host,
     qrUrl,
 
     isLoading,

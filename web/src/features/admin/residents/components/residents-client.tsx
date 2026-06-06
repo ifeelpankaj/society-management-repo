@@ -6,9 +6,9 @@ import { PaginationFooter } from "@/components/data/pagination-footer";
 import { AsyncPanel } from "@/components/shared/async-panel";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { PageShell } from "@/components/shared/page-shell";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { RoleBadge } from "@/components/shared/role-badge";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import type { SmartTableColumn } from "@/components/tables/smart-table";
 import { SmartTable } from "@/components/tables/smart-table";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/format";
 import { paths } from "@/lib/routes/paths";
 
-import { ResidentActions } from "./resident-actions";
+import { ResidentRowActions } from "./resident-row-actions";
 import { ResidentSummaryCards } from "./resident-summary-cards";
 import { ResidentTableToolbar } from "./resident-table-toolbar";
 
@@ -52,6 +52,8 @@ export function ResidentsClient({
     isError,
     isFetching,
     isLoading,
+    joinedFrom,
+    joinedTo,
     members,
     page,
     pageEnd,
@@ -60,11 +62,19 @@ export function ResidentsClient({
     refetch,
     role,
     search,
+    searchMode,
+    setJoinedFrom,
+    setJoinedTo,
     setPage,
     setPageSize,
     setRole,
     setSearch,
+    setSearchMode,
+    setSortBy,
+    setSortOrder,
     setStatus,
+    sortBy,
+    sortOrder,
     status,
     summary,
     total,
@@ -132,106 +142,103 @@ export function ResidentsClient({
         cell: ({ row }) => formatShortDateIN(row.original.joined_at, "Not set"),
       },
       {
-        id: "owned_flat",
-        header: "Owned flat",
-        cell: ({ row }) =>
-          row.original.role === "resident" || row.original.role === "owner" ? (
-            <span className="text-muted-foreground text-sm">Open detail</span>
-          ) : (
-            <span className="text-muted-foreground text-sm">Not checked</span>
-          ),
-      },
-      {
         id: "actions",
         header: "Actions",
         meta: { headerClassName: "text-right", className: "text-right" },
         cell: ({ row }) => (
-          <ResidentActions
-            member={row.original}
-            onDone={refetch}
+          <ResidentRowActions
+            memberId={row.original.id}
             societyId={societyId}
           />
         ),
       },
     ],
-    [refetch, societyId],
+    [societyId],
   );
 
   return (
-    <PageShell background="tinted" className="min-h-full py-8">
-      <main className="mx-auto w-full max-w-6xl space-y-6">
-        <PageHeader
-          actions={<RefreshButton loading={isFetching} onClick={refetch} />}
-          description="Manage society members, roles, access status, and ownership."
-          eyebrow="Community directory"
-          title="Residents"
-        />
+    <WorkspacePage>
+      <PageHeader
+        actions={<RefreshButton loading={isFetching} onClick={refetch} />}
+        description="Manage society members, roles, access status, and ownership."
+        eyebrow="Community directory"
+        title="Residents"
+      />
 
-        <ResidentSummaryCards summary={summary} />
+      <ResidentSummaryCards summary={summary} />
 
-        <Card>
-          <CardHeader className="gap-4">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <CardTitle>Member Directory</CardTitle>
-                <CardDescription>
-                  {total > 0
-                    ? `Showing ${formatNumberIN(pageStart)}-${formatNumberIN(pageEnd)} of ${formatNumberIN(total)} members`
-                    : "0 members shown"}
-                </CardDescription>
-              </div>
-              <ResidentTableToolbar
-                onRoleChange={setRole}
-                onSearchChange={setSearch}
-                onStatusChange={setStatus}
-                role={role}
-                search={search}
-                status={status}
+      <Card>
+        <CardHeader className="gap-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <CardTitle>Member Directory</CardTitle>
+              <CardDescription>
+                {total > 0
+                  ? `Showing ${formatNumberIN(pageStart)}-${formatNumberIN(pageEnd)} of ${formatNumberIN(total)} members`
+                  : "0 members shown"}
+              </CardDescription>
+            </div>
+            <ResidentTableToolbar
+              joinedFrom={joinedFrom}
+              joinedTo={joinedTo}
+              onJoinedFromChange={setJoinedFrom}
+              onJoinedToChange={setJoinedTo}
+              onRoleChange={setRole}
+              onSearchChange={setSearch}
+              onSearchModeChange={setSearchMode}
+              onSortByChange={setSortBy}
+              onSortOrderChange={setSortOrder}
+              onStatusChange={setStatus}
+              role={role}
+              search={search}
+              searchMode={searchMode}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              status={status}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <AsyncPanel
+            empty={isEmpty}
+            emptyDescription="Try changing the search or filters."
+            emptyTitle="No members found"
+            error={isError ? "Refresh the directory and try again." : null}
+            loading={isLoading}
+            loadingLabel="Loading members"
+            onRetry={refetch}
+          >
+            <div className="space-y-4">
+              <SmartTable
+                columns={columns}
+                data={members}
+                emptyState={
+                  <EmptyState
+                    className="border-0"
+                    title="No members found"
+                    description="Try changing the search or filters."
+                  />
+                }
+                loading={isLoading}
+                onRowClick={(member) => {
+                  if (!member.id) return;
+                  router.push(paths.residentDetail(societyId, member.id));
+                }}
+                rowKey={(member) => member.id ?? member.user_id ?? "member"}
+              />
+              <PaginationFooter
+                loading={isFetching}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                page={page}
+                pageSize={pageSize}
+                totalItems={total}
+                totalPages={totalPages}
               />
             </div>
-          </CardHeader>
-          <CardContent>
-            <AsyncPanel
-              empty={isEmpty}
-              emptyDescription="Try changing the search or filters."
-              emptyTitle="No members found"
-              error={isError ? "Refresh the directory and try again." : null}
-              loading={isLoading}
-              loadingLabel="Loading members"
-              onRetry={refetch}
-            >
-              <div className="space-y-4">
-                <SmartTable
-                  columns={columns}
-                  data={members}
-                  emptyState={
-                    <EmptyState
-                      className="border-0"
-                      title="No members found"
-                      description="Try changing the search or filters."
-                    />
-                  }
-                  loading={isLoading}
-                  onRowClick={(member) => {
-                    if (!member.id) return;
-                    router.push(paths.residentDetail(societyId, member.id));
-                  }}
-                  rowKey={(member) => member.id ?? member.user_id ?? "member"}
-                />
-                <PaginationFooter
-                  loading={isFetching}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                  page={page}
-                  pageSize={pageSize}
-                  totalItems={total}
-                  totalPages={totalPages}
-                />
-              </div>
-            </AsyncPanel>
-          </CardContent>
-        </Card>
-      </main>
-    </PageShell>
+          </AsyncPanel>
+        </CardContent>
+      </Card>
+    </WorkspacePage>
   );
 }

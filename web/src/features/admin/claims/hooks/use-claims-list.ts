@@ -39,10 +39,9 @@ function isEmptyClaimsResponse(error: unknown) {
 
 export function useClaimsList({ societyId }: UseClaimsListOptions) {
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search);
-  const [status, setStatus] = useState<ModelsFlatClaimStatus | "all">(
-    "pending",
-  );
+  const [searchMode, setSearchMode] = useState("all");
+  const debouncedSearch = useDebouncedValue(search, 2000);
+  const [status, setStatus] = useState<ModelsFlatClaimStatus | "all">("all");
   const [selectedClaimId, setSelectedClaimId] = useState<number | null>(null);
   const [rejectingClaim, setRejectingClaim] =
     useState<ModelsFlatClaimResponse | null>(null);
@@ -52,12 +51,13 @@ export function useClaimsList({ societyId }: UseClaimsListOptions) {
   const { page, pageSize, offset, totalPages, setPage, setPageSize } =
     usePagination({
       totalItems: estimatedTotalRef.current,
-      resetDeps: [debouncedSearch, status],
+      resetDeps: [debouncedSearch, searchMode, status],
     });
 
   const claimsQuery = useGetV1SocietyFlatClaimsQuery({
     societyId,
     search: debouncedSearch.trim() || undefined,
+    searchMode,
     status: status === "all" ? undefined : status,
     limit: pageSize,
     offset,
@@ -181,6 +181,7 @@ export function useClaimsList({ societyId }: UseClaimsListOptions) {
     resolvedPageStart,
     resolvedTotalPages,
     search,
+    searchMode,
     selectedClaim,
     selectedClaimId,
     setPage,
@@ -188,6 +189,7 @@ export function useClaimsList({ societyId }: UseClaimsListOptions) {
     setRejectReason,
     setRejectingClaim,
     setSearch,
+    setSearchMode,
     setSelectedClaimId,
     setStatus,
     showEmptyClaims,

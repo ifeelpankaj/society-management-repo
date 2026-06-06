@@ -14,8 +14,11 @@ export type SocietyFlatClaimsApiResponse = {
 
 export type GetSocietyFlatClaimsArg = {
   societyId: number;
+  flatId?: number;
+  userId?: number;
   status?: ModelsFlatClaimStatus;
   search?: string;
+  searchMode?: string;
   limit?: number;
   offset?: number;
 };
@@ -40,11 +43,23 @@ export const societyFlatClaimsApi = baseApi.injectEndpoints({
       SocietyFlatClaimsApiResponse,
       GetSocietyFlatClaimsArg
     >({
-      query: ({ societyId, status, search, limit = 20, offset = 0 }) => ({
+      query: ({
+        societyId,
+        flatId,
+        userId,
+        status,
+        search,
+        searchMode,
+        limit = 20,
+        offset = 0,
+      }) => ({
         url: `/v1/societies/${societyId}/flat-claims`,
         params: {
+          flat_id: flatId,
+          user_id: userId,
           status,
           search,
+          search_mode: searchMode,
           limit,
           offset,
         },

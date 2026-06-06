@@ -43,10 +43,8 @@ export const societyFlatResidentsApi = baseApi.injectEndpoints({
         limit = 50,
         offset = 0,
       }) => ({
-        url: "/v1/flat-residents",
+        url: `/v1/societies/${societyId}/flats/${flatId}/residents`,
         params: {
-          society_id: societyId,
-          flat_id: flatId,
           role,
           status,
           is_primary: isPrimary,
@@ -119,11 +117,21 @@ export const societyFlatResidentsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: residentMutationTags,
     }),
+    getV1SocietyFlatResident: build.query<
+      ModelsFlatResidentApiResponse,
+      { societyId: number; flatId: number; residentId: number }
+    >({
+      query: ({ societyId, flatId, residentId }) => ({
+        url: `/v1/societies/${societyId}/flats/${flatId}/residents/${residentId}`,
+      }),
+      providesTags: ["Flat Residents"],
+    }),
   }),
 });
 
 export const {
   useGetV1SocietyFlatResidentsQuery,
+  useGetV1SocietyFlatResidentQuery,
   usePostV1SocietyFlatResidentCustomMutation,
   useDeleteV1SocietyFlatResidentCustomMutation,
   usePostV1SocietyFlatResidentMoveOutCustomMutation,

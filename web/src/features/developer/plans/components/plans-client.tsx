@@ -2,20 +2,26 @@
 
 import {
   CheckCircle2,
+  ExternalLink,
   Layers3,
   Pencil,
   Plus,
-  Search,
   XCircle,
 } from "lucide-react";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { FilterPanel } from "@/components/data/filter-panel";
+import { ListToolbar } from "@/components/data/list-toolbar";
+import { PaginationFooter } from "@/components/data/pagination-footer";
+import { FilterSelect } from "@/components/forms/filter-select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { PageShell } from "@/components/shared/page-shell";
 import { RefreshButton } from "@/components/shared/refresh-button";
+import { SearchInput } from "@/components/shared/search-input";
 import { SectionCard } from "@/components/shared/section-card";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +64,8 @@ import {
 } from "@/lib/api/generated-api";
 import { getApiErrorMessage, getApiMessage } from "@/lib/api-message";
 import { formatMoney, formatNumberIN, titleCaseFromSnake } from "@/lib/format";
+import { usePagination } from "@/lib/hooks";
+import { paths } from "@/lib/routes/paths";
 
 type PlanFormState = {
   name: string;
@@ -154,6 +162,10 @@ function buildCreateRequest(form: PlanFormState): ModelsCreatePlanRequest {
 
 export function PlansClient() {
   const [search, setSearch] = useState("");
+  const [code, setCode] = useState("");
+  const [billingCycle, setBillingCycle] = useState<ModelsBillingCycle | "all">(
+    "all",
+  );
   const [active, setActive] = useState<"all" | "active" | "inactive">("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
@@ -161,12 +173,20 @@ export function PlansClient() {
   const [statusAction, setStatusAction] = useState<PlanStatusAction | null>(
     null,
   );
+  const estimatedTotalRef = useRef(0);
+  const { page, pageSize, offset, totalPages, setPage, setPageSize } =
+    usePagination({
+      totalItems: estimatedTotalRef.current,
+      resetDeps: [search, code, billingCycle, active],
+    });
 
   const plansQuery = useGetV1PlansQuery({
+    code: code.trim() || undefined,
+    billingCycle: billingCycle === "all" ? undefined : billingCycle,
     search: search.trim() || undefined,
     isActive: active === "all" ? undefined : active === "active",
-    limit: 50,
-    offset: 0,
+    limit: pageSize,
+    offset,
   });
   const selectedPlanQuery = useGetV1PlansLookupQuery(
     { id: editingPlanId ?? undefined },
@@ -181,6 +201,13 @@ export function PlansClient() {
     usePostV1PlansByPlanIdDeactivateMutation();
 
   const plans = plansQuery.data?.data?.plans ?? [];
+  const hasNextPage = plans.length >= pageSize;
+  estimatedTotalRef.current = hasNextPage
+    ? page * pageSize + 1
+    : (page - 1) * pageSize + plans.length;
+  const resolvedTotalPages = hasNextPage
+    ? Math.max(totalPages, page + 1)
+    : page;
   const selectedPlan = selectedPlanQuery.data?.data?.plan;
   const statusPlanName = statusAction?.plan.name ?? "this plan";
   const isStatusLoading = isActivating || isDeactivating;
@@ -322,71 +349,99 @@ export function PlansClient() {
   }
 
   return (
-    <PageShell background="tinted" className="min-h-full py-8">
-      <main className="mx-auto w-full max-w-6xl space-y-6">
-        <PageHeader
-          actions={
-            <>
-              <Button type="button" onClick={openCreate}>
-                <Plus className="size-4" />
-                New plan
-              </Button>
-              <RefreshButton
-                loading={plansQuery.isFetching}
-                onClick={() => plansQuery.refetch()}
-              />
-            </>
-          }
-          description="Inspect billing cycles, prices, and subscription limits."
-          eyebrow="Developer workspace"
-          title="Plans"
-        />
+    <WorkspacePage>
+      <PageHeader
+        actions={
+          <>
+            <Button type="button" onClick={openCreate}>
+              <Plus className="size-4" />
+              New plan
+            </Button>
+            <RefreshButton
+              loading={plansQuery.isFetching}
+              onClick={() => plansQuery.refetch()}
+            />
+          </>
+        }
+        description="Inspect billing cycles, prices, and subscription limits."
+        eyebrow="Developer workspace"
+        title="Plans"
+      />
 
-        <SectionCard
-          contentClassName="space-y-4"
-          description={`${formatNumberIN(plans.length)} plans returned by the platform API`}
-          title="Plan Catalog"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Search plans"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-            <select
-              className="h-10 rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-ring/20"
+      <SectionCard
+        contentClassName="space-y-4"
+        description={`${formatNumberIN(plans.length)} plans returned by the platform API`}
+        title="Plan Catalog"
+      >
+        <div className="space-y-3">
+          <ListToolbar className="border-0 bg-transparent p-0 sm:grid sm:grid-cols-[minmax(220px,1fr)_140px]">
+            <SearchInput
+              placeholder="Search plans"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <FilterSelect
+              aria-label="Filter by active state"
               value={active}
               onChange={(event) =>
                 setActive(event.target.value as "all" | "active" | "inactive")
               }
-            >
-              <option value="all">All</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+              options={[
+                { label: "All states", value: "all" },
+                { label: "Active", value: "active" },
+                { label: "Inactive", value: "inactive" },
+              ]}
+            />
+          </ListToolbar>
+          <FilterPanel>
+            <Input
+              onChange={(event) => setCode(event.target.value)}
+              placeholder="Plan code"
+              value={code}
+            />
+            <FilterSelect
+              aria-label="Filter by billing cycle"
+              value={billingCycle}
+              onChange={(event) =>
+                setBillingCycle(
+                  event.target.value as ModelsBillingCycle | "all",
+                )
+              }
+              options={[
+                { label: "All cycles", value: "all" },
+                { label: "Monthly", value: "monthly" },
+                { label: "Yearly", value: "yearly" },
+              ]}
+            />
+          </FilterPanel>
+        </div>
 
-          {plans.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {plans.map((plan) => (
-                <Card size="sm" key={plan.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Layers3 className="size-4 shrink-0" />
-                          <span className="truncate">
-                            {plan.name ?? "Unnamed plan"}
-                          </span>
-                        </CardTitle>
-                        <CardDescription>
-                          {plan.code ?? "No code"}
-                        </CardDescription>
-                      </div>
+        {plans.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {plans.map((plan) => (
+              <Card size="sm" key={plan.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Layers3 className="size-4 shrink-0" />
+                        <span className="truncate">
+                          {plan.name ?? "Unnamed plan"}
+                        </span>
+                      </CardTitle>
+                      <CardDescription>
+                        {plan.code ?? "No code"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      {plan.id ? (
+                        <Button asChild size="sm" type="button" variant="ghost">
+                          <Link href={paths.developerPlan(plan.id)}>
+                            <ExternalLink className="size-4" />
+                            Details
+                          </Link>
+                        </Button>
+                      ) : null}
                       <Button
                         type="button"
                         variant="outline"
@@ -397,79 +452,86 @@ export function PlansClient() {
                         Edit
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={plan.is_active ? "default" : "outline"}>
-                        {plan.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                      <Badge variant="secondary">
-                        {titleCaseFromSnake(plan.billing_cycle)}
-                      </Badge>
-                      <span className="font-semibold text-sm">
-                        {formatMoney(plan.price_amount_paise, plan.currency)}
-                      </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={plan.is_active ? "default" : "outline"}>
+                      {plan.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                    <Badge variant="secondary">
+                      {titleCaseFromSnake(plan.billing_cycle)}
+                    </Badge>
+                    <span className="font-semibold text-sm">
+                      {formatMoney(plan.price_amount_paise, plan.currency)}
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border p-3">
+                      <p className="font-semibold">
+                        {formatNumberIN(plan.max_flats)}
+                      </p>
+                      <p className="text-muted-foreground text-xs">Flats</p>
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="rounded-lg border border-border p-3">
-                        <p className="font-semibold">
-                          {formatNumberIN(plan.max_flats)}
-                        </p>
-                        <p className="text-muted-foreground text-xs">Flats</p>
-                      </div>
-                      <div className="rounded-lg border border-border p-3">
-                        <p className="font-semibold">
-                          {formatNumberIN(plan.max_residents)}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          Residents
-                        </p>
-                      </div>
-                      <div className="rounded-lg border border-border p-3">
-                        <p className="font-semibold">
-                          {formatNumberIN(plan.max_admins)}
-                        </p>
-                        <p className="text-muted-foreground text-xs">Admins</p>
-                      </div>
-                      <div className="rounded-lg border border-border p-3">
-                        <p className="font-semibold">
-                          {formatNumberIN(plan.max_staff)}
-                        </p>
-                        <p className="text-muted-foreground text-xs">Staff</p>
-                      </div>
+                    <div className="rounded-lg border border-border p-3">
+                      <p className="font-semibold">
+                        {formatNumberIN(plan.max_residents)}
+                      </p>
+                      <p className="text-muted-foreground text-xs">Residents</p>
                     </div>
-                    <div className="flex justify-end">
-                      <Button
-                        type="button"
-                        variant={plan.is_active ? "outline" : "default"}
-                        size="sm"
-                        onClick={() =>
-                          setStatusAction({
-                            plan,
-                            type: plan.is_active ? "deactivate" : "activate",
-                          })
-                        }
-                      >
-                        {plan.is_active ? (
-                          <XCircle className="size-4" />
-                        ) : (
-                          <CheckCircle2 className="size-4" />
-                        )}
-                        {plan.is_active ? "Deactivate" : "Activate"}
-                      </Button>
+                    <div className="rounded-lg border border-border p-3">
+                      <p className="font-semibold">
+                        {formatNumberIN(plan.max_admins)}
+                      </p>
+                      <p className="text-muted-foreground text-xs">Admins</p>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="No plans found"
-              description="Change the filters or refresh the catalog."
-            />
-          )}
-        </SectionCard>
-      </main>
+                    <div className="rounded-lg border border-border p-3">
+                      <p className="font-semibold">
+                        {formatNumberIN(plan.max_staff)}
+                      </p>
+                      <p className="text-muted-foreground text-xs">Staff</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant={plan.is_active ? "outline" : "default"}
+                      size="sm"
+                      onClick={() =>
+                        setStatusAction({
+                          plan,
+                          type: plan.is_active ? "deactivate" : "activate",
+                        })
+                      }
+                    >
+                      {plan.is_active ? (
+                        <XCircle className="size-4" />
+                      ) : (
+                        <CheckCircle2 className="size-4" />
+                      )}
+                      {plan.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No plans found"
+            description="Change the filters or refresh the catalog."
+          />
+        )}
+        <PaginationFooter
+          loading={plansQuery.isFetching}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          page={page}
+          pageSize={pageSize}
+          totalItems={estimatedTotalRef.current}
+          totalPages={resolvedTotalPages}
+        />
+      </SectionCard>
 
       <Dialog
         open={planDialogOpen}
@@ -681,6 +743,6 @@ export function PlansClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageShell>
+    </WorkspacePage>
   );
 }

@@ -13,7 +13,9 @@ func SetupDeveloperRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Gu
 	{
 		developer.GET("/developer/dashboard/bootstrap", h.Society.GetDeveloperDashboardBootstrap)
 
+		developer.GET("/societies/search", h.Society.ListSocieties)
 		developer.GET("/societies", h.Society.ListSocieties)
+		developer.GET("/societies/:societyId/allmember", h.Society.ListAllSocietyMember)
 		developer.POST("/societies/:societyId/approve", h.Society.ApproveSociety)
 		developer.POST("/societies/:societyId/reject", h.Society.RejectSociety)
 		developer.POST("/societies/:societyId/suspend", h.Society.SuspendSociety)
@@ -33,12 +35,14 @@ func SetupDeveloperRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Gu
 		developer.POST("/subscriptions/:subscriptionId/expire", h.Subscription.ExpireSubscription)
 		developer.POST("/subscriptions/:subscriptionId/plans/:planId", h.Subscription.ChangeSubscriptionPlan)
 		developer.GET("/subscriptions/lookup", h.Subscription.GetSubscription)
+		developer.GET("/subscriptions/search", h.Subscription.ListSubscriptions)
 		developer.GET("/subscriptions", h.Subscription.ListSubscriptions)
 		developer.GET("/subscriptions/stats", h.Subscription.GetSubscriptionStats)
 
 		developer.GET("/flats", h.Flat.ListFlats)
 		developer.GET("/flat-claims", h.Flat.ListFlatClaims)
 		developer.GET("/flat-claims/:claimId", h.Flat.GetFlatClaim)
+		developer.GET("/flat-residents/search", h.Flat.ListFlatResidents)
 		developer.GET("/flat-residents", h.Flat.ListFlatResidents)
 	}
 }

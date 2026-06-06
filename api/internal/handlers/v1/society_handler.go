@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"go-server/internal/middlewares"
+	middleware "go-server/internal/middlewares"
 	"go-server/internal/models"
 	societysvc "go-server/internal/services/societySvc"
 	"go-server/pkg/utils"
@@ -850,10 +850,51 @@ func (h *SocietyHandler) ListSocietyMembers(c *gin.Context) {
 		return
 	}
 	filter, ok := listMembersFilterFromQuery(c, societyID)
+	// fmt.Printf("ListSocietyMembers filter: %+v\n", filter) // Debug log to check filter values
 	if !ok {
 		return
 	}
 	result, err := h.societySvc.ListSocietyMembers(c.Request.Context(), filter)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Members fetched successfully", gin.H{"members": result})
+}
+
+// ListAllSocietyMember godoc
+// @Summary List all society members for developer
+// @Description [Developer] Lists society members with filters without requiring owner/admin society membership.
+// @Tags Developer
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param search query string false "Search full name, email, phone, role, or status"
+// @Param role query string false "Member role"
+// @Param status query string false "Member status"
+// @Param user_id query int false "User ID"
+// @Param invited_by query int false "Invited by user ID"
+// @Param removed_by query int false "Removed by user ID"
+// @Param joined_from query string false "Joined from RFC3339 timestamp"
+// @Param joined_to query string false "Joined to RFC3339 timestamp"
+// @Param limit query int false "Limit" default(20)
+// @Param offset query int false "Offset" default(0)
+// @Param sort_by query string false "Sort by: joined_at, role, status"
+// @Param sort_order query string false "Sort order: asc, desc"
+// @Success 200 {object} models.PaginatedMembersAPIResponse "Members fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid query parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Unauthorized"
+// @Failure 403 {object} models.ErrorResponseDoc "Forbidden"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Router /v1/societies/{societyId}/allmember [get]
+func (h *SocietyHandler) ListAllSocietyMember(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	filter, ok := listMembersFilterFromQuery(c, societyID)
+	if !ok {
+		return
+	}
+	result, err := h.societySvc.ListAllSocietyMember(c.Request.Context(), filter)
 	if handleServiceError(c, err) {
 		return
 	}
@@ -893,16 +934,17 @@ func parseSocietyAndUser(c *gin.Context) (int64, int64, bool) {
 
 func listSocietiesFilterFromQuery(c *gin.Context) (models.ListSocietiesFilter, bool) {
 	filter := models.ListSocietiesFilter{
-		Status:    optionalString(c.Query("status")),
-		Search:    strings.TrimSpace(c.Query("search")),
-		Name:      strings.TrimSpace(c.Query("name")),
-		Code:      strings.TrimSpace(c.Query("code")),
-		City:      strings.TrimSpace(c.Query("city")),
-		State:     strings.TrimSpace(c.Query("state")),
-		Country:   strings.TrimSpace(c.Query("country")),
-		Pincode:   strings.TrimSpace(c.Query("pincode")),
-		SortBy:    strings.TrimSpace(c.Query("sort_by")),
-		SortOrder: strings.ToLower(strings.TrimSpace(c.Query("sort_order"))),
+		Status:     optionalString(c.Query("status")),
+		Search:     strings.TrimSpace(c.Query("search")),
+		SearchMode: strings.TrimSpace(c.Query("search_mode")),
+		Name:       strings.TrimSpace(c.Query("name")),
+		Code:       strings.TrimSpace(c.Query("code")),
+		City:       strings.TrimSpace(c.Query("city")),
+		State:      strings.TrimSpace(c.Query("state")),
+		Country:    strings.TrimSpace(c.Query("country")),
+		Pincode:    strings.TrimSpace(c.Query("pincode")),
+		SortBy:     strings.TrimSpace(c.Query("sort_by")),
+		SortOrder:  strings.ToLower(strings.TrimSpace(c.Query("sort_order"))),
 	}
 	if !queryInt64Ptr(c, "id", &filter.ID) || !queryInt64Ptr(c, "created_by", &filter.CreatedBy) ||
 		!queryInt64Ptr(c, "approved_by", &filter.ApprovedBy) || !queryInt64Ptr(c, "rejected_by", &filter.RejectedBy) ||
@@ -923,12 +965,13 @@ func listSocietiesFilterFromQuery(c *gin.Context) (models.ListSocietiesFilter, b
 
 func listMembersFilterFromQuery(c *gin.Context, societyID int64) (models.ListSocietyMembersFilter, bool) {
 	filter := models.ListSocietyMembersFilter{
-		SocietyID: societyID,
-		Search:    strings.TrimSpace(c.Query("search")),
-		Role:      optionalString(c.Query("role")),
-		Status:    optionalString(c.Query("status")),
-		SortBy:    strings.TrimSpace(c.Query("sort_by")),
-		SortOrder: strings.ToLower(strings.TrimSpace(c.Query("sort_order"))),
+		SocietyID:  societyID,
+		Search:     strings.TrimSpace(c.Query("search")),
+		SearchMode: strings.TrimSpace(c.Query("search_mode")),
+		Role:       optionalString(c.Query("role")),
+		Status:     optionalString(c.Query("status")),
+		SortBy:     strings.TrimSpace(c.Query("sort_by")),
+		SortOrder:  strings.ToLower(strings.TrimSpace(c.Query("sort_order"))),
 	}
 	if !queryInt64Ptr(c, "user_id", &filter.UserID) || !queryInt64Ptr(c, "invited_by", &filter.InvitedBy) ||
 		!queryInt64Ptr(c, "removed_by", &filter.RemovedBy) {

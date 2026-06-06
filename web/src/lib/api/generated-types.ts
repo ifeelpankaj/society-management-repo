@@ -2491,6 +2491,109 @@ export interface paths {
         };
         trace?: never;
     };
+    "/v1/societies/{societyId}/allmember": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all society members for developer
+         * @description [Developer] Lists society members with filters without requiring owner/admin society membership.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Search full name, email, phone, role, or status */
+                    search?: string;
+                    /** @description Member role */
+                    role?: string;
+                    /** @description Member status */
+                    status?: string;
+                    /** @description User ID */
+                    user_id?: number;
+                    /** @description Invited by user ID */
+                    invited_by?: number;
+                    /** @description Removed by user ID */
+                    removed_by?: number;
+                    /** @description Joined from RFC3339 timestamp */
+                    joined_from?: string;
+                    /** @description Joined to RFC3339 timestamp */
+                    joined_to?: string;
+                    /** @description Limit */
+                    limit?: number;
+                    /** @description Offset */
+                    offset?: number;
+                    /** @description Sort by: joined_at, role, status */
+                    sort_by?: string;
+                    /** @description Sort order: asc, desc */
+                    sort_order?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Members fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.PaginatedMembersAPIResponse"];
+                    };
+                };
+                /** @description Invalid query parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/societies/{societyId}/approve": {
         parameters: {
             query?: never;
@@ -3692,6 +3795,81 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/residents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List flat residents for a society flat
+         * @description [Owner/Admin/Staff] Lists residents for the flat identified in the path.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Resident role: owner, tenant, family */
+                    role?: string;
+                    /** @description Resident status: active, inactive, moved_out */
+                    status?: string;
+                    /** @description Primary resident flag */
+                    is_primary?: boolean;
+                    /** @description Search user, contact, flat, block, role, or status */
+                    search?: string;
+                    /** @description Limit */
+                    limit?: number;
+                    /** @description Offset */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Residents fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.FlatResidentsAPIResponse"];
+                    };
+                };
+                /** @description Invalid path or query parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;

@@ -1,5 +1,6 @@
 "use client";
 
+import { FilterPanel } from "@/components/data/filter-panel";
 import { ListToolbar } from "@/components/data/list-toolbar";
 import { PaginationFooter } from "@/components/data/pagination-footer";
 import { FilterSelect } from "@/components/forms/filter-select";
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { FlatsTable } from "@/features/admin/flats/components/flats-table";
 import type {
   ModelsFlatResponse,
@@ -26,11 +28,16 @@ type FlatsDirectoryCardProps = {
   isError: boolean;
   isFetching: boolean;
   isLoading: boolean;
-  onBlockToggle: (flat: ModelsFlatResponse) => void;
-  onDeactivate: (flat: ModelsFlatResponse) => void;
-  onEdit: (flat: ModelsFlatResponse) => void;
+  block: string;
+  floor: string;
+  flatNumber: string;
+  isActive: "all" | "true" | "false";
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  onBlockChange: (value: string) => void;
+  onFloorChange: (value: string) => void;
+  onFlatNumberChange: (value: string) => void;
+  onIsActiveChange: (value: "all" | "true" | "false") => void;
   onRefetch: () => void;
   onSearchChange: (value: string) => void;
   onStatusChange: (status: ModelsFlatStatus | "all") => void;
@@ -51,9 +58,14 @@ export function FlatsDirectoryCard({
   isError,
   isFetching,
   isLoading,
-  onBlockToggle,
-  onDeactivate,
-  onEdit,
+  block,
+  floor,
+  flatNumber,
+  isActive,
+  onBlockChange,
+  onFloorChange,
+  onFlatNumberChange,
+  onIsActiveChange,
   onPageChange,
   onPageSizeChange,
   onRefetch,
@@ -80,39 +92,63 @@ export function FlatsDirectoryCard({
                 : `${formatNumberIN(flats.length)} flats shown`}
             </CardDescription>
           </div>
-          <ListToolbar className="border-0 bg-transparent p-0 sm:flex-nowrap">
-            <SearchInput
-              className="min-w-[220px]"
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search flats"
-              value={search}
-            />
-            <FilterSelect
-              aria-label="Filter by status"
-              onChange={(event) =>
-                onStatusChange(event.target.value as ModelsFlatStatus | "all")
-              }
-              options={[
-                { label: "All statuses", value: "all" },
-                { label: "Vacant", value: "vacant" },
-                { label: "Occupied", value: "occupied" },
-                { label: "Blocked", value: "blocked" },
-              ]}
-              value={status}
-            />
-            <FilterSelect
-              aria-label="Rows per page"
-              onChange={(event) =>
-                onPageSizeChange(Number.parseInt(event.target.value, 10))
-              }
-              options={[
-                { label: "10 / page", value: "10" },
-                { label: "20 / page", value: "20" },
-                { label: "50 / page", value: "50" },
-              ]}
-              value={String(pageSize)}
-            />
-          </ListToolbar>
+          <div className="space-y-3">
+            <ListToolbar className="border-0 bg-transparent p-0 sm:grid sm:grid-cols-[minmax(220px,1fr)_160px]">
+              <SearchInput
+                className="min-w-[220px]"
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Search flats"
+                value={search}
+              />
+              <FilterSelect
+                aria-label="Filter by status"
+                onChange={(event) =>
+                  onStatusChange(event.target.value as ModelsFlatStatus | "all")
+                }
+                options={[
+                  { label: "All status", value: "all" },
+                  { label: "Vacant", value: "vacant" },
+                  { label: "Occupied", value: "occupied" },
+                  { label: "Blocked", value: "blocked" },
+                ]}
+                value={status}
+              />
+            </ListToolbar>
+            <FilterPanel>
+              <Input
+                aria-label="Filter by block"
+                onChange={(event) => onBlockChange(event.target.value)}
+                placeholder="Block"
+                value={block}
+              />
+              <Input
+                aria-label="Filter by floor"
+                onChange={(event) => onFloorChange(event.target.value)}
+                placeholder="Floor"
+                value={floor}
+              />
+              <Input
+                aria-label="Filter by flat number"
+                onChange={(event) => onFlatNumberChange(event.target.value)}
+                placeholder="Flat number"
+                value={flatNumber}
+              />
+              <FilterSelect
+                aria-label="Filter by active state"
+                onChange={(event) =>
+                  onIsActiveChange(
+                    event.target.value as "all" | "true" | "false",
+                  )
+                }
+                options={[
+                  { label: "All states", value: "all" },
+                  { label: "Active", value: "true" },
+                  { label: "Inactive", value: "false" },
+                ]}
+                value={isActive}
+              />
+            </FilterPanel>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -130,9 +166,6 @@ export function FlatsDirectoryCard({
               actionInProgress={actionInProgress}
               flats={flats}
               loading={isLoading}
-              onBlockToggle={onBlockToggle}
-              onDeactivate={onDeactivate}
-              onEdit={onEdit}
             />
             <PaginationFooter
               loading={isFetching}

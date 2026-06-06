@@ -52,9 +52,9 @@ func SuccessResponse(c *gin.Context, statusCode int, message string, data interf
 func ErrorResponse(c *gin.Context, statusCode int, code, message string, err error) {
 	// Build log fields
 	fields := []zap.Field{
-		zap.Int("status_code", statusCode),
+		zap.Int("status", statusCode),
 		zap.String("error_code", code),
-		zap.String("message", message),
+		zap.String("error_message", message),
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path),
 		zap.String("ip", c.ClientIP()),
@@ -264,9 +264,9 @@ func MultipleFieldValidationErrors(c *gin.Context, errors map[string]string) {
 // Example of enhanced ErrorResponseWithDetails with nil checks
 func ErrorResponseWithDetails(c *gin.Context, statusCode int, code, message string, details map[string]interface{}) {
 	fields := []zap.Field{
-		zap.Int("status_code", statusCode),
+		zap.Int("status", statusCode),
 		zap.String("error_code", code),
-		zap.String("message", message),
+		zap.String("error_message", message),
 		zap.String("path", c.Request.URL.Path),
 	}
 

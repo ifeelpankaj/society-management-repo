@@ -37,4 +37,3 @@ export default async function ResidentsPage({ params }: ResidentsPageProps) {
     />
   );
 }
-//Here only show one detail button in table action column

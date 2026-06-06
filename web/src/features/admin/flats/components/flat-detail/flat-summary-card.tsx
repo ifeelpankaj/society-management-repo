@@ -14,7 +14,6 @@ import { flatLabel } from "./flat-detail-utils";
 
 type FlatSummaryCardProps = {
   flat: ModelsFlatResponse;
-  flatId: number;
 };
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
@@ -26,7 +25,7 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-export function FlatSummaryCard({ flat, flatId }: FlatSummaryCardProps) {
+export function FlatSummaryCard({ flat }: FlatSummaryCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -49,7 +48,6 @@ export function FlatSummaryCard({ flat, flatId }: FlatSummaryCardProps) {
         />
         <DetailRow label="Created" value={formatShortDateIN(flat.created_at)} />
         <DetailRow label="Updated" value={formatShortDateIN(flat.updated_at)} />
-        <DetailRow label="Flat ID" value={`#${flat.id ?? flatId}`} />
       </CardContent>
     </Card>
   );
