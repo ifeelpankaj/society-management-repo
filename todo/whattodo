@@ -1,4 +1,4 @@
-//TODO In web/admin/dashboardflat add a details page where admin can see if he is primary member or not admin can chnage that member as family and transfer owership of flat not society
+<!-- //TODO In web/admin/dashboardflat add a details page where admin can see if he is primary member or not admin can chnage that member as family and transfer owership of flat not society
 //TODO then flat primary member can approve rejct claim as well as admin // Need todo this in app side not in web we are making for admin pannel here and dashboard
 //TODO in resident claim page need to add logout button and one user can claim multiple flat but that flat should be shown vactant until admin approve it
 //TODO in resident claim page also use form field and validation check for all thing except password
@@ -8,3 +8,543 @@
 //TODO admin can assign flat to any resident and that member who is primary member of that flat can become family member or tentat based on what admin decide
 //TODO admin can approve any claim weather its primary member or family member or tenant and only one member can be a primary member per flat either family tenant or owner if primary member claim is approved than all other claim as primary member for that flat can have only one primary member
 //TODO in ui only owner and tent can check isPrimary member checkbox not family
+Your current admin structure is actually quite good. I would **not remove much**. I would add a few things and slightly reorganize details. -->
+
+# Visitor Invite and Entry Flow
+
+## Summary
+
+Implement the full v1 backend flow for visitor invites, public QR/quick-link/guard entry creation, resident approval/rejection, QR validation, check-in/check-out, auto-close, history, and pending approvals.
+
+Use `VisitorSettingService.ResolveApprovalRequirement` as the rule authority. Source enablement is enforced before approval resolution:
+
+- `resident_link` requires `allow_resident_pre_approval=true`, then auto-approves.
+- `public_qr` and `quick_link` require `allow_public_qr_entry=true`.
+- `guard_entry` requires `allow_guard_entry=true`.
+- `quick_link` is treated like public QR for v1; a future `visitor_quick_links` table is out of scope.
+
+## Key Changes
+
+- Add visitor domain models for visitors, invites, entries, events, statuses, vehicle types, QR responses, filters, and request/response DTOs.
+- Extend `VisitorEntrySource` with `quick_link`; validation allows all four DB enum values.
+- Add public visitor-entry options DTOs that expose selectable blocks/flats and purpose list without resident data.
+- Add `queries/visitor_entries.sql` for sqlc covering visitors, invites, entries, events, QR lookup, lifecycle transitions, pending approvals, and history.
+- Add repositories:
+  - `VisitorRepository`
+  - `VisitorInviteRepository`
+  - `VisitorEntryRepository`
+  - `VisitorEntryEventRepository`
+- Add services:
+  - `VisitorInviteService`: `CreateInvite`, `GetInviteByToken`, `SubmitInviteForm`, `CancelInvite`, `ExpireOldInvites`
+  - `VisitorEntryService`: options lookup, public QR, quick-link, guard creation, approval/rejection, QR generation/validation, check-in/out, auto-close, get/list/history/pending approvals
+- Wire services/repositories/handlers in `app/dependency.go`.
+- Run sqlc generation after adding query files so `internal/db` includes visitor entry tables/enums.
+
+## Public API
+
+- Public:
+  - `GET /v1/public/societies/:societyId/visitor-entry-options`
+  - `GET /v1/public/visitor-invites/:token`
+  - `POST /v1/public/visitor-invites/:token/submit`
+  - `POST /v1/public/societies/:societyId/visitor-entries/public-qr`
+  - `POST /v1/public/societies/:societyId/visitor-entries/quick-link`
+  - `POST /v1/public/visitor-entries/qr/validate`
+- Resident authenticated:
+  - `POST /v1/societies/:societyId/flats/:flatId/visitor-invites`
+  - `POST /v1/societies/:societyId/visitor-invites/:inviteId/cancel`
+  - `GET /v1/societies/:societyId/flats/:flatId/visitor-entries/pending`
+  - `POST /v1/societies/:societyId/visitor-entries/:entryId/approve`
+  - `POST /v1/societies/:societyId/visitor-entries/:entryId/reject`
+- Staff/owner/admin:
+  - `POST /v1/societies/:societyId/visitor-entries/guard`
+  - `POST /v1/societies/:societyId/visitor-entries/check-in`
+  - `POST /v1/societies/:societyId/visitor-entries/:entryId/check-out`
+  - `GET /v1/societies/:societyId/visitor-entries`
+  - `GET /v1/societies/:societyId/visitor-entries/:entryId`
+  - `GET /v1/societies/:societyId/visitor-entries/:entryId/events`
+
+## Behavior
+
+- Public options endpoint:
+  - returns active flats grouped with non-sensitive flat/block fields only
+  - returns valid visitor purposes
+  - does not expose resident names, phone numbers, emails, or membership data
+- Invite submission transaction:
+  - validate active, unexpired invite by raw token hash
+  - ensure resident preapproval is enabled
+  - create visitor
+  - create entry with `source=resident_link`, `status=approved`
+  - mark invite `used`
+  - create `created`, `approved`, and `qr_generated` events
+  - generate QR token, store only hash, return raw token once
+- Public QR, quick-link, and guard creation transaction:
+  - create visitor
+  - call `ResolveApprovalRequirement`
+  - if approval required: create entry as `waiting_approval`, no QR, create `created` event
+  - if not required: create entry as `approved`, generate QR, create `created`, `approved`, and `qr_generated` events
+- Hybrid mode only checks `flat_visitor_settings.is_enabled`; mandatory and optional modes do not reject disabled flat purposes.
+- Approval/rejection auth:
+  - owner/admin can approve or reject any entry in the society
+  - primary resident of the entry flat can approve or reject
+  - non-primary family/member residents cannot approve or reject in v1
+- Approval:
+  - allowed only from `waiting_approval`
+  - sets `status=approved`, `approved_by`, generates QR, records `approved` and `qr_generated`
+- Rejection:
+  - allowed only from `waiting_approval`
+  - sets `status=rejected`, `rejected_by`, `rejection_reason`, records `rejected`
+- QR:
+  - raw token is returned only when generated
+  - DB stores `qr_token_hash`
+  - validation/check-in accepts raw token, hashes it, checks approved status and expiry
+- Notifications for this pass are event-only: no email, websocket, push, or separate notification table.
+
+## Test Plan
+
+- Unit tests for approval resolution:
+  - resident link disabled rejects
+  - resident link enabled auto-approves
+  - public QR/quick-link disabled rejects
+  - guard entry disabled rejects
+  - public QR mandatory waits
+  - public QR optional approves
+  - hybrid enabled/approval-required waits
+  - hybrid enabled/no-approval approves
+  - hybrid disabled rejects
+- Service tests for:
+  - invite create/get/submit/cancel/expire
+  - public options excludes resident data
+  - public/quick/guard entry creation
+  - approve/reject auth for owner/admin, primary resident, non-primary resident
+  - QR generated only for approved entries
+  - raw QR token not returned from normal get/list responses
+  - validate/check-in/check-out failures for expired, rejected, waiting, already checked-in/out states
+- Handler/route tests for representative happy paths and auth/role failures.
+- Run `go test ./...` after sqlc generation.
+
+## Assumptions
+
+- No migration change is needed for `quick_link`; it already exists in `visitor_source`.
+- A future `visitor_quick_links` table is intentionally deferred.
+- QR expiry uses `society_visitor_settings.qr_expiry_minutes`.
+- Invite expiry uses a service default unless the create-invite request explicitly provides `expires_at`.
+- Notification delivery beyond persisted `visitor_entry_events` is out of scope for this pass.
+  Now i am creating dashboard things for admin pannel and i am thinking about how to structure it in a way that it can scale when we have more features in future and also it should be easy to use for admin as well as for support team when they need to check some details for resident or flat or claim or visitor etc.
+  You can resuse most of current sturucture but add more details and also add some new pages for visitor management and visitor settings as well. and also add some new sections in existing pages for better details and management. I will write the structure and details below:
+
+# Flat Page
+
+Current:
+
+```txt
+Summary
+Flat table
+Flat details
+Add resident
+Flat resident management
+```
+
+Keep all of it.
+
+### Add in Flat Details
+
+```txt
+Occupancy Status
+  Vacant / Occupied
+
+Current Primary Resident
+
+Total Residents
+
+Visitor Settings
+  approval mode inherited?
+  purpose settings
+```
+
+Add a section:
+
+```txt
+Recent Visitors (last 10)
+```
+
+```txt
+Visitor Name
+Purpose
+Status
+Visited On
+```
+
+This becomes useful later.
+
+---
+
+# Resident Page
+
+Current structure is good.
+
+### Add in Resident Details
+
+Show:
+
+```txt
+Resident QR Status
+  Active
+  Suspended
+  Revoked
+```
+
+and
+
+```txt
+Recent Visitor Approvals
+```
+
+any active resident can approve visitors, so this becomes useful later.
+
+Example:
+
+```txt
+Approved 15 visitors
+Rejected 3 visitors
+```
+
+---
+
+# Claim Page
+
+Current structure is good.
+
+I would add:
+
+```txt
+Claim Timeline
+
+Created
+Reviewed
+Approved / Rejected
+```
+
+Makes support easier.
+
+---
+
+# New Visitor Module
+
+You should add a completely separate sidebar item:
+
+```txt
+Visitors
+```
+
+Do not put visitors under flats.
+
+Visitors become large later.
+
+---
+
+# Visitor Dashboard Summary
+
+Top cards:
+
+```txt
+Today's Visitors
+
+Visitors Inside
+
+Pending Approvals
+
+Checked Out Today
+
+Rejected Today
+
+Auto Closed
+```
+
+---
+
+# Visitor List Page
+
+Table:
+
+```txt
+Visitor Name
+
+Phone
+
+Flat
+
+Purpose
+
+Source
+
+Status
+
+Expected Time
+
+Check In
+
+Check Out
+
+Created At
+
+Actions
+```
+
+Filters:
+
+```txt
+Status
+
+Purpose
+
+Source
+
+Date Range
+
+Flat
+
+Block
+```
+
+---
+
+# Visitor Details Page
+
+This becomes the most important page.
+
+## Visitor Info
+
+```txt
+Name
+Phone
+Email
+Photo
+```
+
+## Visit Info
+
+```txt
+Purpose
+Source
+Status
+Vehicle
+Companions
+```
+
+## Flat Info
+
+```txt
+Flat Number
+Block
+Resident
+```
+
+Resident name should link to resident details.
+
+---
+
+## Timeline
+
+Show:
+
+```txt
+Created
+
+Approved
+
+QR Generated
+
+Checked In
+
+Checked Out
+
+Auto Closed
+```
+
+This comes from:
+
+```txt
+visitor_entry_events
+```
+
+---
+
+# Visitor Approvals Page
+
+Separate page.
+
+Table:
+
+```txt
+Visitor Name
+
+Flat
+
+Purpose
+
+Waiting Since
+
+Resident
+
+Actions
+```
+
+Buttons:
+
+```txt
+Approve
+Reject
+```
+
+Admin can intervene if resident is unavailable.
+
+---
+
+# Visitor Settings Page
+
+This should live under:
+
+```txt
+Society Settings
+  -> Visitor Settings
+```
+
+Not in visitor list.
+
+---
+
+## Society Visitor Settings
+
+Show:
+
+```txt
+Approval Mode
+
+Mandatory
+Optional
+Hybrid
+```
+
+Toggle:
+
+```txt
+Allow Resident Pre Approval
+
+Allow Public QR
+
+Allow Guard Entry
+```
+
+Numbers:
+
+```txt
+Default Visit Duration
+
+Grace Period
+
+QR Expiry
+```
+
+---
+
+## Flat Visitor Rules
+
+Table:
+
+```txt
+Flat
+Purpose
+Approval Required
+Enabled
+Duration
+```
+
+Example:
+
+```txt
+A101 Guest      Yes
+A101 Delivery   No
+A101 Cab        No
+```
+
+Admin can override.
+
+---
+
+# One page missing in your current admin
+
+I would add:
+
+```txt
+Audit Logs
+```
+
+For:
+
+```txt
+Resident suspended
+
+Flat deactivated
+
+Ownership transferred
+
+Visitor approved
+
+Visitor rejected
+
+Claim approved
+```
+
+Very useful later.
+
+---
+
+# One thing I would change
+
+Currently resident details contain:
+
+```txt
+Flat Ownership Section
+```
+
+I would rename it:
+
+```txt
+Residences
+```
+
+Because user may:
+
+```txt
+Own Flat A101
+Tenant in B302
+Family in C105
+```
+
+"Ownership" becomes misleading.
+
+---
+
+# Final Sidebar
+
+```txt
+Dashboard
+
+Flats
+
+Residents
+
+Claims
+
+Visitors
+
+Society Settings
+  - General
+  - Visitor Settings
+
+Audit Logs
+```
+
+This structure will scale much better when visitor traffic starts increasing. 2. Pagination + filters on every table 3. Soft-delete/status instead of hard delete for important records 4. Clear permission rules per action 5. Background jobs for invite expiry, QR expiry, auto-close 6. Notification layer later 7. Dashboard stats from queries, not frontend calculation
+Visitor approval = any active resident of that flat OR owner/admin
+Visitor setting changes = primary resident OR owner/admin
