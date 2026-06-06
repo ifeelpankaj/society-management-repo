@@ -31,6 +31,8 @@ func SetupAdminRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guards
 		admin.PATCH("", h.Society.UpdateSociety)
 		admin.GET("/visitor-settings", h.VisitorSetting.GetSocietySettings)
 		admin.PATCH("/visitor-settings", h.VisitorSetting.UpdateSocietySettings)
+		admin.GET("/visitor-settings/flats", h.VisitorSetting.ListSocietyFlatSettings)
+		admin.GET("/members/:memberId/visitor-approval-stats", h.VisitorEntry.GetMemberVisitorApprovalStats)
 		admin.POST("/members", h.Society.AddMember)
 		admin.PATCH("/members/:userId/role", h.Society.ChangeMemberRole)
 		admin.POST("/members/:userId/suspend", h.Society.SuspendMember)
@@ -60,10 +62,13 @@ func SetupAdminRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guards
 		staffRead.GET("/flat-claims/:claimId", h.Flat.GetSocietyFlatClaim)
 		staffRead.POST("/visitor-entries/guard", h.VisitorEntry.CreateGuardEntry)
 		staffRead.POST("/visitor-entries/check-in", h.VisitorEntry.CheckIn)
-		staffRead.POST("/visitor-entries/:entryId/check-out", h.VisitorEntry.CheckOut)
+		staffRead.GET("/visitor-entries/stats", h.VisitorEntry.GetEntryStats)
+		staffRead.GET("/visitor-entries/pending", h.VisitorEntry.ListSocietyPendingApprovals)
 		staffRead.GET("/visitor-entries", h.VisitorEntry.ListEntries)
 		staffRead.GET("/visitor-entries/:entryId", h.VisitorEntry.GetEntry)
 		staffRead.GET("/visitor-entries/:entryId/events", h.VisitorEntry.ListEvents)
+		staffRead.POST("/visitor-entries/:entryId/check-out", h.VisitorEntry.CheckOut)
+		staffRead.GET("/flats/:flatId/visitor-context", h.VisitorEntry.GetFlatVisitorContext)
 	}
 
 	operationalAdmin := rg.Group("/societies/:societyId")

@@ -145,8 +145,107 @@ WHERE ve.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('status')::visitor_status IS NULL OR ve.status = sqlc.narg('status')::visitor_status)
   AND (sqlc.narg('source')::visitor_source IS NULL OR ve.source = sqlc.narg('source')::visitor_source)
   AND (sqlc.narg('purpose')::visitor_purpose IS NULL OR ve.purpose = sqlc.narg('purpose')::visitor_purpose)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('created_from')::timestamptz IS NULL OR ve.created_at >= sqlc.narg('created_from')::timestamptz)
+  AND (sqlc.narg('created_to')::timestamptz IS NULL OR ve.created_at <= sqlc.narg('created_to')::timestamptz)
 ORDER BY ve.created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountVisitorEntries :one
+SELECT COUNT(*)
+FROM visitor_entries ve
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND (sqlc.narg('flat_id')::bigint IS NULL OR ve.flat_id = sqlc.narg('flat_id')::bigint)
+  AND (sqlc.narg('status')::visitor_status IS NULL OR ve.status = sqlc.narg('status')::visitor_status)
+  AND (sqlc.narg('source')::visitor_source IS NULL OR ve.source = sqlc.narg('source')::visitor_source)
+  AND (sqlc.narg('purpose')::visitor_purpose IS NULL OR ve.purpose = sqlc.narg('purpose')::visitor_purpose)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('created_from')::timestamptz IS NULL OR ve.created_at >= sqlc.narg('created_from')::timestamptz)
+  AND (sqlc.narg('created_to')::timestamptz IS NULL OR ve.created_at <= sqlc.narg('created_to')::timestamptz);
+
+-- name: GetVisitorEntryStats :one
+SELECT
+    COUNT(*) FILTER (
+        WHERE ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )::bigint AS today_visitors,
+    COUNT(*) FILTER (WHERE ve.status = 'checked_in')::bigint AS visitors_inside,
+    COUNT(*) FILTER (WHERE ve.status = 'waiting_approval')::bigint AS pending_approvals,
+    COUNT(*) FILTER (
+        WHERE ve.checked_out_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )::bigint AS checked_out_today,
+    COUNT(*) FILTER (
+        WHERE ve.status = 'rejected'
+          AND ve.updated_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )::bigint AS rejected_today,
+    COUNT(*) FILTER (
+        WHERE ve.auto_closed_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )::bigint AS auto_closed_today
+FROM visitor_entries ve
+WHERE ve.society_id = $1;
+
+-- name: ListSocietyPendingVisitorApprovals :many
+SELECT
+    ve.*,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor,
+    u.full_name AS primary_resident_name,
+    fr.id AS primary_resident_id
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flat_residents fr
+    ON fr.flat_id = ve.flat_id
+   AND fr.society_id = ve.society_id
+   AND fr.status = 'active'
+   AND fr.is_primary = TRUE
+LEFT JOIN users u ON u.id = fr.user_id
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.status = 'waiting_approval'
+  AND (sqlc.narg('flat_id')::bigint IS NULL OR ve.flat_id = sqlc.narg('flat_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+ORDER BY ve.created_at ASC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountSocietyPendingVisitorApprovals :one
+SELECT COUNT(*)
+FROM visitor_entries ve
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.status = 'waiting_approval'
+  AND (sqlc.narg('flat_id')::bigint IS NULL OR ve.flat_id = sqlc.narg('flat_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text);
+
+-- name: CountMemberVisitorApprovals :one
+SELECT
+    COUNT(*) FILTER (WHERE ve.approved_by = $2)::bigint AS approved_count,
+    COUNT(*) FILTER (WHERE ve.rejected_by = $2)::bigint AS rejected_count
+FROM visitor_entries ve
+WHERE ve.society_id = $1
+  AND (ve.approved_by = $2 OR ve.rejected_by = $2);
+
+-- name: ListRecentVisitorEntriesByFlat :many
+SELECT
+    ve.*,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = $1
+  AND ve.flat_id = $2
+ORDER BY ve.created_at DESC
+LIMIT $3;
 
 -- name: ListPendingVisitorApprovals :many
 SELECT

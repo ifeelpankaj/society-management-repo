@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { WorkspacePage } from "@/components/shared/workspace-page";
 import { Button } from "@/components/ui/button";
-import { useFlatDetail } from "@/features/admin/flats/hooks";
+import { useFlatDetail, useFlatVisitorContext } from "@/features/admin/flats/hooks";
 import type {
   ModelsFlatResidentRole,
   ModelsFlatStatus,
@@ -17,8 +17,11 @@ import { paths } from "@/lib/routes/paths";
 
 import { FlatDetailDialogs } from "./flat-detail-dialogs";
 import { FlatDetailHeader } from "./flat-detail-header";
+import { FlatOccupancyCard } from "./flat-occupancy-card";
+import { FlatRecentVisitorsTable } from "./flat-recent-visitors-table";
 import { FlatResidentsTable } from "./flat-residents-table";
 import { FlatSummaryCard, flatLabel } from "./flat-summary-card";
+import { FlatVisitorSettingsSummary } from "./flat-visitor-settings-summary";
 
 type FlatDetailClientProps = {
   societyId: number;
@@ -62,6 +65,7 @@ export function FlatDetailClient({
   const [editIsActive, setEditIsActive] = useState("true");
 
   const detail = useFlatDetail({ societyId, flatId, addOpen, memberSearch });
+  const visitorContext = useFlatVisitorContext({ societyId, flatId });
 
   useEffect(() => {
     if (!detail.flat || !editOpen) return;
@@ -122,6 +126,23 @@ export function FlatDetailClient({
       />
 
       <FlatSummaryCard flat={detail.flat} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <FlatOccupancyCard
+          context={visitorContext.context}
+          loading={visitorContext.isLoading}
+        />
+        <FlatVisitorSettingsSummary
+          context={visitorContext.context}
+          loading={visitorContext.isLoading}
+        />
+      </div>
+
+      <FlatRecentVisitorsTable
+        context={visitorContext.context}
+        loading={visitorContext.isLoading}
+        societyId={societyId}
+      />
 
       <FlatResidentsTable
         buildResidentDetailHref={resolveResidentHref}

@@ -52,4 +52,12 @@ export const paths = {
   claims: (societyId: number) => societyPath(societyId, "claims"),
   claimDetail: (societyId: number, claimId: number) =>
     `${societyPath(societyId, "claims")}/${claimId}`,
+  visitors: (societyId: number) => societyPath(societyId, "visitors"),
+  visitorApprovals: (societyId: number) =>
+    societyPath(societyId, "visitors/approvals"),
+  visitorDetail: (societyId: number, entryId: number) =>
+    `${societyPath(societyId, "visitors")}/${entryId}`,
+  settingsVisitors: (societyId: number) =>
+    societyPath(societyId, "settings/visitors"),
+  auditLogs: (societyId: number) => societyPath(societyId, "audit-logs"),
 } as const;

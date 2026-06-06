@@ -18,6 +18,7 @@ type VisitorSettingService interface {
 	UpdateFlatPurposeSetting(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, req models.UpdateFlatVisitorSettingRequest, actorUserID int64) (*models.FlatVisitorSettingsResponse, error)
 	ResetFlatSettingsToDefault(ctx context.Context, societyID int64, flatID int64, actorUserID int64) error
 	ResolveApprovalRequirement(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, source models.VisitorEntrySource) (bool, error)
+	ListSocietyFlatSettings(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) (*models.SocietyFlatVisitorSettingsListResult, error)
 }
 
 type VisitorSettingSvc struct {
@@ -267,6 +268,28 @@ func ensureSourceEnabled(settings *models.SocietyVisitorSettings, source models.
 		return ErrInvalidVisitorSettings
 	}
 	return nil
+}
+
+func (s *VisitorSettingSvc) ListSocietyFlatSettings(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) (*models.SocietyFlatVisitorSettingsListResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	settings, err := s.settingsRepo.ListSocietyFlat(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	total, err := s.settingsRepo.CountSocietyFlat(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	return &models.SocietyFlatVisitorSettingsListResult{
+		Settings: settings,
+		Total:    total,
+		Limit:    filter.Limit,
+		Offset:   filter.Offset,
+	}, nil
 }
 
 var _ VisitorSettingService = (*VisitorSettingSvc)(nil)

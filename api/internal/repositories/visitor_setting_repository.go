@@ -17,6 +17,8 @@ type VisitorSettingRepository interface {
 	UpdateSociety(ctx context.Context, societyID int64, req models.UpdateSocietyVisitorSettingsRequest, actorUserID int64) (*models.SocietyVisitorSettings, error)
 	CreateDefaultFlat(ctx context.Context, societyID int64, flatID int64, actorUserID int64) error
 	ListFlat(ctx context.Context, societyID int64, flatID int64) ([]*models.FlatVisitorSettings, error)
+	ListSocietyFlat(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) ([]*models.SocietyFlatVisitorSettingRow, error)
+	CountSocietyFlat(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) (int64, error)
 	GetFlatPurpose(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose) (*models.FlatVisitorSettings, error)
 	UpdateFlatPurpose(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, req models.UpdateFlatVisitorSettingRequest, actorUserID int64) (*models.FlatVisitorSettings, error)
 	DeleteFlat(ctx context.Context, societyID int64, flatID int64) error
@@ -82,6 +84,42 @@ func (r *visitorSettingRepository) ListFlat(ctx context.Context, societyID int64
 		items = append(items, flatVisitorSettingsFromDB(row))
 	}
 	return items, nil
+}
+
+func (r *visitorSettingRepository) ListSocietyFlat(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) ([]*models.SocietyFlatVisitorSettingRow, error) {
+	rows, err := GetQueries(ctx, r.db).ListSocietyFlatVisitorSettings(ctx, db.ListSocietyFlatVisitorSettingsParams{
+		SocietyID: filter.SocietyID,
+		FlatID:    filter.FlatID,
+		Block:     filter.Block,
+		Purpose:   dbVisitorPurposePtr(filter.Purpose),
+		Limit:     normalizeVisitorLimit(filter.Limit),
+		Offset:    normalizeOffset(filter.Offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*models.SocietyFlatVisitorSettingRow, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, &models.SocietyFlatVisitorSettingRow{
+			FlatID:                      row.FlatID,
+			FlatNumber:                  row.FlatNumber,
+			Block:                       row.Block,
+			Purpose:                     models.VisitorPurpose(row.Purpose),
+			ApprovalRequired:            row.ApprovalRequired,
+			IsEnabled:                   row.IsEnabled,
+			DefaultVisitDurationMinutes: row.DefaultVisitDurationMinutes,
+		})
+	}
+	return items, nil
+}
+
+func (r *visitorSettingRepository) CountSocietyFlat(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) (int64, error) {
+	return GetQueries(ctx, r.db).CountSocietyFlatVisitorSettings(ctx, db.CountSocietyFlatVisitorSettingsParams{
+		SocietyID: filter.SocietyID,
+		FlatID:    filter.FlatID,
+		Block:     filter.Block,
+		Purpose:   dbVisitorPurposePtr(filter.Purpose),
+	})
 }
 
 func (r *visitorSettingRepository) GetFlatPurpose(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose) (*models.FlatVisitorSettings, error) {

@@ -29,6 +29,7 @@ import {
   ConfirmReasonDialog,
   DetailPageLayout,
   StatusHero,
+  TimelineCard,
 } from "@/features/shared/detail-page";
 import type { ModelsFlatResidentResponse } from "@/lib/api/generated-api";
 import { formatShortDateIN, titleCaseFromSnake } from "@/lib/format";
@@ -250,6 +251,31 @@ export function ClaimDetailClient({
                     showActions={false}
                   />
                 </SectionCard>
+
+                <TimelineCard
+                  description="Support-friendly history for this claim."
+                  items={[
+                    {
+                      id: "created",
+                      label: "Created",
+                      value: claim.created_at,
+                    },
+                    {
+                      id: "reviewed",
+                      label: "Reviewed",
+                      value: claim.reviewed_at,
+                    },
+                    {
+                      id: "status",
+                      label: "Status",
+                      value: claim.status
+                        ? titleCaseFromSnake(claim.status)
+                        : null,
+                      format: "text",
+                    },
+                  ]}
+                  title="Claim timeline"
+                />
 
                 <SectionCard
                   description="People currently linked to this flat"

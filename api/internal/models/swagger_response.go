@@ -315,6 +315,65 @@ type VisitorEntryData struct {
 
 type VisitorEntriesData struct {
 	Entries []*VisitorEntry `json:"entries"`
+	Total   int64           `json:"total,omitempty"`
+	Limit   int32           `json:"limit,omitempty"`
+	Offset  int32           `json:"offset,omitempty"`
+}
+
+type VisitorEntryStatsData struct {
+	Stats *VisitorEntryStatsResponse `json:"stats"`
+}
+
+type VisitorEntryStatsAPIResponse struct {
+	Success bool                  `json:"success" example:"true"`
+	Message string                `json:"message" example:"Visitor entry stats fetched successfully"`
+	Data    VisitorEntryStatsData `json:"data"`
+}
+
+type VisitorPendingEntriesData struct {
+	Entries []*VisitorPendingEntry `json:"entries"`
+	Total   int64                  `json:"total"`
+	Limit   int32                  `json:"limit"`
+	Offset  int32                  `json:"offset"`
+}
+
+type VisitorPendingEntriesAPIResponse struct {
+	Success bool                      `json:"success" example:"true"`
+	Message string                    `json:"message" example:"Pending visitor approvals fetched successfully"`
+	Data    VisitorPendingEntriesData `json:"data"`
+}
+
+type FlatVisitorContextData struct {
+	Context *FlatVisitorContextResponse `json:"context"`
+}
+
+type FlatVisitorContextAPIResponse struct {
+	Success bool                   `json:"success" example:"true"`
+	Message string                 `json:"message" example:"Flat visitor context fetched successfully"`
+	Data    FlatVisitorContextData `json:"data"`
+}
+
+type MemberVisitorApprovalStatsData struct {
+	Stats *MemberVisitorApprovalStatsResponse `json:"stats"`
+}
+
+type MemberVisitorApprovalStatsAPIResponse struct {
+	Success bool                           `json:"success" example:"true"`
+	Message string                         `json:"message" example:"Member visitor approval stats fetched successfully"`
+	Data    MemberVisitorApprovalStatsData `json:"data"`
+}
+
+type SocietyFlatVisitorSettingsData struct {
+	Settings []*SocietyFlatVisitorSettingRow `json:"settings"`
+	Total    int64                           `json:"total"`
+	Limit    int32                           `json:"limit"`
+	Offset   int32                           `json:"offset"`
+}
+
+type SocietyFlatVisitorSettingsAPIResponse struct {
+	Success bool                           `json:"success" example:"true"`
+	Message string                         `json:"message" example:"Society flat visitor settings fetched successfully"`
+	Data    SocietyFlatVisitorSettingsData `json:"data"`
 }
 
 type VisitorEntryEventsData struct {

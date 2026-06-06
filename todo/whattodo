@@ -1,15 +1,3 @@
-<!-- //TODO In web/admin/dashboardflat add a details page where admin can see if he is primary member or not admin can chnage that member as family and transfer owership of flat not society
-//TODO then flat primary member can approve rejct claim as well as admin // Need todo this in app side not in web we are making for admin pannel here and dashboard
-//TODO in resident claim page need to add logout button and one user can claim multiple flat but that flat should be shown vactant until admin approve it
-//TODO in resident claim page also use form field and validation check for all thing except password
-//TODO for now direct register must make email verified false as well phone verified false
-//TODO in flat claim page filter need to be chnaged as all claim fisrt same for developer society
-//TODO add search bar in claim resdient and flat page
-//TODO admin can assign flat to any resident and that member who is primary member of that flat can become family member or tentat based on what admin decide
-//TODO admin can approve any claim weather its primary member or family member or tenant and only one member can be a primary member per flat either family tenant or owner if primary member claim is approved than all other claim as primary member for that flat can have only one primary member
-//TODO in ui only owner and tent can check isPrimary member checkbox not family
-Your current admin structure is actually quite good. I would **not remove much**. I would add a few things and slightly reorganize details. -->
-
 # Visitor Invite and Entry Flow
 
 ## Summary

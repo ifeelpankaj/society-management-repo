@@ -7,9 +7,13 @@ import {
   LayoutDashboard,
   LogOut,
   Moon,
+  Settings,
+  ShieldCheck,
   Sun,
+  UserCheck,
   UsersRound,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -18,7 +22,10 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useAdminSocietySession } from "@/features/admin/society/hooks/use-admin-society";
-import { getSocietyDashboardRoute } from "@/features/auth/auth-routing";
+import {
+  getSocietyDashboardRoute,
+  isAdminSetupRole,
+} from "@/features/auth/auth-routing";
 import { clearClientSession } from "@/features/auth/logout";
 import { usePostV1AuthLogoutMutation } from "@/lib/api/generated-api";
 import { getApiErrorMessage, getApiMessage } from "@/lib/api-message";
@@ -26,7 +33,25 @@ import { appConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/store";
 
-const navGroups = [
+type NavChild = {
+  label: string;
+  segment: string;
+};
+
+type NavItem = {
+  label: string;
+  segment: string;
+  icon: LucideIcon;
+  ownerAdminOnly?: boolean;
+  children?: NavChild[];
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
   {
     label: "Overview",
     items: [{ label: "Dashboard", segment: "", icon: LayoutDashboard }],
@@ -37,13 +62,58 @@ const navGroups = [
       { label: "Flats", segment: "flats", icon: Home },
       { label: "Residents", segment: "residents", icon: UsersRound },
       { label: "Claims", segment: "claims", icon: ClipboardList },
+      { label: "Visitors", segment: "visitors", icon: UserCheck },
+    ],
+  },
+  {
+    label: "Configuration",
+    items: [
+      {
+        label: "Society Settings",
+        segment: "settings/visitors",
+        icon: Settings,
+        ownerAdminOnly: true,
+        children: [
+          { label: "General", segment: "settings/visitors" },
+          { label: "Visitor Settings", segment: "settings/visitors" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Compliance",
+    items: [
+      {
+        label: "Audit Logs",
+        segment: "audit-logs",
+        icon: ShieldCheck,
+        ownerAdminOnly: true,
+      },
     ],
   },
 ];
 
+type ResolvedNavChild = NavChild & { href: string };
+
+type ResolvedNavItem = Omit<NavItem, "children"> & {
+  href: string;
+  children?: ResolvedNavChild[];
+};
+
 function getSidebarItemHref(societyId: number, segment: string) {
   const dashboardRoute = getSocietyDashboardRoute(societyId);
   return segment ? `${dashboardRoute}/${segment}` : dashboardRoute;
+}
+
+function resolveNavItem(societyId: number, item: NavItem): ResolvedNavItem {
+  return {
+    ...item,
+    href: getSidebarItemHref(societyId, item.segment),
+    children: item.children?.map((child) => ({
+      ...child,
+      href: getSidebarItemHref(societyId, child.segment),
+    })),
+  };
 }
 
 function getInitials(name?: string) {
@@ -124,6 +194,7 @@ function AppSidebar({ societyId }: { societyId?: number }) {
     selectedSociety,
     selectedSocietyId,
   } = useAdminSocietySession({ selectedSocietyId: societyId });
+  const canManageSettings = isAdminSetupRole(selectedMembershipRole);
   const userName = mounted
     ? (user?.full_name ?? user?.email ?? "Profile")
     : "Profile";
@@ -134,10 +205,9 @@ function AppSidebar({ societyId }: { societyId?: number }) {
   const scopedNavGroups = activeSocietyId
     ? navGroups.map((group) => ({
         ...group,
-        items: group.items.map((item) => ({
-          ...item,
-          href: getSidebarItemHref(activeSocietyId, item.segment),
-        })),
+        items: group.items
+          .map((item) => resolveNavItem(activeSocietyId, item))
+          .filter((item) => !item.ownerAdminOnly || canManageSettings),
       }))
     : [];
   const staffNavHrefs = activeSocietyId
@@ -145,6 +215,7 @@ function AppSidebar({ societyId }: { societyId?: number }) {
         getSidebarItemHref(activeSocietyId, ""),
         getSidebarItemHref(activeSocietyId, "flats"),
         getSidebarItemHref(activeSocietyId, "claims"),
+        getSidebarItemHref(activeSocietyId, "visitors"),
       ]
     : [];
   const visibleNavGroups = scopedNavGroups
@@ -232,24 +303,54 @@ function AppSidebar({ societyId }: { societyId?: number }) {
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = isActivePath(pathname, item.href);
+              const childActive = item.children?.some((child) =>
+                isActivePath(pathname, child.href),
+              );
+              const showChildren = Boolean(
+                item.children?.length && (active || childActive),
+              );
 
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "group relative flex items-center gap-3 rounded-md px-3 py-2.5 font-medium text-sm transition-all duration-200",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                  {active ? (
-                    <span className="ml-auto size-1.5 rounded-full bg-primary-foreground/80" />
+                <div key={item.href} className="space-y-1">
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "group relative flex items-center gap-3 rounded-md px-3 py-2.5 font-medium text-sm transition-all duration-200",
+                      active || childActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                    {active || childActive ? (
+                      <span className="ml-auto size-1.5 rounded-full bg-primary-foreground/80" />
+                    ) : null}
+                  </Link>
+
+                  {showChildren ? (
+                    <div className="ml-4 space-y-1 border-border/70 border-l pl-2">
+                      {item.children?.map((child) => {
+                        const childIsActive = isActivePath(pathname, child.href);
+
+                        return (
+                          <Link
+                            key={`${item.href}-${child.label}`}
+                            href={child.href}
+                            className={cn(
+                              "block rounded-md px-3 py-2 text-sm transition-colors",
+                              childIsActive
+                                ? "bg-muted font-medium text-foreground"
+                                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                            )}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   ) : null}
-                </Link>
+                </div>
               );
             })}
           </div>

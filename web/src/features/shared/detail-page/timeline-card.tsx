@@ -5,6 +5,7 @@ export type TimelineItem = {
   id: string;
   label: string;
   value?: string | null;
+  format?: "date" | "text";
 };
 
 type TimelineCardProps = {
@@ -30,7 +31,9 @@ export function TimelineCard({
               {item.label}
             </dt>
             <dd className="mt-1 font-medium text-sm">
-              {formatShortDateIN(item.value ?? undefined, "Not set")}
+              {item.format === "text"
+                ? (item.value ?? "Not set")
+                : formatShortDateIN(item.value ?? undefined, "Not set")}
             </dd>
           </div>
         ))}

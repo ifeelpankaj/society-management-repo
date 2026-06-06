@@ -33,7 +33,13 @@ type VisitorEntryRepository interface {
 	Get(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error)
 	GetByQRHash(ctx context.Context, qrHash string) (*models.VisitorEntry, error)
 	List(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
+	Count(ctx context.Context, filter models.VisitorEntryFilter) (int64, error)
 	ListPending(ctx context.Context, societyID int64, flatID int64) ([]*models.VisitorEntry, error)
+	ListSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) ([]*models.VisitorPendingEntry, error)
+	CountSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) (int64, error)
+	ListRecentByFlat(ctx context.Context, societyID int64, flatID int64, limit int32) ([]*models.VisitorEntry, error)
+	GetStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	Approve(ctx context.Context, societyID int64, entryID int64, actorUserID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error)
 	Reject(ctx context.Context, societyID int64, entryID int64, actorUserID int64, reason string) (*models.VisitorEntry, error)
 	GenerateQR(ctx context.Context, societyID int64, entryID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error)
@@ -162,10 +168,63 @@ func (r *visitorEntryRepository) GetByQRHash(ctx context.Context, qrHash string)
 }
 
 func (r *visitorEntryRepository) List(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error) {
-	rows, err := GetQueries(ctx, r.db).ListVisitorEntries(ctx, db.ListVisitorEntriesParams{
-		SocietyID: filter.SocietyID, FlatID: filter.FlatID, Status: dbVisitorStatusPtr(filter.Status),
-		Source: dbVisitorSourcePtr(filter.Source), Purpose: dbVisitorPurposePtr(filter.Purpose),
-		Limit: normalizeVisitorLimit(filter.Limit), Offset: normalizeOffset(filter.Offset),
+	params := visitorEntryListParams(filter)
+	rows, err := GetQueries(ctx, r.db).ListVisitorEntries(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*models.VisitorEntry, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, visitorEntryFromList(row))
+	}
+	return items, nil
+}
+
+func (r *visitorEntryRepository) Count(ctx context.Context, filter models.VisitorEntryFilter) (int64, error) {
+	params := visitorEntryCountParams(filter)
+	return GetQueries(ctx, r.db).CountVisitorEntries(ctx, params)
+}
+
+func (r *visitorEntryRepository) ListSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) ([]*models.VisitorPendingEntry, error) {
+	rows, err := GetQueries(ctx, r.db).ListSocietyPendingVisitorApprovals(ctx, db.ListSocietyPendingVisitorApprovalsParams{
+		SocietyID: filter.SocietyID,
+		FlatID:    filter.FlatID,
+		Block:     filter.Block,
+		Limit:     normalizeVisitorLimit(filter.Limit),
+		Offset:    normalizeOffset(filter.Offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*models.VisitorPendingEntry, 0, len(rows))
+	for _, row := range rows {
+		entry := visitorEntryFromSocietyPending(row)
+		items = append(items, &models.VisitorPendingEntry{
+			VisitorEntry:        entry,
+			WaitingSince:        entry.CreatedAt,
+			PrimaryResidentName: row.PrimaryResidentName,
+			PrimaryResidentID:   row.PrimaryResidentID,
+		})
+	}
+	return items, nil
+}
+
+func (r *visitorEntryRepository) CountSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) (int64, error) {
+	return GetQueries(ctx, r.db).CountSocietyPendingVisitorApprovals(ctx, db.CountSocietyPendingVisitorApprovalsParams{
+		SocietyID: filter.SocietyID,
+		FlatID:    filter.FlatID,
+		Block:     filter.Block,
+	})
+}
+
+func (r *visitorEntryRepository) ListRecentByFlat(ctx context.Context, societyID int64, flatID int64, limit int32) ([]*models.VisitorEntry, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	rows, err := GetQueries(ctx, r.db).ListRecentVisitorEntriesByFlat(ctx, db.ListRecentVisitorEntriesByFlatParams{
+		SocietyID: societyID,
+		FlatID:    flatID,
+		Limit:     limit,
 	})
 	if err != nil {
 		return nil, err
@@ -175,6 +234,35 @@ func (r *visitorEntryRepository) List(ctx context.Context, filter models.Visitor
 		items = append(items, visitorEntryFromList(row))
 	}
 	return items, nil
+}
+
+func (r *visitorEntryRepository) GetStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error) {
+	row, err := GetQueries(ctx, r.db).GetVisitorEntryStats(ctx, societyID)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VisitorEntryStatsResponse{
+		TodayVisitors:    row.TodayVisitors,
+		VisitorsInside:   row.VisitorsInside,
+		PendingApprovals: row.PendingApprovals,
+		CheckedOutToday:  row.CheckedOutToday,
+		RejectedToday:    row.RejectedToday,
+		AutoClosedToday:  row.AutoClosedToday,
+	}, nil
+}
+
+func (r *visitorEntryRepository) CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error) {
+	row, err := GetQueries(ctx, r.db).CountMemberVisitorApprovals(ctx, db.CountMemberVisitorApprovalsParams{
+		SocietyID: societyID,
+		UserID:    userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &models.MemberVisitorApprovalStatsResponse{
+		ApprovedCount: row.ApprovedCount,
+		RejectedCount: row.RejectedCount,
+	}, nil
 }
 
 func (r *visitorEntryRepository) ListPending(ctx context.Context, societyID int64, flatID int64) ([]*models.VisitorEntry, error) {
@@ -330,6 +418,37 @@ func visitorEntryFromList(row db.ListVisitorEntriesRow) *models.VisitorEntry {
 func visitorEntryFromPending(row db.ListPendingVisitorApprovalsRow) *models.VisitorEntry {
 	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
+
+func visitorEntryFromSocietyPending(row db.ListSocietyPendingVisitorApprovalsRow) *models.VisitorEntry {
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+}
+
+func visitorEntryListParams(filter models.VisitorEntryFilter) db.ListVisitorEntriesParams {
+	return db.ListVisitorEntriesParams{
+		SocietyID: filter.SocietyID,
+		FlatID:    filter.FlatID,
+		Status:    dbVisitorStatusPtr(filter.Status),
+		Source:    dbVisitorSourcePtr(filter.Source),
+		Purpose:   dbVisitorPurposePtr(filter.Purpose),
+		Block:     filter.Block,
+		CreatedFrom: timePtrToPgTimestamptz(filter.CreatedFrom),
+		CreatedTo:   timePtrToPgTimestamptz(filter.CreatedTo),
+		Limit:     normalizeVisitorLimit(filter.Limit),
+		Offset:    normalizeOffset(filter.Offset),
+	}
+}
+
+func visitorEntryCountParams(filter models.VisitorEntryFilter) db.CountVisitorEntriesParams {
+	return db.CountVisitorEntriesParams{
+		SocietyID:   filter.SocietyID,
+		FlatID:      filter.FlatID,
+		Status:      dbVisitorStatusPtr(filter.Status),
+		Source:      dbVisitorSourcePtr(filter.Source),
+		Purpose:     dbVisitorPurposePtr(filter.Purpose),
+		Block:       filter.Block,
+		CreatedFrom: timePtrToPgTimestamptz(filter.CreatedFrom),
+		CreatedTo:   timePtrToPgTimestamptz(filter.CreatedTo),
+	}
 
 func visitorEntryFromParts(id, societyID, flatID, visitorID int64, inviteID *int64, source, purpose, status string, vehicleNumber *string, vehicleType *db.VisitorVehicleType, companionsCount int32, companionDetails []byte, expectedAt, expectedCheckoutAt, checkedInAt, checkedOutAt, autoClosedAt pgtype.Timestamptz, approvedBy, rejectedBy, handledByGuardID, createdBy *int64, qrExpiresAt, qrUsedAt pgtype.Timestamptz, notes, rejectionReason *string, metadata []byte, createdAt, updatedAt pgtype.Timestamptz, visitorFullName string, visitorPhone, visitorEmail, visitorPhoto *string, flatNumber string, block, floor *string) *models.VisitorEntry {
 	return &models.VisitorEntry{

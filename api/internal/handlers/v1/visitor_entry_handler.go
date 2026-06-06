@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"go-server/internal/models"
 	visitorentrysvc "go-server/internal/services/visitorEntrySvc"
@@ -468,11 +469,16 @@ func (h *VisitorEntryHandler) ListEntries(c *gin.Context) {
 	if !ok {
 		return
 	}
-	entries, err := h.entrySvc.ListEntries(c.Request.Context(), filter)
+	entries, err := h.entrySvc.ListEntriesPaginated(c.Request.Context(), filter)
 	if handleServiceError(c, err) {
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, "Visitor entries fetched successfully", gin.H{"entries": entries})
+	utils.SuccessResponse(c, http.StatusOK, "Visitor entries fetched successfully", gin.H{
+		"entries": entries.Entries,
+		"total":   entries.Total,
+		"limit":   entries.Limit,
+		"offset":  entries.Offset,
+	})
 }
 
 // ListPendingApprovals godoc
@@ -531,6 +537,127 @@ func (h *VisitorEntryHandler) ListEvents(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, "Visitor entry events fetched successfully", gin.H{"events": events})
+}
+
+// GetEntryStats godoc
+// @Summary Get visitor entry stats
+// @Description [Owner/Admin/Staff] Returns visitor dashboard statistics for a society.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Success 200 {object} models.VisitorEntryStatsAPIResponse "Visitor entry stats fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid society ID"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/stats [get]
+func (h *VisitorEntryHandler) GetEntryStats(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	stats, err := h.entrySvc.GetEntryStats(c.Request.Context(), societyID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor entry stats fetched successfully", gin.H{"stats": stats})
+}
+
+// ListSocietyPendingApprovals godoc
+// @Summary List society pending visitor approvals
+// @Description [Owner/Admin/Staff] Lists visitor entries waiting for approval across the society.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param flat_id query int false "Flat ID"
+// @Param block query string false "Block"
+// @Param limit query int false "Maximum records to return" default(50)
+// @Param offset query int false "Records to skip" default(0)
+// @Success 200 {object} models.VisitorPendingEntriesAPIResponse "Pending visitor approvals fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid query or path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/pending [get]
+func (h *VisitorEntryHandler) ListSocietyPendingApprovals(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	filter, ok := visitorPendingFilterFromQuery(c, societyID)
+	if !ok {
+		return
+	}
+	result, err := h.entrySvc.ListSocietyPendingApprovals(c.Request.Context(), filter)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Pending visitor approvals fetched successfully", gin.H{
+		"entries": result.Entries,
+		"total":   result.Total,
+		"limit":   result.Limit,
+		"offset":  result.Offset,
+	})
+}
+
+// GetFlatVisitorContext godoc
+// @Summary Get flat visitor context
+// @Description [Owner/Admin/Staff] Returns occupancy, primary resident, visitor settings summary, and recent visitors for a flat.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param flatId path int true "Flat ID"
+// @Success 200 {object} models.FlatVisitorContextAPIResponse "Flat visitor context fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Flat or visitor settings not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/flats/{flatId}/visitor-context [get]
+func (h *VisitorEntryHandler) GetFlatVisitorContext(c *gin.Context) {
+	societyID, flatID, ok := visitorEntryFlatPath(c)
+	if !ok {
+		return
+	}
+	result, err := h.entrySvc.GetFlatVisitorContext(c.Request.Context(), societyID, flatID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Flat visitor context fetched successfully", gin.H{"context": result})
+}
+
+// GetMemberVisitorApprovalStats godoc
+// @Summary Get member visitor approval stats
+// @Description [Owner/Admin] Returns how many visitor entries a member has approved or rejected.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param memberId path int true "Member ID"
+// @Success 200 {object} models.MemberVisitorApprovalStatsAPIResponse "Member visitor approval stats fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Insufficient society role"
+// @Failure 404 {object} models.ErrorResponseDoc "Member not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/members/{memberId}/visitor-approval-stats [get]
+func (h *VisitorEntryHandler) GetMemberVisitorApprovalStats(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	memberID, ok := parsePathInt64(c, "memberId")
+	if !ok {
+		return
+	}
+	stats, err := h.entrySvc.GetMemberVisitorApprovalStats(c.Request.Context(), societyID, memberID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Member visitor approval stats fetched successfully", gin.H{"stats": stats})
 }
 
 func (h *VisitorEntryHandler) createPublicEntry(c *gin.Context, create func(context.Context, int64, models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error)) {
@@ -613,6 +740,57 @@ func visitorEntryFilterFromQuery(c *gin.Context, societyID int64) (models.Visito
 			return filter, false
 		}
 		filter.Purpose = &value
+	}
+	if raw := c.Query("limit"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value <= 0 {
+			utils.BadRequestResponse(c, "limit must be a positive integer")
+			return filter, false
+		}
+		filter.Limit = int32(value)
+	}
+	if raw := c.Query("offset"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value < 0 {
+			utils.BadRequestResponse(c, "offset must be zero or positive")
+			return filter, false
+		}
+		filter.Offset = int32(value)
+	}
+	if raw := c.Query("block"); raw != "" {
+		filter.Block = &raw
+	}
+	if raw := c.Query("created_from"); raw != "" {
+		value, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			utils.BadRequestResponse(c, "created_from must be RFC3339")
+			return filter, false
+		}
+		filter.CreatedFrom = &value
+	}
+	if raw := c.Query("created_to"); raw != "" {
+		value, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			utils.BadRequestResponse(c, "created_to must be RFC3339")
+			return filter, false
+		}
+		filter.CreatedTo = &value
+	}
+	return filter, true
+}
+
+func visitorPendingFilterFromQuery(c *gin.Context, societyID int64) (models.VisitorPendingFilter, bool) {
+	filter := models.VisitorPendingFilter{SocietyID: societyID, Limit: 50}
+	if raw := c.Query("flat_id"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || value <= 0 {
+			utils.BadRequestResponse(c, "flat_id must be a positive integer")
+			return filter, false
+		}
+		filter.FlatID = &value
+	}
+	if raw := c.Query("block"); raw != "" {
+		filter.Block = &raw
 	}
 	if raw := c.Query("limit"); raw != "" {
 		value, err := strconv.ParseInt(raw, 10, 32)

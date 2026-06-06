@@ -262,13 +262,109 @@ func (r *QRTokenRequest) Validate() error {
 }
 
 type VisitorEntryFilter struct {
+	SocietyID   int64
+	FlatID      *int64
+	Status      *VisitorStatus
+	Source      *VisitorEntrySource
+	Purpose     *VisitorPurpose
+	Block       *string
+	CreatedFrom *time.Time
+	CreatedTo   *time.Time
+	Limit       int32
+	Offset      int32
+}
+
+type VisitorEntryListResult struct {
+	Entries []*VisitorEntry `json:"entries"`
+	Total   int64           `json:"total"`
+	Limit   int32           `json:"limit"`
+	Offset  int32           `json:"offset"`
+}
+
+type VisitorEntryStatsResponse struct {
+	TodayVisitors    int64 `json:"today_visitors"`
+	VisitorsInside   int64 `json:"visitors_inside"`
+	PendingApprovals int64 `json:"pending_approvals"`
+	CheckedOutToday  int64 `json:"checked_out_today"`
+	RejectedToday    int64 `json:"rejected_today"`
+	AutoClosedToday  int64 `json:"auto_closed_today"`
+}
+
+type VisitorPendingEntry struct {
+	*VisitorEntry
+	WaitingSince        time.Time `json:"waiting_since"`
+	PrimaryResidentName *string   `json:"primary_resident_name,omitempty"`
+	PrimaryResidentID   *int64    `json:"primary_resident_id,omitempty"`
+}
+
+type VisitorPendingListResult struct {
+	Entries []*VisitorPendingEntry `json:"entries"`
+	Total   int64                  `json:"total"`
+	Limit   int32                  `json:"limit"`
+	Offset  int32                  `json:"offset"`
+}
+
+type VisitorPendingFilter struct {
 	SocietyID int64
 	FlatID    *int64
-	Status    *VisitorStatus
-	Source    *VisitorEntrySource
+	Block     *string
+	Limit     int32
+	Offset    int32
+}
+
+type MemberVisitorApprovalStatsResponse struct {
+	ApprovedCount int64 `json:"approved_count"`
+	RejectedCount int64 `json:"rejected_count"`
+}
+
+type FlatVisitorContextResponse struct {
+	OccupancyStatus       FlatStatus                    `json:"occupancy_status"`
+	PrimaryResident       *FlatVisitorContextResident   `json:"primary_resident,omitempty"`
+	TotalResidents        int64                         `json:"total_residents"`
+	InheritsSocietyMode   bool                          `json:"inherits_society_mode"`
+	SocietyApprovalMode   VisitorApprovalMode           `json:"society_approval_mode"`
+	VisitorSettings       []models.FlatVisitorSettingsResponse `json:"visitor_settings"`
+	RecentVisitors        []*FlatRecentVisitorSummary   `json:"recent_visitors"`
+}
+
+type FlatVisitorContextResident struct {
+	ID       int64  `json:"id"`
+	UserID   int64  `json:"user_id"`
+	FullName string `json:"full_name"`
+}
+
+type FlatRecentVisitorSummary struct {
+	EntryID    int64          `json:"entry_id"`
+	FullName   string         `json:"full_name"`
+	Purpose    VisitorPurpose `json:"purpose"`
+	Status     VisitorStatus  `json:"status"`
+	VisitedOn  time.Time      `json:"visited_on"`
+}
+
+type SocietyFlatVisitorSettingRow struct {
+	FlatID                      int64          `json:"flat_id"`
+	FlatNumber                  string         `json:"flat_number"`
+	Block                       *string        `json:"block,omitempty"`
+	Purpose                     VisitorPurpose `json:"purpose"`
+	ApprovalRequired            bool           `json:"approval_required"`
+	IsEnabled                   bool           `json:"is_enabled"`
+	DefaultVisitDurationMinutes *int32         `json:"default_visit_duration_minutes,omitempty"`
+}
+
+type SocietyFlatVisitorSettingsFilter struct {
+	SocietyID int64
+	FlatID    *int64
+	Block     *string
 	Purpose   *VisitorPurpose
 	Limit     int32
 	Offset    int32
+}
+
+type SocietyFlatVisitorSettingsListResult struct {
+	Settings []*SocietyFlatVisitorSettingRow `json:"settings"`
+	Total    int64                           `json:"total"`
+	Limit    int32                           `json:"limit"`
+	Offset   int32                           `json:"offset"`
 }
 
 type VisitorEntryOptionsResponse struct {

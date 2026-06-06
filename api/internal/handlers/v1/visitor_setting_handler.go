@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"go-server/internal/models"
 	visitorsettingsvc "go-server/internal/services/visitorSettingSvc"
@@ -192,6 +193,45 @@ func (h *VisitorSettingHandler) ResetFlatSettingsToDefault(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Flat visitor settings reset successfully", gin.H{"message": "Flat visitor settings reset successfully"})
 }
 
+// ListSocietyFlatSettings godoc
+// @Summary List society flat visitor settings
+// @Description [Owner/Admin] Lists flat-level visitor purpose settings across the society with pagination.
+// @Tags Visitor Settings
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param flat_id query int false "Flat ID"
+// @Param block query string false "Block"
+// @Param purpose query string false "Visitor purpose" Enums(guest, delivery, cab, service, maintenance, staff, other)
+// @Param limit query int false "Maximum records to return" default(50)
+// @Param offset query int false "Records to skip" default(0)
+// @Success 200 {object} models.SocietyFlatVisitorSettingsAPIResponse "Society flat visitor settings fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid query or path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Insufficient society role"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-settings/flats [get]
+func (h *VisitorSettingHandler) ListSocietyFlatSettings(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	filter, ok := societyFlatVisitorSettingsFilterFromQuery(c, societyID)
+	if !ok {
+		return
+	}
+	result, err := h.visitorSettingSvc.ListSocietyFlatSettings(c.Request.Context(), filter)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Society flat visitor settings fetched successfully", gin.H{
+		"settings": result.Settings,
+		"total":    result.Total,
+		"limit":    result.Limit,
+		"offset":   result.Offset,
+	})
+}
+
 func visitorSettingsPath(c *gin.Context) (int64, int64, bool) {
 	societyID, ok := parsePathInt64(c, "societyId")
 	if !ok {
@@ -202,4 +242,44 @@ func visitorSettingsPath(c *gin.Context) (int64, int64, bool) {
 		return 0, 0, false
 	}
 	return societyID, flatID, true
+}
+
+func societyFlatVisitorSettingsFilterFromQuery(c *gin.Context, societyID int64) (models.SocietyFlatVisitorSettingsFilter, bool) {
+	filter := models.SocietyFlatVisitorSettingsFilter{SocietyID: societyID, Limit: 50}
+	if raw := c.Query("flat_id"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || value <= 0 {
+			utils.BadRequestResponse(c, "flat_id must be a positive integer")
+			return filter, false
+		}
+		filter.FlatID = &value
+	}
+	if raw := c.Query("block"); raw != "" {
+		filter.Block = &raw
+	}
+	if raw := c.Query("purpose"); raw != "" {
+		value := models.VisitorPurpose(raw)
+		if !value.IsValid() {
+			utils.BadRequestResponse(c, "invalid purpose")
+			return filter, false
+		}
+		filter.Purpose = &value
+	}
+	if raw := c.Query("limit"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value <= 0 {
+			utils.BadRequestResponse(c, "limit must be a positive integer")
+			return filter, false
+		}
+		filter.Limit = int32(value)
+	}
+	if raw := c.Query("offset"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value < 0 {
+			utils.BadRequestResponse(c, "offset must be zero or positive")
+			return filter, false
+		}
+		filter.Offset = int32(value)
+	}
+	return filter, true
 }

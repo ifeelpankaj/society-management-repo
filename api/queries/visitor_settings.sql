@@ -81,3 +81,34 @@ RETURNING *;
 DELETE FROM flat_visitor_settings
 WHERE society_id = $1
   AND flat_id = $2;
+
+-- name: ListSocietyFlatVisitorSettings :many
+SELECT
+    fvs.*,
+    f.flat_number,
+    f.block
+FROM flat_visitor_settings fvs
+JOIN flats f ON f.id = fvs.flat_id
+WHERE fvs.society_id = sqlc.arg('society_id')
+  AND (sqlc.narg('flat_id')::bigint IS NULL OR fvs.flat_id = sqlc.narg('flat_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('purpose')::visitor_purpose IS NULL OR fvs.purpose = sqlc.narg('purpose')::visitor_purpose)
+ORDER BY f.block NULLS LAST, f.flat_number, CASE fvs.purpose
+    WHEN 'guest' THEN 1
+    WHEN 'delivery' THEN 2
+    WHEN 'cab' THEN 3
+    WHEN 'service' THEN 4
+    WHEN 'maintenance' THEN 5
+    WHEN 'staff' THEN 6
+    ELSE 7
+END
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountSocietyFlatVisitorSettings :one
+SELECT COUNT(*)
+FROM flat_visitor_settings fvs
+JOIN flats f ON f.id = fvs.flat_id
+WHERE fvs.society_id = sqlc.arg('society_id')
+  AND (sqlc.narg('flat_id')::bigint IS NULL OR fvs.flat_id = sqlc.narg('flat_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('purpose')::visitor_purpose IS NULL OR fvs.purpose = sqlc.narg('purpose')::visitor_purpose);

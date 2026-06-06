@@ -16,4 +16,6 @@ var (
 	ErrVisitorQRUnavailable     = models.NewAppError("VISITOR_QR_UNAVAILABLE", "visitor QR is unavailable", http.StatusConflict, nil)
 	ErrVisitorQRInvalid         = models.NewAppError("VISITOR_QR_INVALID", "invalid visitor QR token", http.StatusBadRequest, nil)
 	ErrVisitorQRExpired         = models.NewAppError("VISITOR_QR_EXPIRED", "visitor QR token has expired", http.StatusConflict, nil)
+	ErrVisitorFlatNotFound      = models.NewAppError("VISITOR_FLAT_NOT_FOUND", "flat not found", http.StatusNotFound, nil)
+	ErrVisitorSettingsNotFound  = models.NewAppError("VISITOR_SETTINGS_NOT_FOUND", "visitor settings not found", http.StatusNotFound, nil)
 )

@@ -298,3 +298,106 @@ func (q *Queries) UpdateSocietyVisitorSettings(ctx context.Context, arg UpdateSo
 	)
 	return i, err
 }
+
+const listSocietyFlatVisitorSettings = `-- name: ListSocietyFlatVisitorSettings :many
+SELECT
+    fvs.id, fvs.society_id, fvs.flat_id, fvs.purpose, fvs.approval_required, fvs.default_visit_duration_minutes, fvs.is_enabled, fvs.metadata, fvs.updated_by, fvs.created_at, fvs.updated_at,
+    f.flat_number,
+    f.block
+FROM flat_visitor_settings fvs
+JOIN flats f ON f.id = fvs.flat_id
+WHERE fvs.society_id = $1
+  AND ($2::bigint IS NULL OR fvs.flat_id = $2::bigint)
+  AND ($3::text IS NULL OR f.block = $3::text)
+  AND ($4::visitor_purpose IS NULL OR fvs.purpose = $4::visitor_purpose)
+ORDER BY f.block NULLS LAST, f.flat_number, CASE fvs.purpose
+    WHEN 'guest' THEN 1
+    WHEN 'delivery' THEN 2
+    WHEN 'cab' THEN 3
+    WHEN 'service' THEN 4
+    WHEN 'maintenance' THEN 5
+    WHEN 'staff' THEN 6
+    ELSE 7
+END
+LIMIT $6 OFFSET $5
+`
+
+type ListSocietyFlatVisitorSettingsParams struct {
+	SocietyID int64           `db:"society_id" json:"society_id"`
+	FlatID    *int64          `db:"flat_id" json:"flat_id"`
+	Block     *string         `db:"block" json:"block"`
+	Purpose   *VisitorPurpose `db:"purpose" json:"purpose"`
+	Offset    int32           `db:"offset" json:"offset"`
+	Limit     int32           `db:"limit" json:"limit"`
+}
+
+type ListSocietyFlatVisitorSettingsRow struct {
+	ID                          int64              `db:"id" json:"id"`
+	SocietyID                   int64              `db:"society_id" json:"society_id"`
+	FlatID                      int64              `db:"flat_id" json:"flat_id"`
+	Purpose                     VisitorPurpose     `db:"purpose" json:"purpose"`
+	ApprovalRequired            bool               `db:"approval_required" json:"approval_required"`
+	DefaultVisitDurationMinutes *int32             `db:"default_visit_duration_minutes" json:"default_visit_duration_minutes"`
+	IsEnabled                   bool               `db:"is_enabled" json:"is_enabled"`
+	Metadata                    []byte             `db:"metadata" json:"metadata"`
+	UpdatedBy                   *int64             `db:"updated_by" json:"updated_by"`
+	CreatedAt                   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	FlatNumber                  string             `db:"flat_number" json:"flat_number"`
+	Block                       *string            `db:"block" json:"block"`
+}
+
+func (q *Queries) ListSocietyFlatVisitorSettings(ctx context.Context, arg ListSocietyFlatVisitorSettingsParams) ([]ListSocietyFlatVisitorSettingsRow, error) {
+	rows, err := q.db.Query(ctx, listSocietyFlatVisitorSettings,
+		arg.SocietyID,
+		arg.FlatID,
+		arg.Block,
+		arg.Purpose,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSocietyFlatVisitorSettingsRow{}
+	for rows.Next() {
+		var i ListSocietyFlatVisitorSettingsRow
+		if err := rows.Scan(
+			&i.ID, &i.SocietyID, &i.FlatID, &i.Purpose, &i.ApprovalRequired, &i.DefaultVisitDurationMinutes,
+			&i.IsEnabled, &i.Metadata, &i.UpdatedBy, &i.CreatedAt, &i.UpdatedAt,
+			&i.FlatNumber, &i.Block,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countSocietyFlatVisitorSettings = `-- name: CountSocietyFlatVisitorSettings :one
+SELECT COUNT(*)
+FROM flat_visitor_settings fvs
+JOIN flats f ON f.id = fvs.flat_id
+WHERE fvs.society_id = $1
+  AND ($2::bigint IS NULL OR fvs.flat_id = $2::bigint)
+  AND ($3::text IS NULL OR f.block = $3::text)
+  AND ($4::visitor_purpose IS NULL OR fvs.purpose = $4::visitor_purpose)
+`
+
+type CountSocietyFlatVisitorSettingsParams struct {
+	SocietyID int64           `db:"society_id" json:"society_id"`
+	FlatID    *int64          `db:"flat_id" json:"flat_id"`
+	Block     *string         `db:"block" json:"block"`
+	Purpose   *VisitorPurpose `db:"purpose" json:"purpose"`
+}
+
+func (q *Queries) CountSocietyFlatVisitorSettings(ctx context.Context, arg CountSocietyFlatVisitorSettingsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSocietyFlatVisitorSettings, arg.SocietyID, arg.FlatID, arg.Block, arg.Purpose)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}

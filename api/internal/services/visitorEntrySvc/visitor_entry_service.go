@@ -39,6 +39,11 @@ type VisitorEntryService interface {
 	AutoCloseExpiredEntries(ctx context.Context) error
 	GetEntry(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error)
 	ListEntries(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
+	ListEntriesPaginated(ctx context.Context, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)
+	GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error)
+	GetFlatVisitorContext(ctx context.Context, societyID int64, flatID int64) (*models.FlatVisitorContextResponse, error)
+	GetMemberVisitorApprovalStats(ctx context.Context, societyID int64, memberID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	ListPendingApprovals(ctx context.Context, societyID int64, flatID int64, actorUserID int64) ([]*models.VisitorEntry, error)
 	ListEvents(ctx context.Context, societyID int64, entryID int64) ([]*models.VisitorEntryEvent, error)
 }
@@ -483,6 +488,155 @@ func (s *visitorService) ListEntries(ctx context.Context, filter models.VisitorE
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 	return s.entryRepo.List(ctx, filter)
+}
+
+func (s *visitorService) ListEntriesPaginated(ctx context.Context, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	entries, err := s.entryRepo.List(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	total, err := s.entryRepo.Count(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VisitorEntryListResult{
+		Entries: entries,
+		Total:   total,
+		Limit:   filter.Limit,
+		Offset:  filter.Offset,
+	}, nil
+}
+
+func (s *visitorService) GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	return s.entryRepo.GetStats(ctx, societyID)
+}
+
+func (s *visitorService) ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	entries, err := s.entryRepo.ListSocietyPending(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	total, err := s.entryRepo.CountSocietyPending(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VisitorPendingListResult{
+		Entries: entries,
+		Total:   total,
+		Limit:   filter.Limit,
+		Offset:  filter.Offset,
+	}, nil
+}
+
+func (s *visitorService) GetFlatVisitorContext(ctx context.Context, societyID int64, flatID int64) (*models.FlatVisitorContextResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	flat, err := s.flatRepo.Get(ctx, &models.FlatFilter{SocietyID: &societyID, ID: &flatID})
+	if err != nil {
+		return nil, err
+	}
+	if flat == nil {
+		return nil, ErrVisitorFlatNotFound
+	}
+
+	societySettings, err := s.settingSvc.GetSocietySettings(ctx, societyID)
+	if err != nil {
+		return nil, err
+	}
+	if societySettings == nil {
+		return nil, ErrVisitorSettingsNotFound
+	}
+
+	flatSettings, err := s.settingSvc.GetFlatSettings(ctx, societyID, flatID)
+	if err != nil {
+		return nil, err
+	}
+
+	totalResidents, err := s.residentRepo.CountActive(ctx, societyID, flatID)
+	if err != nil {
+		return nil, err
+	}
+
+	status := string(models.FlatResidentStatusActive)
+	isPrimary := true
+	primary, err := s.residentRepo.Get(ctx, &models.FlatResidentFilter{
+		SocietyID: &societyID,
+		FlatID:    &flatID,
+		Status:    &status,
+		IsPrimary: &isPrimary,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	recent, err := s.entryRepo.ListRecentByFlat(ctx, societyID, flatID, 10)
+	if err != nil {
+		return nil, err
+	}
+	recentSummaries := make([]*models.FlatRecentVisitorSummary, 0, len(recent))
+	for _, entry := range recent {
+		name := ""
+		if entry.Visitor != nil {
+			name = entry.Visitor.FullName
+		}
+		recentSummaries = append(recentSummaries, &models.FlatRecentVisitorSummary{
+			EntryID:   entry.ID,
+			FullName:  name,
+			Purpose:   entry.Purpose,
+			Status:    entry.Status,
+			VisitedOn: entry.CreatedAt,
+		})
+	}
+
+	var primaryResident *models.FlatVisitorContextResident
+	if primary != nil {
+		name := ""
+		if primary.UserName != nil {
+			name = *primary.UserName
+		}
+		primaryResident = &models.FlatVisitorContextResident{
+			ID:       primary.ID,
+			UserID:   primary.UserID,
+			FullName: name,
+		}
+	}
+
+	return &models.FlatVisitorContextResponse{
+		OccupancyStatus:     flat.Status,
+		PrimaryResident:     primaryResident,
+		TotalResidents:      totalResidents,
+		InheritsSocietyMode: societySettings.ApprovalMode == models.VisitorApprovalModeHybrid,
+		SocietyApprovalMode: societySettings.ApprovalMode,
+		VisitorSettings:     flatSettings,
+		RecentVisitors:      recentSummaries,
+	}, nil
+}
+
+func (s *visitorService) GetMemberVisitorApprovalStats(ctx context.Context, societyID int64, memberID int64) (*models.MemberVisitorApprovalStatsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	member, err := s.memberRepo.Get(ctx, models.GetSocietyMemberFilter{ID: &memberID, SocietyID: &societyID})
+	if err != nil {
+		return nil, err
+	}
+	if member == nil {
+		return nil, ErrVisitorForbidden
+	}
+	return s.entryRepo.CountMemberApprovals(ctx, societyID, member.UserID)
 }
 
 func (s *visitorService) ListPendingApprovals(ctx context.Context, societyID int64, flatID int64, actorUserID int64) ([]*models.VisitorEntry, error) {
