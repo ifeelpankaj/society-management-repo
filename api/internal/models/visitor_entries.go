@@ -1,0 +1,398 @@
+package models
+
+import (
+	"errors"
+	"strings"
+	"time"
+)
+
+type VisitorStatus string
+
+const (
+	VisitorStatusWaitingApproval VisitorStatus = "waiting_approval"
+	VisitorStatusApproved        VisitorStatus = "approved"
+	VisitorStatusRejected        VisitorStatus = "rejected"
+	VisitorStatusCheckedIn       VisitorStatus = "checked_in"
+	VisitorStatusCheckedOut      VisitorStatus = "checked_out"
+	VisitorStatusCancelled       VisitorStatus = "cancelled"
+	VisitorStatusExpired         VisitorStatus = "expired"
+	VisitorStatusAutoClosed      VisitorStatus = "auto_closed"
+)
+
+func (s VisitorStatus) IsValid() bool {
+	switch s {
+	case VisitorStatusWaitingApproval, VisitorStatusApproved, VisitorStatusRejected, VisitorStatusCheckedIn,
+		VisitorStatusCheckedOut, VisitorStatusCancelled, VisitorStatusExpired, VisitorStatusAutoClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+type VisitorVehicleType string
+
+const (
+	VisitorVehicleTypeBike  VisitorVehicleType = "bike"
+	VisitorVehicleTypeCar   VisitorVehicleType = "car"
+	VisitorVehicleTypeAuto  VisitorVehicleType = "auto"
+	VisitorVehicleTypeCab   VisitorVehicleType = "cab"
+	VisitorVehicleTypeTruck VisitorVehicleType = "truck"
+	VisitorVehicleTypeOther VisitorVehicleType = "other"
+)
+
+func (t VisitorVehicleType) IsValid() bool {
+	switch t {
+	case VisitorVehicleTypeBike, VisitorVehicleTypeCar, VisitorVehicleTypeAuto, VisitorVehicleTypeCab,
+		VisitorVehicleTypeTruck, VisitorVehicleTypeOther:
+		return true
+	default:
+		return false
+	}
+}
+
+type VisitorEventType string
+
+const (
+	VisitorEventTypeCreated     VisitorEventType = "created"
+	VisitorEventTypeApproved    VisitorEventType = "approved"
+	VisitorEventTypeRejected    VisitorEventType = "rejected"
+	VisitorEventTypeCheckedIn   VisitorEventType = "checked_in"
+	VisitorEventTypeCheckedOut  VisitorEventType = "checked_out"
+	VisitorEventTypeCancelled   VisitorEventType = "cancelled"
+	VisitorEventTypeExpired     VisitorEventType = "expired"
+	VisitorEventTypeAutoClosed  VisitorEventType = "auto_closed"
+	VisitorEventTypeQRGenerated VisitorEventType = "qr_generated"
+	VisitorEventTypeQRUsed      VisitorEventType = "qr_used"
+)
+
+type VisitorInviteStatus string
+
+const (
+	VisitorInviteStatusActive    VisitorInviteStatus = "active"
+	VisitorInviteStatusUsed      VisitorInviteStatus = "used"
+	VisitorInviteStatusExpired   VisitorInviteStatus = "expired"
+	VisitorInviteStatusCancelled VisitorInviteStatus = "cancelled"
+)
+
+type Visitor struct {
+	ID          int64          `json:"id"`
+	FullName    string         `json:"full_name"`
+	PhoneNumber *string        `json:"phone_number,omitempty"`
+	Email       *string        `json:"email,omitempty"`
+	PhotoURL    *string        `json:"photo_url,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+type VisitorInvite struct {
+	ID        int64               `json:"id"`
+	SocietyID int64               `json:"society_id"`
+	FlatID    int64               `json:"flat_id"`
+	CreatedBy int64               `json:"created_by"`
+	Purpose   VisitorPurpose      `json:"purpose"`
+	Status    VisitorInviteStatus `json:"status"`
+	ExpiresAt time.Time           `json:"expires_at"`
+	UsedAt    *time.Time          `json:"used_at,omitempty"`
+	Metadata  map[string]any      `json:"metadata,omitempty"`
+	CreatedAt time.Time           `json:"created_at"`
+	UpdatedAt time.Time           `json:"updated_at"`
+}
+
+type VisitorEntry struct {
+	ID                 int64               `json:"id"`
+	SocietyID          int64               `json:"society_id"`
+	FlatID             int64               `json:"flat_id"`
+	VisitorID          int64               `json:"visitor_id"`
+	InviteID           *int64              `json:"invite_id,omitempty"`
+	Source             VisitorEntrySource  `json:"source"`
+	Purpose            VisitorPurpose      `json:"purpose"`
+	Status             VisitorStatus       `json:"status"`
+	VehicleNumber      *string             `json:"vehicle_number,omitempty"`
+	VehicleType        *VisitorVehicleType `json:"vehicle_type,omitempty"`
+	CompanionsCount    int32               `json:"companions_count"`
+	CompanionDetails   []map[string]any    `json:"companion_details,omitempty"`
+	ExpectedAt         *time.Time          `json:"expected_at,omitempty"`
+	ExpectedCheckoutAt *time.Time          `json:"expected_checkout_at,omitempty"`
+	CheckedInAt        *time.Time          `json:"checked_in_at,omitempty"`
+	CheckedOutAt       *time.Time          `json:"checked_out_at,omitempty"`
+	AutoClosedAt       *time.Time          `json:"auto_closed_at,omitempty"`
+	ApprovedBy         *int64              `json:"approved_by,omitempty"`
+	RejectedBy         *int64              `json:"rejected_by,omitempty"`
+	HandledByGuardID   *int64              `json:"handled_by_guard_id,omitempty"`
+	CreatedBy          *int64              `json:"created_by,omitempty"`
+	QRExpiresAt        *time.Time          `json:"qr_expires_at,omitempty"`
+	QRUsedAt           *time.Time          `json:"qr_used_at,omitempty"`
+	Notes              *string             `json:"notes,omitempty"`
+	RejectionReason    *string             `json:"rejection_reason,omitempty"`
+	Metadata           map[string]any      `json:"metadata,omitempty"`
+	CreatedAt          time.Time           `json:"created_at"`
+	UpdatedAt          time.Time           `json:"updated_at"`
+	Visitor            *VisitorSummary     `json:"visitor,omitempty"`
+	Flat               *VisitorFlatSummary `json:"flat,omitempty"`
+}
+
+type VisitorSummary struct {
+	FullName    string  `json:"full_name"`
+	PhoneNumber *string `json:"phone_number,omitempty"`
+	Email       *string `json:"email,omitempty"`
+	PhotoURL    *string `json:"photo_url,omitempty"`
+}
+
+type VisitorFlatSummary struct {
+	ID         int64   `json:"id"`
+	FlatNumber string  `json:"flat_number"`
+	Block      *string `json:"block,omitempty"`
+	Floor      *string `json:"floor,omitempty"`
+}
+
+type VisitorEntryEvent struct {
+	ID             int64            `json:"id"`
+	VisitorEntryID int64            `json:"visitor_entry_id"`
+	SocietyID      int64            `json:"society_id"`
+	ActorUserID    *int64           `json:"actor_user_id,omitempty"`
+	EventType      VisitorEventType `json:"event_type"`
+	Message        *string          `json:"message,omitempty"`
+	Metadata       map[string]any   `json:"metadata,omitempty"`
+	CreatedAt      time.Time        `json:"created_at"`
+}
+
+type QRTokenResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+type VisitorEntryMutationResponse struct {
+	Entry *VisitorEntry    `json:"entry"`
+	QR    *QRTokenResponse `json:"qr,omitempty"`
+}
+
+type CreateVisitorInviteRequest struct {
+	Purpose   VisitorPurpose `json:"purpose"`
+	ExpiresAt *time.Time     `json:"expires_at,omitempty"`
+}
+
+func (r *CreateVisitorInviteRequest) Validate() error {
+	if r == nil {
+		return errors.New("visitor invite request is required")
+	}
+	if !r.Purpose.IsValid() {
+		return errors.New("invalid visitor purpose")
+	}
+	if r.ExpiresAt != nil && !r.ExpiresAt.After(time.Now()) {
+		return errors.New("expires_at must be in the future")
+	}
+	return nil
+}
+
+type VisitorFormRequest struct {
+	FullName           string              `json:"full_name"`
+	PhoneNumber        *string             `json:"phone_number,omitempty"`
+	Email              *string             `json:"email,omitempty"`
+	PhotoURL           *string             `json:"photo_url,omitempty"`
+	FlatID             int64               `json:"flat_id,omitempty"`
+	Purpose            VisitorPurpose      `json:"purpose,omitempty"`
+	VehicleNumber      *string             `json:"vehicle_number,omitempty"`
+	VehicleType        *VisitorVehicleType `json:"vehicle_type,omitempty"`
+	CompanionsCount    int32               `json:"companions_count,omitempty"`
+	CompanionDetails   []map[string]any    `json:"companion_details,omitempty"`
+	ExpectedAt         *time.Time          `json:"expected_at,omitempty"`
+	ExpectedCheckoutAt *time.Time          `json:"expected_checkout_at,omitempty"`
+	Notes              *string             `json:"notes,omitempty"`
+	Metadata           map[string]any      `json:"metadata,omitempty"`
+}
+
+func (r *VisitorFormRequest) Validate(requireFlatAndPurpose bool) error {
+	if r == nil {
+		return errors.New("visitor form request is required")
+	}
+	if strings.TrimSpace(r.FullName) == "" {
+		return errors.New("full_name is required")
+	}
+	if cleanPtr(r.PhoneNumber) == nil && cleanPtr(r.Email) == nil {
+		return errors.New("phone_number or email is required")
+	}
+	r.PhoneNumber = cleanPtr(r.PhoneNumber)
+	r.Email = cleanPtr(r.Email)
+	r.PhotoURL = cleanPtr(r.PhotoURL)
+	r.VehicleNumber = cleanPtr(r.VehicleNumber)
+	r.Notes = cleanPtr(r.Notes)
+	if requireFlatAndPurpose {
+		if r.FlatID <= 0 {
+			return errors.New("flat_id must be a positive integer")
+		}
+		if !r.Purpose.IsValid() {
+			return errors.New("invalid visitor purpose")
+		}
+	}
+	if r.VehicleType != nil && !r.VehicleType.IsValid() {
+		return errors.New("invalid vehicle_type")
+	}
+	if r.CompanionsCount < 0 {
+		return errors.New("companions_count must be zero or positive")
+	}
+	if r.ExpectedAt != nil && r.ExpectedCheckoutAt != nil && r.ExpectedCheckoutAt.Before(*r.ExpectedAt) {
+		return errors.New("expected_checkout_at must be after expected_at")
+	}
+	return nil
+}
+
+type RejectVisitorEntryRequest struct {
+	Reason string `json:"reason"`
+}
+
+func (r *RejectVisitorEntryRequest) Validate() error {
+	if r == nil || strings.TrimSpace(r.Reason) == "" {
+		return errors.New("reason is required")
+	}
+	r.Reason = strings.TrimSpace(r.Reason)
+	return nil
+}
+
+type QRTokenRequest struct {
+	Token string `json:"token"`
+}
+
+func (r *QRTokenRequest) Validate() error {
+	if r == nil || strings.TrimSpace(r.Token) == "" {
+		return errors.New("token is required")
+	}
+	r.Token = strings.TrimSpace(r.Token)
+	return nil
+}
+
+type VisitorEntryFilter struct {
+	SocietyID   int64
+	FlatID      *int64
+	Status      *VisitorStatus
+	Source      *VisitorEntrySource
+	Purpose     *VisitorPurpose
+	Block       *string
+	CreatedFrom *time.Time
+	CreatedTo   *time.Time
+	Search      *string
+	Limit       int32
+	Offset      int32
+}
+
+type VisitorEntryListResult struct {
+	Entries []*VisitorEntry `json:"entries"`
+	Total   int64           `json:"total"`
+	Limit   int32           `json:"limit"`
+	Offset  int32           `json:"offset"`
+}
+
+type VisitorEntryStatsResponse struct {
+	TodayVisitors    int64 `json:"today_visitors"`
+	VisitorsInside   int64 `json:"visitors_inside"`
+	PendingApprovals int64 `json:"pending_approvals"`
+	CheckedOutToday  int64 `json:"checked_out_today"`
+	RejectedToday    int64 `json:"rejected_today"`
+	AutoClosedToday  int64 `json:"auto_closed_today"`
+}
+
+type VisitorPendingEntry struct {
+	*VisitorEntry
+	WaitingSince        time.Time `json:"waiting_since"`
+	PrimaryResidentName *string   `json:"primary_resident_name,omitempty"`
+	PrimaryResidentID   *int64    `json:"primary_resident_id,omitempty"`
+}
+
+type VisitorPendingListResult struct {
+	Entries []*VisitorPendingEntry `json:"entries"`
+	Total   int64                  `json:"total"`
+	Limit   int32                  `json:"limit"`
+	Offset  int32                  `json:"offset"`
+}
+
+type VisitorPendingFilter struct {
+	SocietyID int64
+	FlatID    *int64
+	Block     *string
+	Limit     int32
+	Offset    int32
+}
+
+type MemberVisitorApprovalStatsResponse struct {
+	ApprovedCount int64 `json:"approved_count"`
+	RejectedCount int64 `json:"rejected_count"`
+}
+
+type FlatVisitorContextResponse struct {
+	OccupancyStatus       FlatStatus                    `json:"occupancy_status"`
+	PrimaryResident       *FlatVisitorContextResident   `json:"primary_resident,omitempty"`
+	TotalResidents        int64                         `json:"total_residents"`
+	InheritsSocietyMode   bool                          `json:"inherits_society_mode"`
+	SocietyApprovalMode   VisitorApprovalMode           `json:"society_approval_mode"`
+	VisitorSettings       []FlatVisitorSettingsResponse `json:"visitor_settings"`
+	RecentVisitors        []*FlatRecentVisitorSummary   `json:"recent_visitors"`
+}
+
+type FlatVisitorContextResident struct {
+	ID       int64  `json:"id"`
+	UserID   int64  `json:"user_id"`
+	FullName string `json:"full_name"`
+}
+
+type FlatRecentVisitorSummary struct {
+	EntryID    int64          `json:"entry_id"`
+	FullName   string         `json:"full_name"`
+	Purpose    VisitorPurpose `json:"purpose"`
+	Status     VisitorStatus  `json:"status"`
+	VisitedOn  time.Time      `json:"visited_on"`
+}
+
+type SocietyFlatVisitorSettingRow struct {
+	FlatID                      int64          `json:"flat_id"`
+	FlatNumber                  string         `json:"flat_number"`
+	Block                       *string        `json:"block,omitempty"`
+	Purpose                     VisitorPurpose `json:"purpose"`
+	ApprovalRequired            bool           `json:"approval_required"`
+	IsEnabled                   bool           `json:"is_enabled"`
+	DefaultVisitDurationMinutes *int32         `json:"default_visit_duration_minutes,omitempty"`
+}
+
+type SocietyFlatVisitorSettingsFilter struct {
+	SocietyID int64
+	FlatID    *int64
+	Block     *string
+	Purpose   *VisitorPurpose
+	Limit     int32
+	Offset    int32
+}
+
+type SocietyFlatVisitorSettingsListResult struct {
+	Settings []*SocietyFlatVisitorSettingRow `json:"settings"`
+	Total    int64                           `json:"total"`
+	Limit    int32                           `json:"limit"`
+	Offset   int32                           `json:"offset"`
+}
+
+type VisitorEntryOptionsResponse struct {
+	Purposes []VisitorPurpose           `json:"purposes"`
+	Blocks   []VisitorEntryOptionsBlock `json:"blocks"`
+	Flats    []VisitorEntryOptionsFlat  `json:"flats"`
+}
+
+type VisitorEntryOptionsBlock struct {
+	Block *string                   `json:"block,omitempty"`
+	Flats []VisitorEntryOptionsFlat `json:"flats"`
+}
+
+type VisitorEntryOptionsFlat struct {
+	ID         int64   `json:"id"`
+	Block      *string `json:"block,omitempty"`
+	Floor      *string `json:"floor,omitempty"`
+	FlatNumber string  `json:"flat_number"`
+}
+
+func cleanPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	cleaned := strings.TrimSpace(*value)
+	if cleaned == "" {
+		return nil
+	}
+	return &cleaned
+}

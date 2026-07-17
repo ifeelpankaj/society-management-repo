@@ -1,0 +1,107 @@
+package flatsvc
+
+import (
+	"context"
+
+	"go-server/internal/models"
+	repository "go-server/internal/repositories"
+	societysvc "go-server/internal/services/societySvc"
+)
+
+type FlatService interface {
+	FlatCommandService
+	FlatQueryService
+	FlatClaimCommandService
+	FlatClaimQueryService
+	FlatResidentCommandService
+	FlatResidentQueryService
+}
+
+type FlatCommandService interface {
+	CreateFlat(ctx context.Context, societyID int64, createdBy int64, req *models.CreateFlatRequest) (*models.FlatResponse, error)
+	BulkCreateFlats(ctx context.Context, societyID int64, createdBy int64, req *models.BulkCreateFlatsRequest) (*models.BulkCreateFlatsResponse, error)
+	UpdateFlat(ctx context.Context, filter *models.FlatFilter, req *models.UpdateFlatRequest) (*models.FlatResponse, error)
+	DeleteFlat(ctx context.Context, filter *models.FlatFilter, deletedBy int64) error
+	BlockFlat(ctx context.Context, filter *models.FlatFilter, blockedBy int64, reason string) (*models.FlatResponse, error)
+	UnblockFlat(ctx context.Context, filter *models.FlatFilter, unblockedBy int64) (*models.FlatResponse, error)
+}
+
+type FlatQueryService interface {
+	GetFlat(ctx context.Context, filter *models.FlatFilter) (*models.FlatResponse, error)
+	ListFlats(ctx context.Context, filter *models.FlatFilter) ([]*models.FlatResponse, error)
+	ListFlatsPaginated(ctx context.Context, filter *models.FlatFilter) (*models.PaginatedFlatsResponse, error)
+	GetFlatStats(ctx context.Context, societyID int64) (*models.FlatStatsResponse, error)
+}
+
+type FlatClaimCommandService interface {
+	SubmitFlatClaim(ctx context.Context, userID int64, req *models.SubmitFlatClaimRequest) (*models.FlatClaimResponse, error)
+	ApproveFlatClaim(ctx context.Context, societyID int64, claimID int64, reviewedBy int64) (*models.ApproveFlatClaimResponse, error)
+	RejectFlatClaim(ctx context.Context, societyID int64, claimID int64, reviewedBy int64, req *models.RejectFlatClaimRequest) (*models.FlatClaimResponse, error)
+	CancelMyFlatClaim(ctx context.Context, claimID int64, userID int64) (*models.FlatClaimResponse, error)
+}
+
+type FlatClaimQueryService interface {
+	GetFlatClaim(ctx context.Context, filter *models.FlatClaimFilter) (*models.FlatClaimResponse, error)
+	ListFlatClaims(ctx context.Context, filter *models.FlatClaimFilter) ([]*models.FlatClaimResponse, error)
+	ListMyFlatClaims(ctx context.Context, userID int64, filter *models.FlatClaimFilter) ([]*models.FlatClaimResponse, error)
+}
+
+type FlatResidentCommandService interface {
+	AddResidentToFlat(ctx context.Context, societyID int64, flatID int64, userID int64, createdBy int64, req *models.AddFlatResidentRequest) (*models.FlatResidentResponse, error)
+	RemoveResidentFromFlat(ctx context.Context, filter *models.FlatResidentFilter, removedBy int64) error
+	ChangePrimaryResident(ctx context.Context, societyID int64, flatID int64, residentID int64, changedBy int64) (*models.FlatResidentResponse, error)
+	UpdateFlatResidentRole(ctx context.Context, filter *models.FlatResidentFilter, updatedBy int64, req *models.UpdateFlatResidentRoleRequest) (*models.FlatResidentResponse, error)
+	MoveOutResident(ctx context.Context, filter *models.FlatResidentFilter, movedOutBy int64) (*models.FlatResidentResponse, error)
+}
+
+type FlatResidentQueryService interface {
+	GetFlatResident(ctx context.Context, filter *models.FlatResidentFilter) (*models.FlatResidentResponse, error)
+	ListFlatResidents(ctx context.Context, filter *models.FlatResidentFilter) ([]*models.FlatResidentResponse, error)
+	ListMyResidences(ctx context.Context, userID int64, filter *models.FlatResidentFilter) ([]*models.FlatResidentResponse, error)
+}
+
+type FlatSvc struct {
+	flatRepo          repository.FlatRepository
+	claimRepo         repository.FlatClaimRepository
+	residentRepo      repository.FlatResidentRepository
+	memberRepo        repository.SocietyMemberRepository
+	txManager         repository.TransactionManager
+	societySvc        societysvc.SocietyService
+	subscriptionSvc   flatSubscriptionGuard
+	visitorSettingSvc flatVisitorSettingDefaults
+}
+
+type flatVisitorSettingDefaults interface {
+	CreateDefaultFlatSettings(ctx context.Context, societyID int64, flatID int64, actorUserID int64) error
+}
+
+type flatSubscriptionGuard interface {
+	EnsureSocietyOperational(ctx context.Context, societyID int64) error
+	CanAddFlat(ctx context.Context, societyID int64, adding int64) error
+	CanAddResident(ctx context.Context, societyID int64, adding int64) error
+}
+
+func NewFlatService(
+	flatRepo repository.FlatRepository,
+	claimRepo repository.FlatClaimRepository,
+	residentRepo repository.FlatResidentRepository,
+	memberRepo repository.SocietyMemberRepository,
+	txManager repository.TransactionManager,
+	societySvc societysvc.SocietyService,
+	subscriptionSvc flatSubscriptionGuard,
+	deps ...any,
+) FlatService {
+	svc := &FlatSvc{
+		flatRepo: flatRepo, claimRepo: claimRepo, residentRepo: residentRepo,
+		memberRepo: memberRepo, txManager: txManager, societySvc: societySvc, subscriptionSvc: subscriptionSvc,
+	}
+	for _, dep := range deps {
+		switch value := dep.(type) {
+		case flatVisitorSettingDefaults:
+			svc.visitorSettingSvc = value
+		}
+	}
+	return svc
+}
+
+var _ FlatService = (*FlatSvc)(nil)

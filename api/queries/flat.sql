@@ -1,0 +1,107 @@
+-- name: CreateFlat :one
+INSERT INTO flats (society_id, block, floor, flat_number, status, is_active, metadata, created_by)
+VALUES ($1, $2, $3, $4, 'vacant', TRUE, COALESCE(sqlc.narg('metadata'), '{}'::jsonb), $5)
+RETURNING *;
+
+-- name: GetFlat :one
+SELECT
+    f.*,
+    s.name AS society_name,
+    s.society_code AS society_code
+FROM flats f
+JOIN societies s ON s.id = f.society_id
+WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR f.society_id = sqlc.narg('society_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('floor')::text IS NULL OR f.floor = sqlc.narg('floor')::text)
+  AND (sqlc.narg('flat_number')::text IS NULL OR f.flat_number = sqlc.narg('flat_number')::text)
+  AND (sqlc.narg('status')::flat_status IS NULL OR f.status = sqlc.narg('status')::flat_status)
+  AND (sqlc.narg('is_active')::bool IS NULL OR f.is_active = sqlc.narg('is_active')::bool)
+ORDER BY f.id DESC
+LIMIT 1;
+
+-- name: ListFlats :many
+SELECT
+    f.*,
+    s.name AS society_name,
+    s.society_code AS society_code
+FROM flats f
+JOIN societies s ON s.id = f.society_id
+WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR f.society_id = sqlc.narg('society_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('floor')::text IS NULL OR f.floor = sqlc.narg('floor')::text)
+  AND (sqlc.narg('flat_number')::text IS NULL OR f.flat_number = sqlc.narg('flat_number')::text)
+  AND (sqlc.narg('status')::flat_status IS NULL OR f.status = sqlc.narg('status')::flat_status)
+  AND (sqlc.narg('is_active')::bool IS NULL OR f.is_active = sqlc.narg('is_active')::bool)
+  AND (
+      sqlc.arg('search')::text = ''
+      OR f.flat_number ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR COALESCE(f.floor, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR f.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR s.name ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR s.society_code ILIKE '%' || sqlc.arg('search')::text || '%'
+  )
+ORDER BY f.created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: UpdateFlat :one
+UPDATE flats
+SET
+    block = COALESCE(sqlc.narg('block'), block),
+    floor = COALESCE(sqlc.narg('floor'), floor),
+    flat_number = COALESCE(sqlc.narg('flat_number'), flat_number),
+    status = COALESCE(sqlc.narg('status'), status),
+    is_active = COALESCE(sqlc.narg('is_active'), is_active),
+    metadata = COALESCE(sqlc.narg('metadata'), metadata),
+    updated_at = NOW()
+WHERE (sqlc.narg('id')::bigint IS NULL OR id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR society_id = sqlc.narg('society_id')::bigint)
+RETURNING *;
+
+-- name: DeactivateFlat :exec
+UPDATE flats
+SET is_active = FALSE, updated_at = NOW()
+WHERE (sqlc.narg('id')::bigint IS NULL OR id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR society_id = sqlc.narg('society_id')::bigint);
+
+-- name: BlockFlat :one
+UPDATE flats
+SET status = 'blocked', updated_at = NOW()
+WHERE (sqlc.narg('id')::bigint IS NULL OR id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR society_id = sqlc.narg('society_id')::bigint)
+  AND is_active = TRUE
+RETURNING *;
+
+-- name: UnblockFlat :one
+UPDATE flats
+SET status = 'vacant', updated_at = NOW()
+WHERE (sqlc.narg('id')::bigint IS NULL OR id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR society_id = sqlc.narg('society_id')::bigint)
+  AND status = 'blocked'
+RETURNING *;
+
+-- name: MarkFlatOccupied :one
+UPDATE flats
+SET status = 'occupied', updated_at = NOW()
+WHERE id = $1 AND society_id = $2 AND is_active = TRUE AND status != 'blocked'
+RETURNING *;
+
+-- name: MarkFlatVacant :one
+UPDATE flats
+SET status = 'vacant', updated_at = NOW()
+WHERE id = $1 AND society_id = $2 AND is_active = TRUE AND status != 'blocked'
+RETURNING *;
+
+-- name: GetFlatStats :one
+SELECT
+    sqlc.arg('society_id')::bigint AS society_id,
+    COUNT(*) AS total_flats,
+    COUNT(*) FILTER (WHERE status = 'vacant') AS vacant_flats,
+    COUNT(*) FILTER (WHERE status = 'occupied') AS occupied_flats,
+    COUNT(*) FILTER (WHERE status = 'blocked') AS blocked_flats,
+    COUNT(*) FILTER (WHERE is_active = TRUE) AS active_flats,
+    COUNT(*) FILTER (WHERE is_active = FALSE) AS inactive_flats
+FROM flats
+WHERE society_id = sqlc.arg('society_id')::bigint;
