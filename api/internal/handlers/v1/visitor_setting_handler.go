@@ -87,7 +87,7 @@ func (h *VisitorSettingHandler) UpdateSocietySettings(c *gin.Context) {
 
 // GetFlatSettings godoc
 // @Summary Get flat visitor settings
-// @Description [Owner/Admin/Primary Resident] Fetches all visitor purpose settings for a flat.
+// @Description [Owner/Admin/Flat Resident] Fetches all visitor purpose settings for a flat.
 // @Tags Visitor Settings
 // @Produce json
 // @Param societyId path int true "Society ID"
@@ -95,7 +95,7 @@ func (h *VisitorSettingHandler) UpdateSocietySettings(c *gin.Context) {
 // @Success 200 {object} models.FlatVisitorSettingsAPIResponse "Flat visitor settings fetched successfully"
 // @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter"
 // @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
-// @Failure 403 {object} models.ErrorResponseDoc "Owner/admin or primary resident access required"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner/admin or flat resident access required"
 // @Failure 404 {object} models.ErrorResponseDoc "Flat or visitor settings not found"
 // @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
 // @Security AccessToken
@@ -118,7 +118,7 @@ func (h *VisitorSettingHandler) GetFlatSettings(c *gin.Context) {
 
 // UpdateFlatPurposeSetting godoc
 // @Summary Update flat visitor purpose setting
-// @Description [Owner/Admin/Primary Resident] Updates approval, duration override, or enabled state for one visitor purpose on a flat.
+// @Description [Owner/Admin/Flat Resident] Updates approval, duration override, or enabled state for one visitor purpose on a flat.
 // @Tags Visitor Settings
 // @Accept json
 // @Produce json
@@ -129,7 +129,7 @@ func (h *VisitorSettingHandler) GetFlatSettings(c *gin.Context) {
 // @Success 200 {object} models.FlatVisitorSettingAPIResponse "Flat visitor setting updated successfully"
 // @Failure 400 {object} models.ErrorResponseDoc "Invalid request, visitor purpose, or path parameter"
 // @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
-// @Failure 403 {object} models.ErrorResponseDoc "Owner/admin or primary resident access required"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner/admin or flat resident access required"
 // @Failure 404 {object} models.ErrorResponseDoc "Flat or visitor setting not found"
 // @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
 // @Security AccessToken
@@ -165,7 +165,7 @@ func (h *VisitorSettingHandler) UpdateFlatPurposeSetting(c *gin.Context) {
 
 // ResetFlatSettingsToDefault godoc
 // @Summary Reset flat visitor settings
-// @Description [Owner/Admin/Primary Resident] Resets a flat's visitor purpose settings back to the production defaults.
+// @Description [Owner/Admin/Flat Resident] Resets a flat's visitor purpose settings back to the production defaults.
 // @Tags Visitor Settings
 // @Produce json
 // @Param societyId path int true "Society ID"
@@ -173,7 +173,7 @@ func (h *VisitorSettingHandler) UpdateFlatPurposeSetting(c *gin.Context) {
 // @Success 200 {object} models.MessageAPIResponse "Flat visitor settings reset successfully"
 // @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter"
 // @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
-// @Failure 403 {object} models.ErrorResponseDoc "Owner/admin or primary resident access required"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner/admin or flat resident access required"
 // @Failure 404 {object} models.ErrorResponseDoc "Flat or visitor settings not found"
 // @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
 // @Security AccessToken

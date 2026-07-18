@@ -50,6 +50,7 @@ function formatFlatLabel(residence?: {
 export default function ResidentProfileScreen() {
   const router = useRouter();
   const {
+    canManageFlatMembers,
     canManageFlatVisitors,
     flatId,
     isLoading,
@@ -155,7 +156,7 @@ export default function ResidentProfileScreen() {
                 onPress={() => router.push(residentVisitorSettingsRoute())}
               />
             ) : null}
-            {!canManageFlatVisitors ? (
+            {!canManageFlatMembers ? (
               <ProfileActionRow
                 icon={{ ios: "person.2.fill", android: "group", web: "group" }}
                 isLast

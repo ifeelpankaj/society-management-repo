@@ -110,9 +110,9 @@ func (h *AuthHandler) RegisterResident(c *gin.Context) {
 	setAccessTokenCookie(c, h.authCfg, result.AccessToken)
 	setRefreshTokenCookie(c, h.authCfg, result.RefreshToken)
 
-	utils.SuccessResponse(c, http.StatusCreated, "Resident account created successfully", gin.H{
-		"user": result.User,
-	})
+	utils.SuccessResponse(c, http.StatusCreated, "Resident account created successfully",
+		buildAuthSessionData(h.authCfg, result.User, result.AccessToken, result.RefreshToken, true),
+	)
 }
 
 // VerifyOTP godoc
@@ -236,9 +236,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	setAccessTokenCookie(c, h.authCfg, result.AccessToken)
 	setRefreshTokenCookie(c, h.authCfg, result.RefreshToken)
 
-	utils.SuccessResponse(c, http.StatusOK, "Login successful", gin.H{
-		"user": result.User,
-	})
+	utils.SuccessResponse(c, http.StatusOK, "Login successful",
+		buildAuthSessionData(h.authCfg, result.User, result.AccessToken, result.RefreshToken, true),
+	)
 }
 
 // Refresh godoc
@@ -266,9 +266,9 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 	setAccessTokenCookie(c, h.authCfg, result.AccessToken)
 
-	utils.SuccessResponse(c, http.StatusOK, "Access token refreshed successfully", gin.H{
-		"message": "Access token refreshed successfully",
-	})
+	utils.SuccessResponse(c, http.StatusOK, "Access token refreshed successfully",
+		buildRefreshSessionData(h.authCfg, result.AccessToken),
+	)
 }
 
 // Logout godoc

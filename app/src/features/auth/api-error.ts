@@ -24,7 +24,7 @@ export function getApiMessage(error: unknown, fallback: string) {
 
 export function getVisitorActionErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "status" in error && error.status === 403) {
-    return "Only the primary resident can perform this action.";
+    return "Only an active flat resident can perform this action.";
   }
 
   return getApiMessage(error, fallback);

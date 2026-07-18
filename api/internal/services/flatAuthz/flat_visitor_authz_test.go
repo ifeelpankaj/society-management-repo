@@ -171,7 +171,16 @@ func TestCanManageFlatVisitors(t *testing.T) {
 				Status:    models.FlatResidentStatusActive,
 				Role:      models.FlatResidentRoleFamily,
 			},
-			wantErr: ErrForbidden,
+		},
+		{
+			name: "tenant resident",
+			resident: &models.FlatResident{
+				SocietyID: societyID,
+				FlatID:    flatID,
+				UserID:    100,
+				Status:    models.FlatResidentStatusActive,
+				Role:      models.FlatResidentRoleTenant,
+			},
 		},
 		{
 			name:    "unrelated user",

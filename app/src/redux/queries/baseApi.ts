@@ -6,7 +6,14 @@ import {
   fetchBaseQuery,
 } from "@reduxjs/toolkit/query/react";
 
-import { getAccessToken } from "@/lib/auth/secure-token";
+import {
+  clearTokens,
+  extractAuthSession,
+  getAccessToken,
+  getRefreshToken,
+  saveTokens,
+  type AuthSessionPayload,
+} from "@/features/auth/auth-storage";
 import type { ModelsUserResponse } from "@/lib/api/generated-api";
 import { appConfig } from "@/lib/config";
 import { clearAuth, setCredentials } from "@/redux/authSlice";
@@ -64,8 +71,13 @@ function shouldSkipReauth(args: string | FetchArgs) {
   return PUBLIC_AUTH_PATHS.some((path) => url.includes(path));
 }
 
-function isLoginRequest(args: string | FetchArgs) {
-  return getRequestUrl(args).includes("/v1/auth/login");
+function isAuthSessionRequest(args: string | FetchArgs) {
+  const url = getRequestUrl(args);
+  return (
+    url.includes("/v1/auth/login") ||
+    url.includes("/v1/auth/resident/register") ||
+    url.includes("/v1/auth/refresh")
+  );
 }
 
 function getApiErrorCode(result: { error?: FetchBaseQueryError }) {
@@ -97,11 +109,12 @@ function shouldSyncProfileForForbidden(
   );
 }
 
-function clearSessionAfterAuthFailure(
+async function clearSessionAfterAuthFailure(
   api: Parameters<
     BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>
   >[1],
 ) {
+  await clearTokens();
   api.dispatch(clearAuth());
 }
 
@@ -135,6 +148,18 @@ async function syncProfileSession(
   return true;
 }
 
+async function persistAuthResponse(data: unknown) {
+  if (!data || typeof data !== "object" || !("data" in data)) {
+    return;
+  }
+
+  const payload = (data as { data?: AuthSessionPayload }).data;
+  const session = extractAuthSession(payload ?? null);
+  if (session) {
+    await saveTokens(session);
+  }
+}
+
 let refreshPromise: Promise<boolean> | null = null;
 let refreshFailed = false;
 
@@ -150,8 +175,9 @@ export const baseQueryWithReauth: BaseQueryFn<
 > = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  if (!result.error && isLoginRequest(args)) {
+  if (!result.error && isAuthSessionRequest(args)) {
     resetRefreshState();
+    await persistAuthResponse(result.data);
   }
 
   if (shouldSyncProfileForForbidden(args, result)) {
@@ -164,24 +190,30 @@ export const baseQueryWithReauth: BaseQueryFn<
 
   if (result.error?.status === 401 && !shouldSkipReauth(args)) {
     if (refreshFailed) {
-      clearSessionAfterAuthFailure(api);
+      await clearSessionAfterAuthFailure(api);
       return result;
     }
 
     if (!refreshPromise) {
       refreshPromise = (async (): Promise<boolean> => {
+        const refreshToken = await getRefreshToken();
         const refreshResult = await baseQuery(
-          { url: "/v1/auth/refresh", method: "POST" },
+          {
+            url: "/v1/auth/refresh",
+            method: "POST",
+            body: refreshToken ? { refresh_token: refreshToken } : undefined,
+          },
           api,
           extraOptions,
         );
 
         if (refreshResult.error || !refreshResult.data) {
           refreshFailed = true;
-          clearSessionAfterAuthFailure(api);
+          await clearSessionAfterAuthFailure(api);
           return false;
         }
 
+        await persistAuthResponse(refreshResult.data);
         refreshFailed = false;
         return true;
       })().finally(() => {

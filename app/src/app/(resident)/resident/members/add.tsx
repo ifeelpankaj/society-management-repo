@@ -16,7 +16,7 @@ const ROLE_OPTIONS: { label: string; value: ModelsFlatResidentRole }[] = [
 ];
 
 export default function AddFlatMemberScreen() {
-  const { canManageFlatVisitors, isLoading, requiresSelection, selectedResidence } = useResident();
+  const { canManageFlatMembers, isLoading, requiresSelection, selectedResidence } = useResident();
   const { showComingSoon } = useProfileAction();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -31,7 +31,7 @@ export default function AddFlatMemberScreen() {
     return <ResidentSocietyGate />;
   }
 
-  if (!canManageFlatVisitors) {
+  if (!canManageFlatMembers) {
     return (
       <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
         <ScrollView contentContainerClassName="px-5 pb-8 pt-3">

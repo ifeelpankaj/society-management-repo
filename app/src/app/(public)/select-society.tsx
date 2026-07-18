@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { saveWorkspace } from "@/features/auth/auth-storage";
 import {
   formatGlobalRole,
   formatMembershipRole,
@@ -158,12 +159,14 @@ export default function SelectSocietyScreen() {
 
   const openResidence = (flatId: number) => {
     dispatch(setSelectedFlat(flatId));
+    void saveWorkspace({ flatId });
     router.replace("/resident/dashboard");
   };
 
   const openMembership = (membership: ModelsSocietyMemberResponse) => {
     if (membership.role === "staff" && membership.society_id) {
       dispatch(setSelectedSociety(membership.society_id));
+      void saveWorkspace({ societyId: membership.society_id });
       router.replace("/guard/dashboard");
       return;
     }

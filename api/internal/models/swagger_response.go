@@ -18,6 +18,20 @@ type UserData struct {
 	User *UserResponse `json:"user"`
 }
 
+type AuthSessionData struct {
+	User                  *UserResponse `json:"user"`
+	AccessToken           string        `json:"access_token,omitempty"`
+	RefreshToken          string        `json:"refresh_token,omitempty"`
+	AccessTokenExpiresAt  string        `json:"access_token_expires_at,omitempty"`
+	RefreshTokenExpiresAt string        `json:"refresh_token_expires_at,omitempty"`
+}
+
+type AuthRefreshData struct {
+	Message              string `json:"message" example:"Access token refreshed successfully"`
+	AccessToken          string `json:"access_token,omitempty"`
+	AccessTokenExpiresAt string `json:"access_token_expires_at,omitempty"`
+}
+
 type BootstrapData struct {
 	User             *UserResponse             `json:"user"`
 	Memberships      []*SocietyMemberResponse  `json:"memberships"`
@@ -50,9 +64,9 @@ type ResendOTPAPIResponse struct {
 }
 
 type LoginAPIResponse struct {
-	Success bool     `json:"success" example:"true"`
-	Message string   `json:"message" example:"Login successful"`
-	Data    UserData `json:"data"`
+	Success bool            `json:"success" example:"true"`
+	Message string          `json:"message" example:"Login successful"`
+	Data    AuthSessionData `json:"data"`
 }
 
 type PublicClaimOptionsData struct {
@@ -67,9 +81,9 @@ type PublicClaimOptionsAPIResponse struct {
 }
 
 type RefreshTokenAPIResponse struct {
-	Success bool        `json:"success" example:"true"`
-	Message string      `json:"message" example:"Access token refreshed successfully"`
-	Data    MessageData `json:"data"`
+	Success bool            `json:"success" example:"true"`
+	Message string          `json:"message" example:"Access token refreshed successfully"`
+	Data    AuthRefreshData `json:"data"`
 }
 
 type LogoutAPIResponse struct {

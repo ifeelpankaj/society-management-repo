@@ -90,7 +90,11 @@ const injectedRtkApi = api
         PostV1AuthRefreshApiResponse,
         PostV1AuthRefreshApiArg
       >({
-        query: () => ({ url: `/v1/auth/refresh`, method: "POST" }),
+        query: (queryArg) => ({
+          url: `/v1/auth/refresh`,
+          method: "POST",
+          body: queryArg?.modelsRefreshTokenRequest,
+        }),
         invalidatesTags: ["Auth"],
       }),
       postV1AuthRegister: build.mutation<
@@ -1337,7 +1341,9 @@ export type GetV1AuthProfileApiResponse =
 export type GetV1AuthProfileApiArg = void;
 export type PostV1AuthRefreshApiResponse =
   /** status 200 Access token refreshed successfully */ ModelsRefreshTokenApiResponse;
-export type PostV1AuthRefreshApiArg = void;
+export type PostV1AuthRefreshApiArg = {
+  modelsRefreshTokenRequest?: ModelsRefreshTokenRequest;
+};
 export type PostV1AuthRegisterApiResponse =
   /** status 201 Account created successfully */ ModelsRegisterApiResponse;
 export type PostV1AuthRegisterApiArg = {
@@ -2499,11 +2505,26 @@ export type ModelsUserResponse = {
   timezone?: string;
   updated_at?: string;
 };
+export type ModelsAuthSessionData = {
+  access_token?: string;
+  access_token_expires_at?: string;
+  refresh_token?: string;
+  refresh_token_expires_at?: string;
+  user?: ModelsUserResponse;
+};
+export type ModelsAuthRefreshData = {
+  access_token?: string;
+  access_token_expires_at?: string;
+  message?: string;
+};
+export type ModelsRefreshTokenRequest = {
+  refresh_token?: string;
+};
 export type ModelsUserData = {
   user?: ModelsUserResponse;
 };
 export type ModelsLoginApiResponse = {
-  data?: ModelsUserData;
+  data?: ModelsAuthSessionData;
   message?: string;
   success?: boolean;
 };
@@ -2523,7 +2544,7 @@ export type ModelsGetProfileApiResponse = {
   success?: boolean;
 };
 export type ModelsRefreshTokenApiResponse = {
-  data?: ModelsMessageData;
+  data?: ModelsAuthRefreshData;
   message?: string;
   success?: boolean;
 };

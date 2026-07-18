@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"go-server/internal/models"
 	authsvc "go-server/internal/services/authSvc"
@@ -11,17 +12,19 @@ import (
 )
 
 func AccessAuthMiddleware(jwtSecret, jwtIssuer string) gin.HandlerFunc {
-	return tokenCookieMiddleware(jwtSecret, jwtIssuer, "access_token", authsvc.TokenTypeAccess, "Authentication required. Please login")
+	return authMiddleware(jwtSecret, jwtIssuer, "access_token", authsvc.TokenTypeAccess, "Authentication required. Please login", nil)
 }
 
 func RefreshAuthMiddleware(jwtSecret, jwtIssuer string) gin.HandlerFunc {
-	return tokenCookieMiddleware(jwtSecret, jwtIssuer, "refresh_token", authsvc.TokenTypeRefresh, "Refresh token missing. Please login again")
+	return authMiddleware(jwtSecret, jwtIssuer, "refresh_token", authsvc.TokenTypeRefresh, "Refresh token missing. Please login again", resolveRefreshToken)
 }
 
-func tokenCookieMiddleware(jwtSecret, jwtIssuer, cookieName, tokenType, missingMessage string) gin.HandlerFunc {
+type tokenResolver func(*gin.Context) string
+
+func authMiddleware(jwtSecret, jwtIssuer, cookieName, tokenType, missingMessage string, resolver tokenResolver) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, err := c.Cookie(cookieName)
-		if err != nil || token == "" {
+		token := resolveAuthToken(c, cookieName, resolver)
+		if token == "" {
 			utils.ErrorResponse(c, http.StatusUnauthorized, models.ErrCodeUnauthorized, missingMessage, nil)
 			c.Abort()
 			return
@@ -34,15 +37,58 @@ func tokenCookieMiddleware(jwtSecret, jwtIssuer, cookieName, tokenType, missingM
 			return
 		}
 
-		c.Set("user_id", claims.UserID)
-		c.Set("email", claims.Email)
-		c.Set("role", claims.Role)
-		c.Set("token_type", claims.TokenType)
-		c.Set("phone_number", claims.PhoneNumber)
-		c.Set("email_verified", claims.EmailVerified)
-		c.Set("phone_verified", claims.PhoneVerified)
+		setAuthContext(c, claims)
 		c.Next()
 	}
+}
+
+func resolveAuthToken(c *gin.Context, cookieName string, resolver tokenResolver) string {
+	if token, err := c.Cookie(cookieName); err == nil && strings.TrimSpace(token) != "" {
+		return strings.TrimSpace(token)
+	}
+
+	if token := bearerToken(c.GetHeader("Authorization")); token != "" {
+		return token
+	}
+
+	if resolver != nil {
+		return resolver(c)
+	}
+
+	return ""
+}
+
+func resolveRefreshToken(c *gin.Context) string {
+	var req models.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(req.RefreshToken)
+}
+
+func bearerToken(header string) string {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return ""
+	}
+
+	const prefix = "Bearer "
+	if !strings.HasPrefix(header, prefix) {
+		return ""
+	}
+
+	return strings.TrimSpace(strings.TrimPrefix(header, prefix))
+}
+
+func setAuthContext(c *gin.Context, claims *authsvc.Claims) {
+	c.Set("user_id", claims.UserID)
+	c.Set("email", claims.Email)
+	c.Set("role", claims.Role)
+	c.Set("token_type", claims.TokenType)
+	c.Set("phone_number", claims.PhoneNumber)
+	c.Set("email_verified", claims.EmailVerified)
+	c.Set("phone_verified", claims.PhoneVerified)
 }
 
 func GetUserIDFromContext(c *gin.Context) (int64, bool) {

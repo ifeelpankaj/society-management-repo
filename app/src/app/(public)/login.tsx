@@ -20,7 +20,9 @@ import { useToast } from "@/components/ui";
 import { getApiMessage } from "@/features/auth/api-error";
 import { useCompleteAuth } from "@/features/auth/use-complete-auth";
 import { usePostV1AuthLoginMutation } from "@/lib/api/generated-api";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
+
+import { useAuth } from "@/features/auth/use-auth";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -28,8 +30,14 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login, { isLoading }] = usePostV1AuthLoginMutation();
   const completeAuth = useCompleteAuth();
+  const { homeRoute, status } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+
+  if (status === "authenticated" && homeRoute) {
+    return <Redirect href={homeRoute} />;
+  }
+
   const handleForget = () => {
     // Navigate to the forget password screen
     router.push("/forget");
@@ -52,7 +60,7 @@ export default function LoginScreen() {
         },
       }).unwrap();
 
-      await completeAuth(response.data?.user ?? null);
+      await completeAuth(response.data ?? undefined);
     } catch (error) {
       showToast({
         title: "Sign in failed",

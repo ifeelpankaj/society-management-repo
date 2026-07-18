@@ -88,3 +88,7 @@ type ChangePasswordRequest struct {
 }
 
 func (r *ChangePasswordRequest) Sanitize() {}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}

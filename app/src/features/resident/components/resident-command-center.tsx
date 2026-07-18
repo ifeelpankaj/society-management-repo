@@ -33,7 +33,6 @@ const QUICK_ACTIONS = [
     label: "Invite",
     route: residentVisitorInviteRoute(),
     icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
-    requiresPrimary: true,
   },
   {
     id: "logs",
@@ -132,16 +131,16 @@ function PendingBanner({
 }
 
 function QuickActionsRow({
-  canManageFlatVisitors,
+  canManageFlatMembers,
   isHybrid,
   onNavigate,
 }: {
-  canManageFlatVisitors: boolean;
+  canManageFlatMembers: boolean;
   isHybrid: boolean;
   onNavigate: (route: Href) => void;
 }) {
   const actions = QUICK_ACTIONS.filter((action) => {
-    if ("requiresPrimary" in action && action.requiresPrimary && !canManageFlatVisitors) {
+    if ("requiresPrimary" in action && action.requiresPrimary && !canManageFlatMembers) {
       return false;
     }
     if ("requiresHybrid" in action && action.requiresHybrid && !isHybrid) {
@@ -279,7 +278,7 @@ export function ResidentCommandCenter() {
             <PendingBanner count={dashboard.pendingCount} onPress={goApprovals} />
 
             <QuickActionsRow
-              canManageFlatVisitors={dashboard.canManageFlatVisitors}
+              canManageFlatMembers={dashboard.canManageFlatMembers}
               isHybrid={dashboard.isHybrid}
               onNavigate={(route) => router.push(route)}
             />

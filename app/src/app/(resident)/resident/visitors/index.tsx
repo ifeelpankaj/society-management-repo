@@ -134,7 +134,7 @@ export default function ResidentVisitorsScreen() {
         emptyMessage={
           canManageFlatVisitors
             ? "Visitors waiting for your approval will appear here."
-            : "Only the flat owner can approve or reject visitor entries."
+            : "You do not have permission to approve or reject visitor entries."
         }
         contentContainerClassName="px-5 pb-8 pt-3"
         header={
@@ -147,7 +147,7 @@ export default function ResidentVisitorsScreen() {
               <Text className="text-sm" style={{ color: theme.text.secondary }}>
                 {canManageFlatVisitors
                   ? "Review visitors before they can enter the society."
-                  : "Only the flat owner can approve or reject visitor entries."}
+                  : "You do not have permission to approve or reject visitor entries."}
               </Text>
             </View>
             {canManageFlatVisitors ? (

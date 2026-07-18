@@ -5,6 +5,7 @@ import {
   type ModelsUserResponse,
   useGetV1BootstrapQuery,
 } from "@/lib/api/generated-api";
+import { saveWorkspace } from "@/features/auth/auth-storage";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { setSelectedSociety } from "@/redux/appSlice";
 
@@ -51,7 +52,10 @@ export function GuardSocietyProvider({ children }: PropsWithChildren) {
       selectedMembership,
       selectedSocietyId: selectedMembership?.society_id,
       requiresSelection: memberships.length > 1 && !selectedMembership,
-      selectSociety: (societyId: number) => dispatch(setSelectedSociety(societyId)),
+      selectSociety: (societyId: number) => {
+        dispatch(setSelectedSociety(societyId));
+        void saveWorkspace({ societyId });
+      },
       refetch,
       user: data?.data?.user ?? null,
     }),

@@ -9,7 +9,7 @@ import (
 var (
 	ErrForbidden = models.NewAppError(
 		"FLAT_VISITOR_FORBIDDEN",
-		"only the flat owner or society admin can perform this action",
+		"only an active flat resident or society admin can perform this action",
 		http.StatusForbidden,
 		nil,
 	)

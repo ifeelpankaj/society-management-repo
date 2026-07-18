@@ -32,6 +32,7 @@ function isToday(value?: string | null) {
 
 export function useResidentDashboard() {
   const {
+    canManageFlatMembers,
     canManageFlatVisitors,
     flatId,
     refetch: refetchBootstrap,
@@ -223,6 +224,7 @@ export function useResidentDashboard() {
     isHybrid,
     isInitialLoading,
     isReady: !shouldSkip,
+    canManageFlatMembers,
     canManageFlatVisitors,
     isRefreshing: queries.some((query) => query.isFetching && !query.isLoading),
     membersCount,

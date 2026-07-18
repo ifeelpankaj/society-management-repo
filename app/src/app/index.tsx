@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -12,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useAuth } from "@/features/auth/use-auth";
 
 const images = [
   require("../../assets/images/public/soc_img_one.png"),
@@ -31,6 +33,7 @@ const features = [
 export default function Index() {
   const { width } = useWindowDimensions();
   const router = useRouter();
+  const { homeRoute, status } = useAuth();
   const carouselRef = useRef<ScrollView>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -45,6 +48,10 @@ export default function Index() {
 
     return () => clearInterval(timer);
   }, [width]);
+
+  if (status === "authenticated" && homeRoute) {
+    return <Redirect href={homeRoute} />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-[#17110f]">

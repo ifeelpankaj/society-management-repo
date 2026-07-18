@@ -1,14 +1,12 @@
 import { useRouter } from "expo-router";
 
 import { usePostV1AuthLogoutMutation } from "@/lib/api/generated-api";
-import { useAppDispatch } from "@/redux/hooks";
-import { clearWorkspaceSelection } from "@/redux/appSlice";
-import { clearAuth } from "@/redux/authSlice";
-import { baseApi } from "@/redux/queries/baseApi";
+
+import { useAuth } from "./use-auth";
 
 export function useLogout() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const { signOutLocal } = useAuth();
   const [logout, logoutState] = usePostV1AuthLogoutMutation();
 
   const signOut = async () => {
@@ -17,9 +15,7 @@ export function useLogout() {
     } catch {
       // Session may already be cleared server-side.
     } finally {
-      dispatch(clearAuth());
-      dispatch(clearWorkspaceSelection());
-      dispatch(baseApi.util.resetApiState());
+      await signOutLocal();
       router.replace("/");
     }
   };

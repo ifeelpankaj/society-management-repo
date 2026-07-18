@@ -7,7 +7,8 @@ import {
 } from "@/lib/api/generated-api";
 import { setSelectedFlat } from "@/redux/appSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { canManageFlatVisitors } from "@/features/resident/resident-access";
+import { saveWorkspace } from "@/features/auth/auth-storage";
+import { canManageFlatMembers, canManageFlatVisitors } from "@/features/resident/resident-access";
 
 type ResidentContextValue = {
   isLoading: boolean;
@@ -17,6 +18,7 @@ type ResidentContextValue = {
   flatId?: number;
   isPrimary: boolean;
   canManageFlatVisitors: boolean;
+  canManageFlatMembers: boolean;
   requiresSelection: boolean;
   selectResidence: (flatId: number) => void;
   refetch: () => void;
@@ -53,8 +55,12 @@ export function ResidentProvider({ children }: PropsWithChildren) {
       flatId: selectedResidence?.flat_id,
       isPrimary: selectedResidence?.is_primary === true,
       canManageFlatVisitors: canManageFlatVisitors(selectedResidence),
+      canManageFlatMembers: canManageFlatMembers(selectedResidence),
       requiresSelection: residences.length > 1 && !selectedResidence,
-      selectResidence: (flatId: number) => dispatch(setSelectedFlat(flatId)),
+      selectResidence: (flatId: number) => {
+        dispatch(setSelectedFlat(flatId));
+        void saveWorkspace({ flatId });
+      },
       refetch,
       user: data?.data?.user ?? null,
     }),

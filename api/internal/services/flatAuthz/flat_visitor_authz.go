@@ -84,7 +84,7 @@ func (a *FlatVisitorAuthz) CanManageFlatVisitors(ctx context.Context, societyID 
 		return nil
 	}
 
-	if a.isFlatManager(ctx, societyID, flatID, userID) {
+	if a.isActiveFlatResident(ctx, societyID, flatID, userID) {
 		return nil
 	}
 
@@ -132,15 +132,6 @@ func (a *FlatVisitorAuthz) ensureFlatInSociety(ctx context.Context, societyID in
 		return ErrFlatNotFound
 	}
 	return nil
-}
-
-func (a *FlatVisitorAuthz) isFlatManager(ctx context.Context, societyID int64, flatID int64, userID int64) bool {
-	resident, err := a.getActiveFlatResident(ctx, societyID, flatID, userID)
-	if err != nil || resident == nil {
-		return false
-	}
-
-	return resident.IsPrimary || resident.Role == models.FlatResidentRoleOwner
 }
 
 func (a *FlatVisitorAuthz) isActiveFlatResident(ctx context.Context, societyID int64, flatID int64, userID int64) bool {
