@@ -99,6 +99,18 @@ type VisitorInvite struct {
 	UpdatedAt time.Time           `json:"updated_at"`
 }
 
+// PublicVisitorInviteView is the public-safe invite payload for the visitor web form.
+type PublicVisitorInviteView struct {
+	ID          int64               `json:"id"`
+	Purpose     VisitorPurpose      `json:"purpose"`
+	Status      VisitorInviteStatus `json:"status"`
+	ExpiresAt   time.Time           `json:"expires_at"`
+	SocietyName string              `json:"society_name"`
+	FlatNumber  string              `json:"flat_number"`
+	Block       *string             `json:"block,omitempty"`
+	Floor       *string             `json:"floor,omitempty"`
+}
+
 type VisitorEntry struct {
 	ID                 int64               `json:"id"`
 	SocietyID          int64               `json:"society_id"`
@@ -340,6 +352,13 @@ type FlatRecentVisitorSummary struct {
 	Purpose    VisitorPurpose `json:"purpose"`
 	Status     VisitorStatus  `json:"status"`
 	VisitedOn  time.Time      `json:"visited_on"`
+}
+
+type GuardDeskBootstrapResponse struct {
+	Society            *SocietyResponse           `json:"society"`
+	Stats              *VisitorEntryStatsResponse `json:"stats"`
+	ExpectedTodayCount int64                      `json:"expected_today_count"`
+	PendingPreview     []*VisitorPendingEntry     `json:"pending_preview"`
 }
 
 type SocietyFlatVisitorSettingRow struct {

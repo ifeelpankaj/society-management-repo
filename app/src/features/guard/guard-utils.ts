@@ -248,6 +248,117 @@ export function formatDateTime(value?: string | null) {
   }).format(date);
 }
 
+export function formatActivityTimestamp(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const time = formatTimeOfDay(value);
+
+  if (!time) {
+    return formatDateTime(value);
+  }
+
+  if (isToday(value)) {
+    return `Today, ${time}`;
+  }
+
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
+  ) {
+    return `Yesterday, ${time}`;
+  }
+
+  return formatDateTime(value);
+}
+
+export type VisitorStatusMeta = {
+  bg: string;
+  border: string;
+  color: string;
+  label: string;
+};
+
+export function getVisitorStatusMeta(status?: ModelsVisitorStatus): VisitorStatusMeta {
+  switch (status) {
+    case "waiting_approval":
+      return {
+        bg: "#fffbeb",
+        border: "#fde68a",
+        color: "#92400e",
+        label: "Pending",
+      };
+    case "approved":
+      return {
+        bg: "#ecfdf5",
+        border: "#bbf7d0",
+        color: "#166534",
+        label: "Approved",
+      };
+    case "checked_in":
+      return {
+        bg: "#ecfdf5",
+        border: "#bbf7d0",
+        color: "#166534",
+        label: "Checked In",
+      };
+    case "checked_out":
+      return {
+        bg: "#f8fafc",
+        border: "#e2e8f0",
+        color: "#64748b",
+        label: "Checked Out",
+      };
+    case "rejected":
+      return {
+        bg: "#fef2f2",
+        border: "#fecaca",
+        color: "#b91c1c",
+        label: "Rejected",
+      };
+    case "expired":
+      return {
+        bg: "#fef2f2",
+        border: "#fecaca",
+        color: "#b91c1c",
+        label: "Expired",
+      };
+    case "cancelled":
+      return {
+        bg: "#f8fafc",
+        border: "#e2e8f0",
+        color: "#64748b",
+        label: "Cancelled",
+      };
+    case "auto_closed":
+      return {
+        bg: "#f8fafc",
+        border: "#e2e8f0",
+        color: "#64748b",
+        label: "Auto Closed",
+      };
+    default:
+      return {
+        bg: "#f8fafc",
+        border: "#e2e8f0",
+        color: "#64748b",
+        label: titleize(status),
+      };
+  }
+}
+
 export function statusTone(status?: ModelsVisitorStatus) {
   switch (status) {
     case "approved":

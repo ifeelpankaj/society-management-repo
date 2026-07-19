@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, Card, LoadingState } from "@/components/ui";
@@ -10,9 +10,16 @@ import { titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
 import { useResident } from "@/features/resident/resident-context";
 import {
+  copyVisitorInviteLink,
+  formatVisitorInviteShareMessage,
+  shareVisitorInvite,
+  shareVisitorInviteOnWhatsApp,
+} from "@/features/visitors/visitor-invite-share";
+import {
   type ModelsVisitorPurpose,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesMutation,
 } from "@/lib/api/generated-api";
+import { buildVisitorInviteUrl } from "@/lib/config";
 import { theme } from "@/lib/theme";
 
 type CreatedInvite = {
@@ -20,15 +27,6 @@ type CreatedInvite = {
   token: string;
   expiresAt?: string;
 };
-
-function formatInviteShareMessage(invite: CreatedInvite) {
-  const purposeLabel = titleize(invite.purpose);
-  const expiryLine = invite.expiresAt
-    ? `\nExpires: ${new Date(invite.expiresAt).toLocaleString()}`
-    : "";
-
-  return `You're invited as a ${purposeLabel} visitor.\nUse this invite code: ${invite.token}${expiryLine}`;
-}
 
 export default function ResidentInviteScreen() {
   const router = useRouter();
@@ -94,22 +92,55 @@ export default function ResidentInviteScreen() {
     }
   };
 
+  const shareMessage = createdInvite
+    ? formatVisitorInviteShareMessage(createdInvite)
+    : "";
+
   const handleShareInvite = async () => {
     if (!createdInvite) {
       return;
     }
 
     try {
-      await Share.share({
-        message: formatInviteShareMessage(createdInvite),
-        title: "Visitor invite",
-      });
+      await shareVisitorInvite(shareMessage);
     } catch {
       Alert.alert("Share failed", "Unable to open the share sheet.");
     }
   };
 
+  const handleShareWhatsApp = async () => {
+    if (!createdInvite) {
+      return;
+    }
+
+    try {
+      await shareVisitorInviteOnWhatsApp(shareMessage);
+    } catch {
+      Alert.alert("Share failed", "Unable to open WhatsApp.");
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!createdInvite) {
+      return;
+    }
+
+    try {
+      const copied = await copyVisitorInviteLink(createdInvite.token);
+      Alert.alert(
+        copied ? "Link copied" : "Share link",
+        copied
+          ? "Visitor form link copied to clipboard."
+          : "Use the share sheet to copy the visitor form link.",
+      );
+    } catch {
+      Alert.alert("Copy failed", "Unable to copy the visitor form link.");
+    }
+  };
+
   if (createdInvite) {
+    const formUrl = buildVisitorInviteUrl(createdInvite.token);
+
     return (
       <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
         <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
@@ -120,7 +151,7 @@ export default function ResidentInviteScreen() {
                 Invite ready
               </Text>
               <Text className="text-sm" style={{ color: theme.text.secondary }}>
-                Share this invite code with your visitor so they can complete entry details.
+                Share this form link with your visitor so they can complete entry details on web.
               </Text>
             </View>
 
@@ -136,10 +167,22 @@ export default function ResidentInviteScreen() {
 
               <View className="gap-1">
                 <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                  Form link
+                </Text>
+                <Text
+                  className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-900"
+                  selectable
+                >
+                  {formUrl}
+                </Text>
+              </View>
+
+              <View className="gap-1">
+                <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
                   Invite code
                 </Text>
                 <Text
-                  className="rounded-xl bg-slate-100 px-4 py-3 font-mono text-sm text-slate-900"
+                  className="rounded-xl bg-slate-100 px-4 py-3 font-mono text-xs text-slate-900"
                   selectable
                 >
                   {createdInvite.token}
@@ -153,7 +196,9 @@ export default function ResidentInviteScreen() {
               ) : null}
             </Card>
 
-            <Button title="Share invite" onPress={handleShareInvite} />
+            <Button title="Share on WhatsApp" onPress={handleShareWhatsApp} />
+            <Button title="Copy link" variant="secondary" onPress={handleCopyLink} />
+            <Button title="Share invite" variant="secondary" onPress={handleShareInvite} />
             <Button title="Done" variant="secondary" onPress={() => router.back()} />
           </View>
         </ScrollView>
@@ -171,7 +216,7 @@ export default function ResidentInviteScreen() {
               Create invite
             </Text>
             <Text className="text-sm" style={{ color: theme.text.secondary }}>
-              Generate a pre-approved visitor invite for your flat.
+              Generate a shareable visitor form link for your flat.
             </Text>
           </View>
 

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { getTodayRange } from "@/features/guard/guard-routes";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
 import {
@@ -20,8 +21,11 @@ export function useGuardActivityFeed() {
         return { items: [], total: 0, limit, offset };
       }
 
+      const { createdFrom, createdTo } = getTodayRange();
       const response = await fetchEntries({
         societyId: selectedSocietyId,
+        createdFrom,
+        createdTo,
         limit,
         offset,
       }).unwrap();
@@ -44,5 +48,5 @@ export function useGuardActivityFeed() {
 }
 
 export const ACTIVITY_VISIBLE_ROWS = ACTIVITY_PAGE_SIZE;
-export const ACTIVITY_ROW_HEIGHT = 48;
+export const ACTIVITY_ROW_HEIGHT = 64;
 export const ACTIVITY_LIST_HEIGHT = ACTIVITY_ROW_HEIGHT * ACTIVITY_VISIBLE_ROWS;

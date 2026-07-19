@@ -276,6 +276,7 @@ export function GuardCommandCenter() {
               isLoading={activityFeed.isLoading}
               isLoadingMore={activityFeed.isLoadingMore}
               items={activityFeed.items}
+              showFlat
               onLoadMore={() => {
                 void activityFeed.loadMore();
               }}

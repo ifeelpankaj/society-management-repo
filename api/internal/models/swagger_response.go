@@ -128,6 +128,16 @@ type MessageAPIResponse struct {
 	Data    MessageData `json:"data"`
 }
 
+type DeviceTokenData struct {
+	DeviceToken *DeviceToken `json:"device_token"`
+}
+
+type RegisterDeviceTokenAPIResponse struct {
+	Success bool            `json:"success" example:"true"`
+	Message string          `json:"message" example:"Device token registered successfully"`
+	Data    DeviceTokenData `json:"data"`
+}
+
 type SocietyData struct {
 	Society *SocietyResponse `json:"society"`
 }
@@ -309,7 +319,7 @@ type VisitorEntryOptionsData struct {
 }
 
 type VisitorInviteData struct {
-	Invite *VisitorInvite `json:"invite"`
+	Invite *PublicVisitorInviteView `json:"invite"`
 }
 
 type VisitorInviteTokenData struct {
@@ -355,6 +365,16 @@ type VisitorPendingEntriesAPIResponse struct {
 	Success bool                      `json:"success" example:"true"`
 	Message string                    `json:"message" example:"Pending visitor approvals fetched successfully"`
 	Data    VisitorPendingEntriesData `json:"data"`
+}
+
+type GuardDeskBootstrapData struct {
+	Desk *GuardDeskBootstrapResponse `json:"desk"`
+}
+
+type GuardDeskBootstrapAPIResponse struct {
+	Success bool                   `json:"success" example:"true"`
+	Message string                 `json:"message" example:"Guard desk bootstrap fetched successfully"`
+	Data    GuardDeskBootstrapData `json:"data"`
 }
 
 type FlatVisitorContextData struct {

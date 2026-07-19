@@ -101,11 +101,53 @@ func (h *VisitorEntryHandler) CreateInvite(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
 // @Router /v1/public/visitor-invites/{token} [get]
 func (h *VisitorEntryHandler) GetInviteByToken(c *gin.Context) {
-	invite, err := h.inviteSvc.GetInviteByToken(c.Request.Context(), c.Param("token"))
+	invite, err := h.inviteSvc.GetPublicInviteByToken(c.Request.Context(), c.Param("token"))
 	if handleServiceError(c, err) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, "Visitor invite fetched successfully", gin.H{"invite": invite})
+}
+
+// CreateStaffInvite godoc
+// @Summary Create visitor invite (staff)
+// @Description [Staff] Creates a visitor invite for a flat and returns the invite plus shareable token details.
+// @Tags Visitor Entries
+// @Accept json
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param flatId path int true "Flat ID"
+// @Param request body models.CreateVisitorInviteRequest true "Visitor invite request"
+// @Success 201 {object} models.VisitorInviteTokenAPIResponse "Visitor invite created successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid request, validation error, or path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Society, flat, or visitor settings not found"
+// @Failure 409 {object} models.ErrorResponseDoc "Visitor invite cannot be created in current state"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/flats/{flatId}/visitor-invites/staff [post]
+func (h *VisitorEntryHandler) CreateStaffInvite(c *gin.Context) {
+	societyID, flatID, ok := visitorEntryFlatPath(c)
+	if !ok {
+		return
+	}
+	var req models.CreateVisitorInviteRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	if err := req.Validate(); err != nil {
+		utils.BadRequestResponse(c, err.Error())
+		return
+	}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+	token, invite, err := h.inviteSvc.CreateStaffInvite(c.Request.Context(), societyID, flatID, req.Purpose, userID, req.ExpiresAt)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusCreated, "Visitor invite created successfully", gin.H{"invite": invite, "token": token.QR})
 }
 
 // SubmitInviteForm godoc
@@ -563,6 +605,31 @@ func (h *VisitorEntryHandler) GetEntryStats(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, "Visitor entry stats fetched successfully", gin.H{"stats": stats})
+}
+
+// GetGuardDeskBootstrap godoc
+// @Summary Get guard desk bootstrap
+// @Description [Owner/Admin/Staff] Returns aggregated guard desk dashboard data for a society.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Success 200 {object} models.GuardDeskBootstrapAPIResponse "Guard desk bootstrap fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid society ID"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/guard-desk/bootstrap [get]
+func (h *VisitorEntryHandler) GetGuardDeskBootstrap(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	result, err := h.entrySvc.GetGuardDeskBootstrap(c.Request.Context(), societyID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Guard desk bootstrap fetched successfully", gin.H{"desk": result})
 }
 
 // ListSocietyPendingApprovals godoc

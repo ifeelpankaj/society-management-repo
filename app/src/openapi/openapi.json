@@ -1456,6 +1456,138 @@
         }
       }
     },
+    "/v1/me/device-tokens": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "Stores the authenticated user's FCM device token for push notifications.",
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Register or refresh a device push token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.RegisterDeviceTokenRequest"
+              }
+            }
+          },
+          "description": "Device token payload",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Device token registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.RegisterDeviceTokenAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid device token request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "Removes the authenticated user's FCM device token, typically on logout.",
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Unregister a device push token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.UnregisterDeviceTokenRequest"
+              }
+            }
+          },
+          "description": "Device token payload",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Device token removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.MessageAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid device token request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/flat-claims": {
       "get": {
         "security": [
@@ -5626,6 +5758,171 @@
         }
       }
     },
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-entries": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Resident] Lists visitor entries for a resident flat with optional status, purpose, and date filters.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "List flat visitor entries",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor status",
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "waiting_approval",
+                "approved",
+                "rejected",
+                "checked_in",
+                "checked_out",
+                "cancelled",
+                "expired",
+                "auto_closed"
+              ]
+            }
+          },
+          {
+            "description": "Visitor purpose",
+            "name": "purpose",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guest",
+                "delivery",
+                "cab",
+                "service",
+                "maintenance",
+                "staff",
+                "other"
+              ]
+            }
+          },
+          {
+            "description": "Created from (RFC3339)",
+            "name": "created_from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Created to (RFC3339)",
+            "name": "created_to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum records to return",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "description": "Records to skip",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visitor entries fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntriesAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Resident access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flat not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/flats/{flatId}/visitor-entries/pending": {
       "get": {
         "security": [
@@ -5755,15 +6052,7 @@
           }
         ],
         "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/models.CreateVisitorInviteRequest"
-              }
-            }
-          },
-          "description": "Visitor invite request",
-          "required": true
+          "$ref": "#/components/requestBodies/models.CreateVisitorInviteRequest"
         },
         "responses": {
           "201": {
@@ -5839,6 +6128,115 @@
         }
       }
     },
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-invites/staff": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Staff] Creates a visitor invite for a flat and returns the invite plus shareable token details.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Create visitor invite (staff)",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/models.CreateVisitorInviteRequest"
+        },
+        "responses": {
+          "201": {
+            "description": "Visitor invite created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorInviteTokenAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, validation error, or path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Society, flat, or visitor settings not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Visitor invite cannot be created in current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/flats/{flatId}/visitor-settings": {
       "get": {
         "security": [
@@ -5846,7 +6244,7 @@
             "AccessToken": []
           }
         ],
-        "description": "[Owner/Admin/Primary Resident] Fetches all visitor purpose settings for a flat.",
+        "description": "[Owner/Admin/Flat Resident] Fetches all visitor purpose settings for a flat.",
         "tags": [
           "Visitor Settings"
         ],
@@ -5903,7 +6301,7 @@
             }
           },
           "403": {
-            "description": "Owner/admin or primary resident access required",
+            "description": "Owner/admin or flat resident access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -5942,7 +6340,7 @@
             "AccessToken": []
           }
         ],
-        "description": "[Owner/Admin/Primary Resident] Resets a flat's visitor purpose settings back to the production defaults.",
+        "description": "[Owner/Admin/Flat Resident] Resets a flat's visitor purpose settings back to the production defaults.",
         "tags": [
           "Visitor Settings"
         ],
@@ -5999,7 +6397,7 @@
             }
           },
           "403": {
-            "description": "Owner/admin or primary resident access required",
+            "description": "Owner/admin or flat resident access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -6038,7 +6436,7 @@
             "AccessToken": []
           }
         ],
-        "description": "[Owner/Admin/Primary Resident] Updates approval, duration override, or enabled state for one visitor purpose on a flat.",
+        "description": "[Owner/Admin/Flat Resident] Updates approval, duration override, or enabled state for one visitor purpose on a flat.",
         "tags": [
           "Visitor Settings"
         ],
@@ -6124,7 +6522,7 @@
             }
           },
           "403": {
-            "description": "Owner/admin or primary resident access required",
+            "description": "Owner/admin or flat resident access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -6135,6 +6533,83 @@
           },
           "404": {
             "description": "Flat or visitor setting not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/guard-desk/bootstrap": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Returns aggregated guard desk dashboard data for a society.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Get guard desk bootstrap",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guard desk bootstrap fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.GuardDeskBootstrapAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid society ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
             "content": {
               "application/json": {
                 "schema": {
@@ -9616,6 +10091,17 @@
         "description": "Visitor QR token",
         "required": true
       },
+      "models.CreateVisitorInviteRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/models.CreateVisitorInviteRequest"
+            }
+          }
+        },
+        "description": "Visitor invite request",
+        "required": true
+      },
       "models.VisitorFormRequest": {
         "content": {
           "application/json": {
@@ -9736,6 +10222,41 @@
           "AuthProviderApple",
           "AuthProviderPhone"
         ]
+      },
+      "models.AuthRefreshData": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "access_token_expires_at": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "example": "Access token refreshed successfully"
+          }
+        }
+      },
+      "models.AuthSessionData": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "access_token_expires_at": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "refresh_token_expires_at": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/models.UserResponse"
+          }
+        }
       },
       "models.BillingCycle": {
         "type": "string",
@@ -10272,6 +10793,56 @@
           },
           "total": {
             "type": "integer"
+          }
+        }
+      },
+      "models.DevicePlatform": {
+        "type": "string",
+        "enum": [
+          "ios",
+          "android",
+          "web"
+        ],
+        "x-enum-varnames": [
+          "DevicePlatformIOS",
+          "DevicePlatformAndroid",
+          "DevicePlatformWeb"
+        ]
+      },
+      "models.DeviceToken": {
+        "type": "object",
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "last_seen_at": {
+            "type": "string"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/models.DevicePlatform"
+          },
+          "token": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "models.DeviceTokenData": {
+        "type": "object",
+        "properties": {
+          "device_token": {
+            "$ref": "#/components/schemas/models.DeviceToken"
           }
         }
       },
@@ -11049,6 +11620,50 @@
           }
         }
       },
+      "models.GuardDeskBootstrapAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.GuardDeskBootstrapData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Guard desk bootstrap fetched successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.GuardDeskBootstrapData": {
+        "type": "object",
+        "properties": {
+          "desk": {
+            "$ref": "#/components/schemas/models.GuardDeskBootstrapResponse"
+          }
+        }
+      },
+      "models.GuardDeskBootstrapResponse": {
+        "type": "object",
+        "properties": {
+          "expected_today_count": {
+            "type": "integer"
+          },
+          "pending_preview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/models.VisitorPendingEntry"
+            }
+          },
+          "society": {
+            "$ref": "#/components/schemas/models.SocietyResponse"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/models.VisitorEntryStatsResponse"
+          }
+        }
+      },
       "models.HealthCheckResponseDoc": {
         "type": "object",
         "properties": {
@@ -11104,7 +11719,7 @@
         "type": "object",
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/models.UserData"
+            "$ref": "#/components/schemas/models.AuthSessionData"
           },
           "message": {
             "type": "string",
@@ -11591,6 +12206,35 @@
           }
         }
       },
+      "models.PublicVisitorInviteView": {
+        "type": "object",
+        "properties": {
+          "block": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "flat_number": {
+            "type": "string"
+          },
+          "floor": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/models.VisitorPurpose"
+          },
+          "society_name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/models.VisitorInviteStatus"
+          }
+        }
+      },
       "models.QRTokenRequest": {
         "type": "object",
         "properties": {
@@ -11631,7 +12275,7 @@
         "type": "object",
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/models.MessageData"
+            "$ref": "#/components/schemas/models.AuthRefreshData"
           },
           "message": {
             "type": "string",
@@ -11656,6 +12300,40 @@
           "success": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "models.RegisterDeviceTokenAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.DeviceTokenData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Device token registered successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.RegisterDeviceTokenRequest": {
+        "type": "object",
+        "required": [
+          "platform",
+          "token"
+        ],
+        "properties": {
+          "device_id": {
+            "type": "string"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/models.DevicePlatform"
+          },
+          "token": {
+            "type": "string"
           }
         }
       },
@@ -12791,6 +13469,17 @@
           }
         }
       },
+      "models.UnregisterDeviceTokenRequest": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
       "models.UpdateFlatRequest": {
         "type": "object",
         "properties": {
@@ -13651,7 +14340,7 @@
         "type": "object",
         "properties": {
           "invite": {
-            "$ref": "#/components/schemas/models.VisitorInvite"
+            "$ref": "#/components/schemas/models.PublicVisitorInviteView"
           }
         }
       },

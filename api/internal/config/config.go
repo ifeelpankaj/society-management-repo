@@ -90,6 +90,10 @@ type Config struct {
 	SMTPPassword string
 	SMTPFrom     string
 
+	// Push notifications (FCM)
+	FCMEnabled         bool
+	FCMCredentialsPath string
+
 	// Security
 	EnableHTTPS    bool
 	TLSCertFile    string
@@ -247,6 +251,10 @@ func loadConfigInternal() (*Config, error) {
 		SMTPUser:     getEnv("SMTP_USERNAME", "user@example.com"),
 		SMTPPassword: getEnv("SMTP_PASSWORD", "password"),
 		SMTPFrom:     getEnv("SMTP_FROM_EMAIL", "noreply@example.com"),
+
+		// Push notifications
+		FCMEnabled:         getEnvAsBool("FCM_ENABLED", false),
+		FCMCredentialsPath: getEnv("FCM_CREDENTIALS_PATH", ""),
 
 		// Security
 		// EnableHTTPS:    getEnvAsBool("ENABLE_HTTPS", env == "production"),

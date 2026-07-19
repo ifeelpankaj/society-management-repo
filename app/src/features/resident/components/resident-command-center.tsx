@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useCallback } from "react";
 import { Pressable, Text, View, type ViewStyle } from "react-native";
@@ -242,14 +242,6 @@ export function ResidentCommandCenter() {
     void activityFeed.refresh();
   }, [activityFeed, refetchAll]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (dashboard.isReady) {
-        refetchAll();
-      }
-    }, [dashboard.isReady, refetchAll]),
-  );
-
   return (
     <View className="flex-1" style={{ backgroundColor: G.screenBg }}>
       <ResidentScreenShell
@@ -295,7 +287,7 @@ export function ResidentCommandCenter() {
               isLoading={activityFeed.isLoading}
               isLoadingMore={activityFeed.isLoadingMore}
               items={activityFeed.items}
-              title="Recent Activity"
+              title="Today's Activity"
               onLoadMore={() => {
                 void activityFeed.loadMore();
               }}

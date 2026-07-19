@@ -236,6 +236,31 @@ func (q *Queries) CheckOutVisitorEntry(ctx context.Context, arg CheckOutVisitorE
 	return i, err
 }
 
+const countExpectedTodayVisitorEntries = `-- name: CountExpectedTodayVisitorEntries :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+WHERE ve.society_id = $1
+  AND ve.status = 'approved'
+  AND (
+    (
+      ve.expected_at IS NOT NULL
+      AND ve.expected_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+      AND ve.expected_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )
+    OR (
+      ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+      AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )
+  )
+`
+
+func (q *Queries) CountExpectedTodayVisitorEntries(ctx context.Context, societyID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countExpectedTodayVisitorEntries, societyID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countMemberVisitorApprovals = `-- name: CountMemberVisitorApprovals :one
 SELECT
     COUNT(*) FILTER (WHERE ve.approved_by = $2)::bigint AS approved_count,

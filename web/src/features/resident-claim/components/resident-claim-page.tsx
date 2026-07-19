@@ -26,7 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { clearClientSession } from "@/features/auth/logout";
+import { completeClientSignOut } from "@/features/auth/logout";
 import {
   ClaimLoginForm,
   type ClaimLoginFormValues,
@@ -181,7 +181,7 @@ export function ResidentClaimPage({ societyCode }: ResidentClaimPageProps) {
 
     try {
       const response = await logout().unwrap();
-      clearClientSession(dispatch);
+      await completeClientSignOut(dispatch);
       setSubmittedClaimId(null);
       toast.success(getApiMessage(response, "Signed out successfully."), {
         id: toastId,

@@ -1482,6 +1482,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/device-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register or refresh a device push token
+         * @description Stores the authenticated user's FCM device token for push notifications.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Device token payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["models.RegisterDeviceTokenRequest"];
+                };
+            };
+            responses: {
+                /** @description Device token registered successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.RegisterDeviceTokenAPIResponse"];
+                    };
+                };
+                /** @description Invalid device token request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        /**
+         * Unregister a device push token
+         * @description Removes the authenticated user's FCM device token, typically on logout.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Device token payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["models.UnregisterDeviceTokenRequest"];
+                };
+            };
+            responses: {
+                /** @description Device token removed successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.MessageAPIResponse"];
+                    };
+                };
+                /** @description Invalid device token request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/flat-claims": {
         parameters: {
             query?: never;
@@ -2054,6 +2180,480 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/societies/{societyCode}/visitor-entries/public-qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create public QR visitor entry
+         * @description [Public] Creates a visitor entry from a society public QR flow. Approval may be required depending on visitor settings.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society code */
+                    societyCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.VisitorFormRequest"];
+            responses: {
+                /** @description Visitor entry created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryMutationAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, society code, or validation error */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Public QR visitor entry is disabled */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Society, flat, or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry cannot be created in current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/societies/{societyCode}/visitor-entries/quick-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create quick-link visitor entry
+         * @description [Public] Creates a visitor entry from a quick-link flow. Approval may be required depending on visitor settings.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society code */
+                    societyCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.VisitorFormRequest"];
+            responses: {
+                /** @description Visitor entry created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryMutationAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, society code, or validation error */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Quick-link visitor entry is disabled */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Society, flat, or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry cannot be created in current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/societies/{societyCode}/visitor-entry-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get visitor entry options
+         * @description [Public] Fetches allowed visitor purposes and flat/block options for the public visitor entry form.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society code */
+                    societyCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entry options fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryOptionsAPIResponse"];
+                    };
+                };
+                /** @description Invalid society code */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Society or flats not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/visitor-entries/qr/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate visitor QR token
+         * @description [Public] Validates a visitor QR token and returns the matching approved visitor entry.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.QRTokenRequest"];
+            responses: {
+                /** @description Visitor QR validated successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, token, or visitor entry state */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description QR token is expired, unavailable, or already used */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/visitor-invites/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get visitor invite by token
+         * @description [Public] Fetches an active visitor invite from its public token before the visitor submits details.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Visitor invite token */
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor invite fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorInviteAPIResponse"];
+                    };
+                };
+                /** @description Invalid token */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite is expired, used, or cancelled */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/visitor-invites/{token}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit visitor invite form
+         * @description [Public] Submits visitor details for an active resident invite and creates the visitor entry.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Visitor invite token */
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.VisitorFormRequest"];
+            responses: {
+                /** @description Visitor entry created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryMutationAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, token, or validation error */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite is expired, used, or cancelled */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4514,6 +5114,834 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get flat visitor context
+         * @description [Owner/Admin/Staff] Returns occupancy, primary resident, visitor settings summary, and recent visitors for a flat.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Flat visitor context fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.FlatVisitorContextAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Flat or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List flat visitor entries
+         * @description [Resident] Lists visitor entries for a resident flat with optional status, purpose, and date filters.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Visitor status */
+                    status?: "waiting_approval" | "approved" | "rejected" | "checked_in" | "checked_out" | "cancelled" | "expired" | "auto_closed";
+                    /** @description Visitor purpose */
+                    purpose?: "guest" | "delivery" | "cab" | "service" | "maintenance" | "staff" | "other";
+                    /** @description Created from (RFC3339) */
+                    created_from?: string;
+                    /** @description Created to (RFC3339) */
+                    created_to?: string;
+                    /** @description Maximum records to return */
+                    limit?: number;
+                    /** @description Records to skip */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entries fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntriesAPIResponse"];
+                    };
+                };
+                /** @description Invalid query or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Flat not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-entries/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pending visitor approvals
+         * @description [Resident] Lists visitor entries waiting for approval for a resident flat.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Pending visitor approvals fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntriesAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Flat not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create visitor invite
+         * @description [Resident] Creates a pre-approved visitor invite for a flat and returns the invite plus QR token details.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.CreateVisitorInviteRequest"];
+            responses: {
+                /** @description Visitor invite created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorInviteTokenAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, validation error, or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Society, flat, or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite cannot be created in current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-invites/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create visitor invite (staff)
+         * @description [Staff] Creates a visitor invite for a flat and returns the invite plus shareable token details.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.CreateVisitorInviteRequest"];
+            responses: {
+                /** @description Visitor invite created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorInviteTokenAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, validation error, or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Society, flat, or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite cannot be created in current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get flat visitor settings
+         * @description [Owner/Admin/Flat Resident] Fetches all visitor purpose settings for a flat.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Flat visitor settings fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.FlatVisitorSettingsAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner/admin or flat resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Flat or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-settings/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset flat visitor settings
+         * @description [Owner/Admin/Flat Resident] Resets a flat's visitor purpose settings back to the production defaults.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Flat visitor settings reset successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.MessageAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner/admin or flat resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Flat or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-settings/{purpose}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update flat visitor purpose setting
+         * @description [Owner/Admin/Flat Resident] Updates approval, duration override, or enabled state for one visitor purpose on a flat.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Flat ID */
+                    flatId: number;
+                    /** @description Visitor purpose */
+                    purpose: "guest" | "delivery" | "cab" | "service" | "maintenance" | "staff" | "other";
+                };
+                cookie?: never;
+            };
+            /** @description Flat visitor purpose setting update payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["models.UpdateFlatVisitorSettingRequest"];
+                };
+            };
+            responses: {
+                /** @description Flat visitor setting updated successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.FlatVisitorSettingAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, visitor purpose, or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner/admin or flat resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Flat or visitor setting not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/guard-desk/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get guard desk bootstrap
+         * @description [Owner/Admin/Staff] Returns aggregated guard desk dashboard data for a society.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Guard desk bootstrap fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.GuardDeskBootstrapAPIResponse"];
+                    };
+                };
+                /** @description Invalid society ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/societies/{societyId}/guards": {
         parameters: {
             query?: never;
@@ -4863,6 +6291,95 @@ export interface paths {
                 };
                 /** @description Invalid path parameter */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Member not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/members/{memberId}/visitor-approval-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get member visitor approval stats
+         * @description [Owner/Admin] Returns how many visitor entries a member has approved or rejected.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Member ID */
+                    memberId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Member visitor approval stats fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.MemberVisitorApprovalStatsAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Insufficient society role */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5920,6 +7437,1281 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/societies/{societyId}/visitor-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List visitor entries
+         * @description [Owner/Admin/Staff] Lists visitor entries for a society with optional flat, status, source, purpose, limit, and offset filters.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Flat ID */
+                    flat_id?: number;
+                    /** @description Visitor status */
+                    status?: "waiting_approval" | "approved" | "rejected" | "checked_in" | "checked_out" | "cancelled" | "expired" | "auto_closed";
+                    /** @description Visitor entry source */
+                    source?: "resident_link" | "public_qr" | "guard_entry" | "quick_link";
+                    /** @description Visitor purpose */
+                    purpose?: "guest" | "delivery" | "cab" | "service" | "maintenance" | "staff" | "other";
+                    /** @description Maximum records to return */
+                    limit?: number;
+                    /** @description Records to skip */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entries fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntriesAPIResponse"];
+                    };
+                };
+                /** @description Invalid query or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check in visitor
+         * @description [Owner/Admin/Staff] Checks in a visitor using a valid QR token.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.QRTokenRequest"];
+            responses: {
+                /** @description Visitor checked in successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, token, or visitor entry state */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description QR token is expired, unavailable, or already used */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/guard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create guard visitor entry
+         * @description [Owner/Admin/Staff] Creates a visitor entry from the guard desk for a society. Approval may be required depending on visitor settings.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["models.VisitorFormRequest"];
+            responses: {
+                /** @description Visitor entry created successfully */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryMutationAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, validation error, or society ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Society, flat, or visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry cannot be created in current state */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List society pending visitor approvals
+         * @description [Owner/Admin/Staff] Lists visitor entries waiting for approval across the society.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Flat ID */
+                    flat_id?: number;
+                    /** @description Block */
+                    block?: string;
+                    /** @description Maximum records to return */
+                    limit?: number;
+                    /** @description Records to skip */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Pending visitor approvals fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorPendingEntriesAPIResponse"];
+                    };
+                };
+                /** @description Invalid query or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get visitor entry stats
+         * @description [Owner/Admin/Staff] Returns visitor dashboard statistics for a society.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entry stats fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryStatsAPIResponse"];
+                    };
+                };
+                /** @description Invalid society ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/{entryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get visitor entry
+         * @description [Owner/Admin/Staff] Fetches one visitor entry by ID.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Visitor entry ID */
+                    entryId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entry fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve visitor entry
+         * @description [Resident] Approves a waiting visitor entry and returns QR token details for the visitor.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Visitor entry ID */
+                    entryId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entry approved successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryMutationAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Resident approval access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry is not waiting for approval */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/check-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check out visitor
+         * @description [Owner/Admin/Staff] Checks out a checked-in visitor entry.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Visitor entry ID */
+                    entryId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor checked out successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter or visitor entry state */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor is not checked in or already checked out */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List visitor entry events
+         * @description [Owner/Admin/Staff] Lists audit events recorded for a visitor entry.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Visitor entry ID */
+                    entryId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor entry events fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntryEventsAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject visitor entry
+         * @description [Resident] Rejects a waiting visitor entry with a reason.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Visitor entry ID */
+                    entryId: number;
+                };
+                cookie?: never;
+            };
+            /** @description Visitor rejection reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["models.RejectVisitorEntryRequest"];
+                };
+            };
+            responses: {
+                /** @description Visitor entry rejected successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.MessageAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, validation error, or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Resident rejection access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor entry is not waiting for approval */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-invites/{inviteId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel visitor invite
+         * @description [Resident] Cancels a visitor invite created for a society before it is used.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                    /** @description Visitor invite ID */
+                    inviteId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor invite cancelled successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.MessageAPIResponse"];
+                    };
+                };
+                /** @description Invalid path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Invite owner or resident access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor invite cannot be cancelled */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get society visitor settings
+         * @description [Owner/Admin] Fetches society-level visitor configuration for approval mode, QR entry, guard entry, pre-approval, durations, and active state.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Visitor settings fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.SocietyVisitorSettingsAPIResponse"];
+                    };
+                };
+                /** @description Invalid society ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Insufficient society role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update society visitor settings
+         * @description [Owner/Admin] Updates society-level visitor configuration. Boolean false values are accepted and persisted.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            /** @description Society visitor settings update payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["models.UpdateSocietyVisitorSettingsRequest"];
+                };
+            };
+            responses: {
+                /** @description Visitor settings updated successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.SocietyVisitorSettingsAPIResponse"];
+                    };
+                };
+                /** @description Invalid request, validation error, or invalid society ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Insufficient society role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Visitor settings not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/v1/societies/{societyId}/visitor-settings/flats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List society flat visitor settings
+         * @description [Owner/Admin] Lists flat-level visitor purpose settings across the society with pagination.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Flat ID */
+                    flat_id?: number;
+                    /** @description Block */
+                    block?: string;
+                    /** @description Visitor purpose */
+                    purpose?: "guest" | "delivery" | "cab" | "service" | "maintenance" | "staff" | "other";
+                    /** @description Maximum records to return */
+                    limit?: number;
+                    /** @description Records to skip */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Society flat visitor settings fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.SocietyFlatVisitorSettingsAPIResponse"];
+                    };
+                };
+                /** @description Invalid query or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Insufficient society role */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions": {
         parameters: {
             query?: never;
@@ -6287,6 +9079,19 @@ export interface components {
         };
         /** @enum {string} */
         "models.AuthProvider": "email" | "google" | "apple" | "phone";
+        "models.AuthRefreshData": {
+            access_token?: string;
+            access_token_expires_at?: string;
+            /** @example Access token refreshed successfully */
+            message?: string;
+        };
+        "models.AuthSessionData": {
+            access_token?: string;
+            access_token_expires_at?: string;
+            refresh_token?: string;
+            refresh_token_expires_at?: string;
+            user?: components["schemas"]["models.UserResponse"];
+        };
         /** @enum {string} */
         "models.BillingCycle": "monthly" | "yearly";
         "models.BootstrapAPIResponse": {
@@ -6402,6 +9207,10 @@ export interface components {
             starts_at: string;
             trial_ends_at: string;
         };
+        "models.CreateVisitorInviteRequest": {
+            expires_at?: string;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+        };
         /** @enum {string} */
         "models.DashboardKind": "developer" | "society_admin" | "select_society" | "onboarding";
         "models.DefaultDashboardResponse": {
@@ -6448,6 +9257,21 @@ export interface components {
             rejected?: number;
             suspended?: number;
             total?: number;
+        };
+        /** @enum {string} */
+        "models.DevicePlatform": "ios" | "android" | "web";
+        "models.DeviceToken": {
+            created_at?: string;
+            device_id?: string;
+            id?: number;
+            last_seen_at?: string;
+            platform?: components["schemas"]["models.DevicePlatform"];
+            token?: string;
+            updated_at?: string;
+            user_id?: number;
+        };
+        "models.DeviceTokenData": {
+            device_token?: components["schemas"]["models.DeviceToken"];
         };
         "models.ErrorData": {
             code?: string;
@@ -6503,6 +9327,9 @@ export interface components {
             requested_role?: components["schemas"]["models.FlatResidentRole"];
             reviewed_at?: string;
             reviewed_by?: number;
+            reviewer_email?: string;
+            reviewer_name?: string;
+            reviewer_phone?: string;
             society_code?: string;
             society_id?: number;
             society_name?: string;
@@ -6534,6 +9361,13 @@ export interface components {
         };
         "models.FlatData": {
             flat?: components["schemas"]["models.FlatResponse"];
+        };
+        "models.FlatRecentVisitorSummary": {
+            entry_id?: number;
+            full_name?: string;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            status?: components["schemas"]["models.VisitorStatus"];
+            visited_on?: string;
         };
         "models.FlatResidentAPIResponse": {
             data?: components["schemas"]["models.FlatResidentData"];
@@ -6616,6 +9450,62 @@ export interface components {
         };
         /** @enum {string} */
         "models.FlatStatus": "vacant" | "occupied" | "blocked";
+        "models.FlatVisitorContextAPIResponse": {
+            data?: components["schemas"]["models.FlatVisitorContextData"];
+            /** @example Flat visitor context fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.FlatVisitorContextData": {
+            context?: components["schemas"]["models.FlatVisitorContextResponse"];
+        };
+        "models.FlatVisitorContextResident": {
+            full_name?: string;
+            id?: number;
+            user_id?: number;
+        };
+        "models.FlatVisitorContextResponse": {
+            inherits_society_mode?: boolean;
+            occupancy_status?: components["schemas"]["models.FlatStatus"];
+            primary_resident?: components["schemas"]["models.FlatVisitorContextResident"];
+            recent_visitors?: components["schemas"]["models.FlatRecentVisitorSummary"][];
+            society_approval_mode?: components["schemas"]["models.VisitorApprovalMode"];
+            total_residents?: number;
+            visitor_settings?: components["schemas"]["models.FlatVisitorSettingsResponse"][];
+        };
+        "models.FlatVisitorSettingAPIResponse": {
+            data?: components["schemas"]["models.FlatVisitorSettingData"];
+            /** @example Flat visitor setting updated successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.FlatVisitorSettingData": {
+            visitor_setting?: components["schemas"]["models.FlatVisitorSettingsResponse"];
+        };
+        "models.FlatVisitorSettingsAPIResponse": {
+            data?: components["schemas"]["models.FlatVisitorSettingsData"];
+            /** @example Flat visitor settings fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.FlatVisitorSettingsData": {
+            visitor_settings?: components["schemas"]["models.FlatVisitorSettingsResponse"][];
+        };
+        "models.FlatVisitorSettingsResponse": {
+            approval_required?: boolean;
+            created_at?: string;
+            default_visit_duration_minutes?: number;
+            flat_id?: number;
+            id?: number;
+            is_enabled?: boolean;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            society_id?: number;
+            updated_at?: string;
+            updated_by?: number;
+        };
         "models.FlatsAPIResponse": {
             data?: components["schemas"]["models.FlatsData"];
             /** @example Flats fetched successfully */
@@ -6655,6 +9545,22 @@ export interface components {
         "models.GuardData": {
             guard?: components["schemas"]["models.CreateGuardResponse"];
         };
+        "models.GuardDeskBootstrapAPIResponse": {
+            data?: components["schemas"]["models.GuardDeskBootstrapData"];
+            /** @example Guard desk bootstrap fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.GuardDeskBootstrapData": {
+            desk?: components["schemas"]["models.GuardDeskBootstrapResponse"];
+        };
+        "models.GuardDeskBootstrapResponse": {
+            expected_today_count?: number;
+            pending_preview?: components["schemas"]["models.VisitorPendingEntry"][];
+            society?: components["schemas"]["models.SocietyResponse"];
+            stats?: components["schemas"]["models.VisitorEntryStatsResponse"];
+        };
         "models.HealthCheckResponseDoc": {
             /** @example go-server */
             app?: string;
@@ -6680,7 +9586,7 @@ export interface components {
             timestamp?: string;
         };
         "models.LoginAPIResponse": {
-            data?: components["schemas"]["models.UserData"];
+            data?: components["schemas"]["models.AuthSessionData"];
             /** @example Login successful */
             message?: string;
             /** @example true */
@@ -6697,6 +9603,20 @@ export interface components {
             message?: string;
             /** @example true */
             success?: boolean;
+        };
+        "models.MemberVisitorApprovalStatsAPIResponse": {
+            data?: components["schemas"]["models.MemberVisitorApprovalStatsData"];
+            /** @example Member visitor approval stats fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.MemberVisitorApprovalStatsData": {
+            stats?: components["schemas"]["models.MemberVisitorApprovalStatsResponse"];
+        };
+        "models.MemberVisitorApprovalStatsResponse": {
+            approved_count?: number;
+            rejected_count?: number;
         };
         "models.MessageAPIResponse": {
             data?: components["schemas"]["models.MessageData"];
@@ -6848,6 +9768,23 @@ export interface components {
             state?: string;
             total_flats?: number;
         };
+        "models.PublicVisitorInviteView": {
+            block?: string;
+            expires_at?: string;
+            flat_number?: string;
+            floor?: string;
+            id?: number;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            society_name?: string;
+            status?: components["schemas"]["models.VisitorInviteStatus"];
+        };
+        "models.QRTokenRequest": {
+            token?: string;
+        };
+        "models.QRTokenResponse": {
+            expires_at?: string;
+            token?: string;
+        };
         "models.ReadinessResponseDoc": {
             /** @example connected */
             database?: string;
@@ -6857,7 +9794,7 @@ export interface components {
             timestamp?: string;
         };
         "models.RefreshTokenAPIResponse": {
-            data?: components["schemas"]["models.MessageData"];
+            data?: components["schemas"]["models.AuthRefreshData"];
             /** @example Access token refreshed successfully */
             message?: string;
             /** @example true */
@@ -6870,6 +9807,18 @@ export interface components {
             /** @example true */
             success?: boolean;
         };
+        "models.RegisterDeviceTokenAPIResponse": {
+            data?: components["schemas"]["models.DeviceTokenData"];
+            /** @example Device token registered successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.RegisterDeviceTokenRequest": {
+            device_id?: string;
+            platform: components["schemas"]["models.DevicePlatform"];
+            token: string;
+        };
         "models.RegisterRequest": {
             email: string;
             first_name: string;
@@ -6879,6 +9828,9 @@ export interface components {
         };
         "models.RejectFlatClaimRequest": {
             reason: string;
+        };
+        "models.RejectVisitorEntryRequest": {
+            reason?: string;
         };
         "models.RenewSubscriptionRequest": {
             ends_at: string;
@@ -7004,6 +9956,28 @@ export interface components {
             total_blocks?: number;
             total_flats?: number;
             updated_at?: string;
+        };
+        "models.SocietyFlatVisitorSettingRow": {
+            approval_required?: boolean;
+            block?: string;
+            default_visit_duration_minutes?: number;
+            flat_id?: number;
+            flat_number?: string;
+            is_enabled?: boolean;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+        };
+        "models.SocietyFlatVisitorSettingsAPIResponse": {
+            data?: components["schemas"]["models.SocietyFlatVisitorSettingsData"];
+            /** @example Society flat visitor settings fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.SocietyFlatVisitorSettingsData": {
+            limit?: number;
+            offset?: number;
+            settings?: components["schemas"]["models.SocietyFlatVisitorSettingRow"][];
+            total?: number;
         };
         "models.SocietyMemberAPIResponse": {
             data?: components["schemas"]["models.SocietyMemberData"];
@@ -7144,6 +10118,31 @@ export interface components {
             trial_ends_at?: string;
             updated_at?: string;
         };
+        "models.SocietyVisitorSettingsAPIResponse": {
+            data?: components["schemas"]["models.SocietyVisitorSettingsData"];
+            /** @example Visitor settings fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.SocietyVisitorSettingsData": {
+            visitor_settings?: components["schemas"]["models.SocietyVisitorSettingsResponse"];
+        };
+        "models.SocietyVisitorSettingsResponse": {
+            allow_guard_entry?: boolean;
+            allow_public_qr_entry?: boolean;
+            allow_resident_pre_approval?: boolean;
+            approval_mode?: components["schemas"]["models.VisitorApprovalMode"];
+            created_at?: string;
+            default_visit_duration_minutes?: number;
+            grace_period_minutes?: number;
+            id?: number;
+            is_active?: boolean;
+            qr_expiry_minutes?: number;
+            society_id?: number;
+            updated_at?: string;
+            updated_by?: number;
+        };
         "models.SubmitFlatClaimRequest": {
             flat_id: number;
             metadata?: {
@@ -7197,6 +10196,9 @@ export interface components {
         "models.TransferOwnershipRequest": {
             new_owner_user_id: number;
         };
+        "models.UnregisterDeviceTokenRequest": {
+            token: string;
+        };
         "models.UpdateFlatRequest": {
             block?: string;
             flat_number?: string;
@@ -7209,6 +10211,11 @@ export interface components {
         };
         "models.UpdateFlatResidentRoleRequest": {
             role: components["schemas"]["models.FlatResidentRole"];
+        };
+        "models.UpdateFlatVisitorSettingRequest": {
+            approval_required?: boolean;
+            default_visit_duration_minutes?: number;
+            is_enabled?: boolean;
         };
         "models.UpdatePlanRequest": {
             billing_cycle?: components["schemas"]["models.BillingCycle"];
@@ -7241,6 +10248,16 @@ export interface components {
             state?: string;
             total_blocks?: number;
             total_flats?: number;
+        };
+        "models.UpdateSocietyVisitorSettingsRequest": {
+            allow_guard_entry?: boolean;
+            allow_public_qr_entry?: boolean;
+            allow_resident_pre_approval?: boolean;
+            approval_mode?: components["schemas"]["models.VisitorApprovalMode"];
+            default_visit_duration_minutes?: number;
+            grace_period_minutes?: number;
+            is_active?: boolean;
+            qr_expiry_minutes?: number;
         };
         "models.UserData": {
             user?: components["schemas"]["models.UserResponse"];
@@ -7286,10 +10303,298 @@ export interface components {
             email: string;
             otp: string;
         };
+        /** @enum {string} */
+        "models.VisitorApprovalMode": "mandatory" | "optional" | "hybrid";
+        "models.VisitorEntriesAPIResponse": {
+            data?: components["schemas"]["models.VisitorEntriesData"];
+            /** @example Visitor entries fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorEntriesData": {
+            entries?: components["schemas"]["models.VisitorEntry"][];
+            limit?: number;
+            offset?: number;
+            total?: number;
+        };
+        "models.VisitorEntry": {
+            approved_by?: number;
+            auto_closed_at?: string;
+            checked_in_at?: string;
+            checked_out_at?: string;
+            companion_details?: {
+                [key: string]: unknown;
+            }[];
+            companions_count?: number;
+            created_at?: string;
+            created_by?: number;
+            expected_at?: string;
+            expected_checkout_at?: string;
+            flat?: components["schemas"]["models.VisitorFlatSummary"];
+            flat_id?: number;
+            handled_by_guard_id?: number;
+            id?: number;
+            invite_id?: number;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            notes?: string;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            qr_expires_at?: string;
+            qr_used_at?: string;
+            rejected_by?: number;
+            rejection_reason?: string;
+            society_id?: number;
+            source?: components["schemas"]["models.VisitorEntrySource"];
+            status?: components["schemas"]["models.VisitorStatus"];
+            updated_at?: string;
+            vehicle_number?: string;
+            vehicle_type?: components["schemas"]["models.VisitorVehicleType"];
+            visitor?: components["schemas"]["models.VisitorSummary"];
+            visitor_id?: number;
+        };
+        "models.VisitorEntryAPIResponse": {
+            data?: components["schemas"]["models.VisitorEntryData"];
+            /** @example Visitor entry fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorEntryData": {
+            entry?: components["schemas"]["models.VisitorEntry"];
+        };
+        "models.VisitorEntryEvent": {
+            actor_user_id?: number;
+            created_at?: string;
+            event_type?: components["schemas"]["models.VisitorEventType"];
+            id?: number;
+            message?: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            society_id?: number;
+            visitor_entry_id?: number;
+        };
+        "models.VisitorEntryEventsAPIResponse": {
+            data?: components["schemas"]["models.VisitorEntryEventsData"];
+            /** @example Visitor entry events fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorEntryEventsData": {
+            events?: components["schemas"]["models.VisitorEntryEvent"][];
+        };
+        "models.VisitorEntryMutationAPIResponse": {
+            data?: components["schemas"]["models.VisitorEntryMutationResponse"];
+            /** @example Visitor entry created successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorEntryMutationResponse": {
+            entry?: components["schemas"]["models.VisitorEntry"];
+            qr?: components["schemas"]["models.QRTokenResponse"];
+        };
+        "models.VisitorEntryOptionsAPIResponse": {
+            data?: components["schemas"]["models.VisitorEntryOptionsData"];
+            /** @example Visitor entry options fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorEntryOptionsBlock": {
+            block?: string;
+            flats?: components["schemas"]["models.VisitorEntryOptionsFlat"][];
+        };
+        "models.VisitorEntryOptionsData": {
+            options?: components["schemas"]["models.VisitorEntryOptionsResponse"];
+        };
+        "models.VisitorEntryOptionsFlat": {
+            block?: string;
+            flat_number?: string;
+            floor?: string;
+            id?: number;
+        };
+        "models.VisitorEntryOptionsResponse": {
+            blocks?: components["schemas"]["models.VisitorEntryOptionsBlock"][];
+            flats?: components["schemas"]["models.VisitorEntryOptionsFlat"][];
+            purposes?: components["schemas"]["models.VisitorPurpose"][];
+        };
+        /** @enum {string} */
+        "models.VisitorEntrySource": "resident_link" | "public_qr" | "guard_entry" | "quick_link";
+        "models.VisitorEntryStatsAPIResponse": {
+            data?: components["schemas"]["models.VisitorEntryStatsData"];
+            /** @example Visitor entry stats fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorEntryStatsData": {
+            stats?: components["schemas"]["models.VisitorEntryStatsResponse"];
+        };
+        "models.VisitorEntryStatsResponse": {
+            auto_closed_today?: number;
+            checked_out_today?: number;
+            pending_approvals?: number;
+            rejected_today?: number;
+            today_visitors?: number;
+            visitors_inside?: number;
+        };
+        /** @enum {string} */
+        "models.VisitorEventType": "created" | "approved" | "rejected" | "checked_in" | "checked_out" | "cancelled" | "expired" | "auto_closed" | "qr_generated" | "qr_used";
+        "models.VisitorFlatSummary": {
+            block?: string;
+            flat_number?: string;
+            floor?: string;
+            id?: number;
+        };
+        "models.VisitorFormRequest": {
+            companion_details?: {
+                [key: string]: unknown;
+            }[];
+            companions_count?: number;
+            email?: string;
+            expected_at?: string;
+            expected_checkout_at?: string;
+            flat_id?: number;
+            full_name?: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            notes?: string;
+            phone_number?: string;
+            photo_url?: string;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            vehicle_number?: string;
+            vehicle_type?: components["schemas"]["models.VisitorVehicleType"];
+        };
+        "models.VisitorInvite": {
+            created_at?: string;
+            created_by?: number;
+            expires_at?: string;
+            flat_id?: number;
+            id?: number;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            society_id?: number;
+            status?: components["schemas"]["models.VisitorInviteStatus"];
+            updated_at?: string;
+            used_at?: string;
+        };
+        "models.VisitorInviteAPIResponse": {
+            data?: components["schemas"]["models.VisitorInviteData"];
+            /** @example Visitor invite fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorInviteData": {
+            invite?: components["schemas"]["models.PublicVisitorInviteView"];
+        };
+        /** @enum {string} */
+        "models.VisitorInviteStatus": "active" | "used" | "expired" | "cancelled";
+        "models.VisitorInviteTokenAPIResponse": {
+            data?: components["schemas"]["models.VisitorInviteTokenData"];
+            /** @example Visitor invite created successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorInviteTokenData": {
+            invite?: components["schemas"]["models.VisitorInvite"];
+            token?: components["schemas"]["models.QRTokenResponse"];
+        };
+        "models.VisitorPendingEntriesAPIResponse": {
+            data?: components["schemas"]["models.VisitorPendingEntriesData"];
+            /** @example Pending visitor approvals fetched successfully */
+            message?: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "models.VisitorPendingEntriesData": {
+            entries?: components["schemas"]["models.VisitorPendingEntry"][];
+            limit?: number;
+            offset?: number;
+            total?: number;
+        };
+        "models.VisitorPendingEntry": {
+            approved_by?: number;
+            auto_closed_at?: string;
+            checked_in_at?: string;
+            checked_out_at?: string;
+            companion_details?: {
+                [key: string]: unknown;
+            }[];
+            companions_count?: number;
+            created_at?: string;
+            created_by?: number;
+            expected_at?: string;
+            expected_checkout_at?: string;
+            flat?: components["schemas"]["models.VisitorFlatSummary"];
+            flat_id?: number;
+            handled_by_guard_id?: number;
+            id?: number;
+            invite_id?: number;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            notes?: string;
+            primary_resident_id?: number;
+            primary_resident_name?: string;
+            purpose?: components["schemas"]["models.VisitorPurpose"];
+            qr_expires_at?: string;
+            qr_used_at?: string;
+            rejected_by?: number;
+            rejection_reason?: string;
+            society_id?: number;
+            source?: components["schemas"]["models.VisitorEntrySource"];
+            status?: components["schemas"]["models.VisitorStatus"];
+            updated_at?: string;
+            vehicle_number?: string;
+            vehicle_type?: components["schemas"]["models.VisitorVehicleType"];
+            visitor?: components["schemas"]["models.VisitorSummary"];
+            visitor_id?: number;
+            waiting_since?: string;
+        };
+        /** @enum {string} */
+        "models.VisitorPurpose": "guest" | "delivery" | "cab" | "service" | "maintenance" | "staff" | "other";
+        /** @enum {string} */
+        "models.VisitorStatus": "waiting_approval" | "approved" | "rejected" | "checked_in" | "checked_out" | "cancelled" | "expired" | "auto_closed";
+        "models.VisitorSummary": {
+            email?: string;
+            full_name?: string;
+            phone_number?: string;
+            photo_url?: string;
+        };
+        /** @enum {string} */
+        "models.VisitorVehicleType": "bike" | "car" | "auto" | "cab" | "truck" | "other";
     };
     responses: never;
     parameters: never;
-    requestBodies: never;
+    requestBodies: {
+        /** @description Visitor QR token */
+        "models.QRTokenRequest": {
+            content: {
+                "application/json": components["schemas"]["models.QRTokenRequest"];
+            };
+        };
+        /** @description Visitor invite request */
+        "models.CreateVisitorInviteRequest": {
+            content: {
+                "application/json": components["schemas"]["models.CreateVisitorInviteRequest"];
+            };
+        };
+        /** @description Visitor details */
+        "models.VisitorFormRequest": {
+            content: {
+                "application/json": components["schemas"]["models.VisitorFormRequest"];
+            };
+        };
+    };
     headers: never;
     pathItems: never;
 }

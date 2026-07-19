@@ -5,37 +5,64 @@ import {
   ACTIVITY_ROW_HEIGHT,
 } from "@/features/guard/hooks/use-guard-activity-feed";
 import {
-  formatTimeOfDay,
+  formatActivityTimestamp,
+  getFlatLabel,
   getVisitorName,
+  getVisitorStatusMeta,
+  titleize,
 } from "@/features/guard/guard-utils";
 import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { theme } from "@/lib/theme";
 
 const G = theme.guard;
 
-function ActivityTimelineItem({ entry }: { entry: ModelsVisitorEntry }) {
+function ActivityTimelineItem({
+  entry,
+  showFlat,
+}: {
+  entry: ModelsVisitorEntry;
+  showFlat?: boolean;
+}) {
   const name = getVisitorName(entry);
-  const isExit = entry.status === "checked_out";
-  const time = formatTimeOfDay(
+  const statusMeta = getVisitorStatusMeta(entry.status);
+  const timestamp = formatActivityTimestamp(
     entry.checked_out_at ?? entry.checked_in_at ?? entry.updated_at ?? entry.created_at,
   );
-  const dotColor = isExit ? theme.status.error : theme.status.success;
-  const verb = isExit ? "exited" : "entered";
+  const purpose = entry.purpose ? titleize(entry.purpose) : "Visitor";
+  const flatLabel = showFlat ? getFlatLabel(entry) : null;
 
   return (
-    <View
-      className="flex-row items-center gap-3 px-1"
-      style={{ height: ACTIVITY_ROW_HEIGHT }}
-    >
-      <View className="h-2 w-2 rounded-full" style={{ backgroundColor: dotColor }} />
-      <Text className="flex-1 text-[14px] leading-5" style={{ color: G.text }}>
-        <Text className="font-semibold">{name}</Text>
-        <Text style={{ color: G.textMuted }}>
-          {" "}
-          {verb}
-          {time ? ` ${time}` : ""}
+    <View className="gap-1 px-1 py-2" style={{ minHeight: ACTIVITY_ROW_HEIGHT }}>
+      <View className="flex-row items-start justify-between gap-2">
+        <Text
+          className="flex-1 text-[14px] font-semibold leading-5"
+          numberOfLines={1}
+          style={{ color: G.text }}
+        >
+          {name}
         </Text>
+        <View
+          className="rounded-full border px-2 py-0.5"
+          style={{
+            backgroundColor: statusMeta.bg,
+            borderColor: statusMeta.border,
+          }}
+        >
+          <Text className="text-[10px] font-semibold" style={{ color: statusMeta.color }}>
+            {statusMeta.label}
+          </Text>
+        </View>
+      </View>
+
+      <Text className="text-[12px] leading-4" style={{ color: G.textMuted }} numberOfLines={1}>
+        {[purpose, flatLabel].filter(Boolean).join(" · ")}
       </Text>
+
+      {timestamp ? (
+        <Text className="text-[12px] font-medium leading-4" style={{ color: G.textMuted }}>
+          {timestamp}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -59,6 +86,7 @@ type TodayActivityFeedProps = {
   items: ModelsVisitorEntry[];
   onLoadMore: () => void;
   onViewAll: () => void;
+  showFlat?: boolean;
   title?: string;
 };
 
@@ -69,6 +97,7 @@ export function TodayActivityFeed({
   items,
   onLoadMore,
   onViewAll,
+  showFlat = false,
   title = "Today's Activity",
 }: TodayActivityFeedProps) {
   return (
@@ -114,7 +143,9 @@ export function TodayActivityFeed({
           data={items}
           ItemSeparatorComponent={ItemSeparator}
           keyExtractor={(item) => `activity-${item.id}`}
-          renderItem={({ item }) => <ActivityTimelineItem entry={item} />}
+          renderItem={({ item }) => (
+            <ActivityTimelineItem entry={item} showFlat={showFlat} />
+          )}
           scrollEnabled={items.length > 4 || hasMore}
           showsVerticalScrollIndicator={false}
           style={{ height: ACTIVITY_LIST_HEIGHT }}

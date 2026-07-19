@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { clearClientSession } from "@/features/auth/logout";
+import { completeClientSignOut } from "@/features/auth/logout";
 import { usePostV1AuthLogoutMutation } from "@/lib/api/generated-api";
 import { getApiErrorMessage, getApiMessage } from "@/lib/api-message";
 import { appConfig } from "@/lib/config";
@@ -128,7 +128,7 @@ export function DeveloperSidebar() {
 
     try {
       const response = await logout().unwrap();
-      clearClientSession(dispatch);
+      await completeClientSignOut(dispatch);
       toast.success(getApiMessage(response, "Signed out successfully."), {
         id: toastId,
       });

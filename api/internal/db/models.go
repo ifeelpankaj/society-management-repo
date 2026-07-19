@@ -97,6 +97,49 @@ func (ns NullBillingCycle) Value() (driver.Value, error) {
 	return string(ns.BillingCycle), nil
 }
 
+type DevicePlatform string
+
+const (
+	DevicePlatformIos     DevicePlatform = "ios"
+	DevicePlatformAndroid DevicePlatform = "android"
+	DevicePlatformWeb     DevicePlatform = "web"
+)
+
+func (e *DevicePlatform) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = DevicePlatform(s)
+	case string:
+		*e = DevicePlatform(s)
+	default:
+		return fmt.Errorf("unsupported scan type for DevicePlatform: %T", src)
+	}
+	return nil
+}
+
+type NullDevicePlatform struct {
+	DevicePlatform DevicePlatform `json:"device_platform"`
+	Valid          bool           `json:"valid"` // Valid is true if DevicePlatform is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullDevicePlatform) Scan(value interface{}) error {
+	if value == nil {
+		ns.DevicePlatform, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.DevicePlatform.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullDevicePlatform) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.DevicePlatform), nil
+}
+
 type FlatClaimStatus string
 
 const (
@@ -854,6 +897,17 @@ func (ns NullVisitorVehicleType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.VisitorVehicleType), nil
+}
+
+type DeviceToken struct {
+	ID         int64              `db:"id" json:"id"`
+	UserID     int64              `db:"user_id" json:"user_id"`
+	Token      string             `db:"token" json:"token"`
+	Platform   DevicePlatform     `db:"platform" json:"platform"`
+	DeviceID   *string            `db:"device_id" json:"device_id"`
+	LastSeenAt pgtype.Timestamptz `db:"last_seen_at" json:"last_seen_at"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type Flat struct {

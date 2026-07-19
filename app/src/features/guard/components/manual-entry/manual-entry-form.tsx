@@ -18,15 +18,26 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import {
   flatFromResponse,
+  formatSelectedFlatLabel,
   type SelectedFlat,
   useGuardManualEntry,
 } from "@/features/guard/hooks/useGuardManualEntry";
+import { useGuardVisitorInvite } from "@/features/guard/hooks/useGuardVisitorInvite";
+import {
+  copyVisitorInviteLink,
+  formatVisitorInviteShareMessage,
+  shareVisitorInvite,
+  shareVisitorInviteOnWhatsApp,
+} from "@/features/visitors/visitor-invite-share";
 import {
   type ModelsVisitorPurpose,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery,
   useGetV1SocietiesBySocietyIdFlatsQuery,
 } from "@/lib/api/generated-api";
+import { buildVisitorInviteUrl } from "@/lib/config";
 import { theme } from "@/lib/theme";
+
+type EntryMode = "full_entry" | "form_link";
 
 const G = theme.guard;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -530,6 +541,104 @@ function PurposePicker({
   );
 }
 
+function EntryModeToggle({
+  value,
+  onChange,
+}: {
+  value: EntryMode;
+  onChange: (mode: EntryMode) => void;
+}) {
+  return (
+    <View className="flex-row gap-2 rounded-2xl bg-white p-1" style={{ borderWidth: 1, borderColor: G.border }}>
+      {(
+        [
+          { id: "full_entry" as const, label: "Full entry" },
+          { id: "form_link" as const, label: "Send form link" },
+        ] as const
+      ).map((option) => {
+        const active = value === option.id;
+
+        return (
+          <Pressable
+            key={option.id}
+            className="flex-1 items-center rounded-[14px] py-3"
+            style={{ backgroundColor: active ? G.teal : "transparent" }}
+            onPress={() => onChange(option.id)}
+          >
+            <Text
+              className="text-[14px] font-semibold"
+              style={{ color: active ? "#ffffff" : G.textMuted }}
+            >
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function InviteLinkSuccessCard({
+  invite,
+  onClear,
+}: {
+  invite: {
+    purpose: ModelsVisitorPurpose;
+    token: string;
+    expiresAt?: string;
+    flat?: SelectedFlat | null;
+  };
+  onClear: () => void;
+}) {
+  const formUrl = buildVisitorInviteUrl(invite.token);
+  const shareMessage = formatVisitorInviteShareMessage(invite);
+
+  return (
+    <View
+      className="gap-3 rounded-[20px] bg-white p-5"
+      style={{ borderWidth: 1, borderColor: "#99f6e4", boxShadow: G.heroShadow }}
+    >
+      <Text className="text-[15px] font-semibold text-teal-700">Form link ready</Text>
+      <Text className="text-[16px] font-medium text-slate-900">
+        {titleize(invite.purpose)} · {formatSelectedFlatLabel(invite.flat)}
+      </Text>
+      <Text className="rounded-xl bg-slate-100 px-3 py-3 text-[13px] text-slate-800" selectable>
+        {formUrl}
+      </Text>
+      {invite.expiresAt ? (
+        <Text className="text-[13px] text-slate-500">
+          Expires {new Date(invite.expiresAt).toLocaleString()}
+        </Text>
+      ) : null}
+      <View className="gap-2">
+        <Pressable
+          className="items-center rounded-xl bg-teal-700 py-3"
+          onPress={() => shareVisitorInviteOnWhatsApp(shareMessage)}
+        >
+          <Text className="font-semibold text-white">Share on WhatsApp</Text>
+        </Pressable>
+        <View className="flex-row gap-2">
+          <Pressable
+            className="flex-1 items-center rounded-xl bg-slate-100 py-3"
+            onPress={() => copyVisitorInviteLink(invite.token)}
+          >
+            <Text className="font-semibold text-slate-700">Copy link</Text>
+          </Pressable>
+          <Pressable
+            className="flex-1 items-center rounded-xl bg-slate-100 py-3"
+            onPress={() => shareVisitorInvite(shareMessage)}
+          >
+            <Text className="font-semibold text-slate-700">Share</Text>
+          </Pressable>
+        </View>
+        <Pressable className="items-center rounded-xl bg-slate-100 py-3" onPress={onClear}>
+          <Text className="font-semibold text-slate-700">New link</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 type ManualEntryFormProps = {
   societyId: number;
   societyName?: string | null;
@@ -540,9 +649,18 @@ type ManualEntryFormProps = {
 export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: ManualEntryFormProps) {
   const insets = useSafeAreaInsets();
   const form = useGuardManualEntry(societyId);
+  const inviteForm = useGuardVisitorInvite(societyId);
+  const [entryMode, setEntryMode] = useState<EntryMode>("full_entry");
   const [showExtra, setShowExtra] = useState(false);
 
   const handleSubmit = async () => {
+    if (entryMode === "form_link") {
+      const result = await inviteForm.submit();
+      if (result.success) onSuccess(result.message);
+      else onError(result.message);
+      return;
+    }
+
     const result = await form.submit();
     if (result.success) onSuccess(result.message);
     else onError(result.message);
@@ -554,7 +672,18 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
     else onError(result.message);
   };
 
-  const canSubmit = form.isFormValid && !form.createEntryState.isLoading;
+  const isFormLinkMode = entryMode === "form_link";
+  const canSubmit = isFormLinkMode
+    ? inviteForm.isFormValid && !inviteForm.createInviteState.isLoading
+    : form.isFormValid && !form.createEntryState.isLoading;
+  const isSubmitting = isFormLinkMode
+    ? inviteForm.createInviteState.isLoading
+    : form.createEntryState.isLoading;
+  const selectedFlat = isFormLinkMode ? inviteForm.selectedFlat : form.selectedFlat;
+  const flatError = isFormLinkMode ? inviteForm.flatError : form.errors.flat;
+  const purpose = isFormLinkMode ? inviteForm.purpose : form.purpose;
+  const setSelectedFlat = isFormLinkMode ? inviteForm.setSelectedFlat : form.setSelectedFlat;
+  const setPurpose = isFormLinkMode ? inviteForm.setPurpose : form.setPurpose;
 
   return (
     <View className="flex-1">
@@ -573,113 +702,135 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
           </Text>
         </View>
 
+        <EntryModeToggle value={entryMode} onChange={setEntryMode} />
+
         <FlatPicker
-          error={form.errors.flat}
-          selected={form.selectedFlat}
+          error={flatError}
+          selected={selectedFlat}
           societyId={societyId}
-          onSelect={form.setSelectedFlat}
+          onSelect={setSelectedFlat}
         />
 
-        <PurposePicker value={form.purpose} onChange={form.setPurpose} />
+        <PurposePicker value={purpose} onChange={setPurpose} />
 
-        <View className="gap-4">
-          <StepLabel step={3} title="Visitor details" />
-          <Field
-            autoCapitalize="words"
-            error={form.errors.fullName}
-            label="Visitor name"
-            placeholder="Full name"
-            value={form.fullName}
-            onChangeText={form.setFullName}
-          />
-          <Field
-            error={form.errors.phoneNumber}
-            keyboardType="phone-pad"
-            label="Phone number"
-            placeholder="10-digit mobile"
-            value={form.phoneNumber}
-            onChangeText={form.setPhoneNumber}
-          />
-        </View>
-
-        <Pressable className="flex-row items-center gap-2 py-1" onPress={() => setShowExtra((v) => !v)}>
-          <SymbolView
-            name={{
-              ios: showExtra ? "minus.circle" : "plus.circle",
-              android: showExtra ? "remove_circle" : "add_circle",
-              web: showExtra ? "remove_circle" : "add_circle",
-            }}
-            size={18}
-            tintColor={G.teal}
-          />
-          <Text className="text-[14px] font-medium text-teal-700">
-            {showExtra ? "Hide details" : "Additional details"}
-          </Text>
-          {form.optionalFieldsCount > 0 ? (
-            <View className="rounded-full bg-teal-50 px-2 py-0.5">
-              <Text className="text-[11px] font-bold text-teal-700">{form.optionalFieldsCount}</Text>
+        {!isFormLinkMode ? (
+          <>
+            <View className="gap-4">
+              <StepLabel step={3} title="Visitor details" />
+              <Field
+                autoCapitalize="words"
+                error={form.errors.fullName}
+                label="Visitor name"
+                placeholder="Full name"
+                value={form.fullName}
+                onChangeText={form.setFullName}
+              />
+              <Field
+                error={form.errors.phoneNumber}
+                keyboardType="phone-pad"
+                label="Phone number"
+                placeholder="10-digit mobile"
+                value={form.phoneNumber}
+                onChangeText={form.setPhoneNumber}
+              />
             </View>
-          ) : null}
-        </Pressable>
 
-        {showExtra ? (
-          <View className="gap-4">
-            <Field
-              autoCapitalize="none"
-              keyboardType="email-address"
-              label="Email"
-              placeholder="Optional"
-              value={form.email}
-              onChangeText={form.setEmail}
-            />
-            <Field
-              autoCapitalize="characters"
-              label="Vehicle number"
-              placeholder="Optional"
-              value={form.vehicleNumber}
-              onChangeText={form.setVehicleNumber}
-            />
-            <Field
-              label="Notes"
-              multiline
-              placeholder="Optional"
-              value={form.notes}
-              onChangeText={form.setNotes}
-            />
-          </View>
-        ) : null}
-
-        {form.createdEntry?.entry ? (
-          <View
-            className="gap-3 rounded-[20px] bg-white p-5"
-            style={{ borderWidth: 1, borderColor: "#99f6e4", boxShadow: G.heroShadow }}
-          >
-            <Text className="text-[15px] font-semibold text-teal-700">Entry created</Text>
-            <Text className="text-[16px] font-medium text-slate-900">
-              {getVisitorName(form.createdEntry.entry)}
-            </Text>
-            <Text className="text-[14px] text-slate-500">
-              {getFlatLabel(form.createdEntry.entry)} · {titleize(form.createdEntry.entry.purpose)}
-            </Text>
-            <View className="flex-row gap-2">
-              {form.createdEntry.qrToken && form.createdEntry.entry.status === "approved" ? (
-                <Pressable
-                  className="flex-1 items-center rounded-xl bg-teal-700 py-3"
-                  disabled={form.checkInState.isLoading}
-                  onPress={handleCheckIn}
-                >
-                  <Text className="font-semibold text-white">Check in</Text>
-                </Pressable>
+            <Pressable className="flex-row items-center gap-2 py-1" onPress={() => setShowExtra((v) => !v)}>
+              <SymbolView
+                name={{
+                  ios: showExtra ? "minus.circle" : "plus.circle",
+                  android: showExtra ? "remove_circle" : "add_circle",
+                  web: showExtra ? "remove_circle" : "add_circle",
+                }}
+                size={18}
+                tintColor={G.teal}
+              />
+              <Text className="text-[14px] font-medium text-teal-700">
+                {showExtra ? "Hide details" : "Additional details"}
+              </Text>
+              {form.optionalFieldsCount > 0 ? (
+                <View className="rounded-full bg-teal-50 px-2 py-0.5">
+                  <Text className="text-[11px] font-bold text-teal-700">{form.optionalFieldsCount}</Text>
+                </View>
               ) : null}
-              <Pressable
-                className="flex-1 items-center rounded-xl bg-slate-100 py-3"
-                onPress={form.clearCreatedEntry}
+            </Pressable>
+
+            {showExtra ? (
+              <View className="gap-4">
+                <Field
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  label="Email"
+                  placeholder="Optional"
+                  value={form.email}
+                  onChangeText={form.setEmail}
+                />
+                <Field
+                  autoCapitalize="characters"
+                  label="Vehicle number"
+                  placeholder="Optional"
+                  value={form.vehicleNumber}
+                  onChangeText={form.setVehicleNumber}
+                />
+                <Field
+                  label="Notes"
+                  multiline
+                  placeholder="Optional"
+                  value={form.notes}
+                  onChangeText={form.setNotes}
+                />
+              </View>
+            ) : null}
+
+            {form.createdEntry?.entry ? (
+              <View
+                className="gap-3 rounded-[20px] bg-white p-5"
+                style={{ borderWidth: 1, borderColor: "#99f6e4", boxShadow: G.heroShadow }}
               >
-                <Text className="font-semibold text-slate-700">New entry</Text>
-              </Pressable>
+                <Text className="text-[15px] font-semibold text-teal-700">Entry created</Text>
+                <Text className="text-[16px] font-medium text-slate-900">
+                  {getVisitorName(form.createdEntry.entry)}
+                </Text>
+                <Text className="text-[14px] text-slate-500">
+                  {getFlatLabel(form.createdEntry.entry)} · {titleize(form.createdEntry.entry.purpose)}
+                </Text>
+                <View className="flex-row gap-2">
+                  {form.createdEntry.qrToken && form.createdEntry.entry.status === "approved" ? (
+                    <Pressable
+                      className="flex-1 items-center rounded-xl bg-teal-700 py-3"
+                      disabled={form.checkInState.isLoading}
+                      onPress={handleCheckIn}
+                    >
+                      <Text className="font-semibold text-white">Check in</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    className="flex-1 items-center rounded-xl bg-slate-100 py-3"
+                    onPress={form.clearCreatedEntry}
+                  >
+                    <Text className="font-semibold text-slate-700">New entry</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <View className="rounded-[20px] bg-white p-4" style={{ borderWidth: 1, borderColor: G.border }}>
+              <Text className="text-[15px] font-semibold text-slate-900">Send a web form link</Text>
+              <Text className="mt-2 text-[14px] leading-5 text-slate-500">
+                The visitor will open the link, fill their details on web, and receive a gate QR code.
+              </Text>
             </View>
-          </View>
-        ) : null}
+
+            {inviteForm.createdInvite ? (
+              <InviteLinkSuccessCard
+                invite={inviteForm.createdInvite}
+                onClear={inviteForm.clearCreatedInvite}
+              />
+            ) : null}
+          </>
+        )}
       </ScrollView>
 
       <View
@@ -701,14 +852,14 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
           }}
           onPress={handleSubmit}
         >
-          {form.createEntryState.isLoading ? (
+          {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text
               className="text-[17px] font-bold tracking-wide"
               style={{ color: canSubmit ? "#ffffff" : G.textMuted }}
             >
-              Create Entry
+              {isFormLinkMode ? "Create form link" : "Create Entry"}
             </Text>
           )}
         </Pressable>

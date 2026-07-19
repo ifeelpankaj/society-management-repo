@@ -1,0 +1,161 @@
+package visitorentrysvc_test
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"go-server/internal/models"
+	repository "go-server/internal/repositories"
+	flatauthz "go-server/internal/services/flatAuthz"
+	visitorentrysvc "go-server/internal/services/visitorEntrySvc"
+)
+
+type guardDeskSocietyRepo struct {
+	society *models.Society
+}
+
+func (r *guardDeskSocietyRepo) Create(context.Context, *models.Society) error { return nil }
+func (r *guardDeskSocietyRepo) Get(_ context.Context, _ models.GetSocietyFilter) (*models.Society, error) {
+	return r.society, nil
+}
+func (r *guardDeskSocietyRepo) List(context.Context, models.ListSocietiesFilter) ([]*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) Count(context.Context, models.ListSocietiesFilter) (int64, error) {
+	return 0, nil
+}
+func (r *guardDeskSocietyRepo) Update(context.Context, int64, models.UpdateSocietyRequest) (*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) Approve(context.Context, int64, int64) (*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) Reject(context.Context, int64, int64, string) (*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) Suspend(context.Context, int64, int64, string) (*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) Reactivate(context.Context, int64, int64) (*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) Restore(context.Context, int64) (*models.Society, error) { return nil, nil }
+func (r *guardDeskSocietyRepo) SoftDelete(context.Context, int64) error                 { return nil }
+func (r *guardDeskSocietyRepo) CountPendingByCreator(context.Context, int64) (int64, error) {
+	return 0, nil
+}
+
+type guardDeskEntryRepo struct {
+	stats              *models.VisitorEntryStatsResponse
+	expectedTodayCount int64
+	pending            []*models.VisitorPendingEntry
+}
+
+func (r *guardDeskEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) Get(context.Context, int64, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) GetByQRHash(context.Context, string) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) List(context.Context, models.VisitorEntryFilter) ([]*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) Count(context.Context, models.VisitorEntryFilter) (int64, error) {
+	return 0, nil
+}
+func (r *guardDeskEntryRepo) ListPending(context.Context, int64, int64) ([]*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) ListSocietyPending(context.Context, models.VisitorPendingFilter) ([]*models.VisitorPendingEntry, error) {
+	return r.pending, nil
+}
+func (r *guardDeskEntryRepo) CountSocietyPending(context.Context, models.VisitorPendingFilter) (int64, error) {
+	return int64(len(r.pending)), nil
+}
+func (r *guardDeskEntryRepo) ListRecentByFlat(context.Context, int64, int64, int32) ([]*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) GetStats(context.Context, int64) (*models.VisitorEntryStatsResponse, error) {
+	return r.stats, nil
+}
+func (r *guardDeskEntryRepo) CountExpectedToday(context.Context, int64) (int64, error) {
+	return r.expectedTodayCount, nil
+}
+func (r *guardDeskEntryRepo) CountMemberApprovals(context.Context, int64, int64) (*models.MemberVisitorApprovalStatsResponse, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) Approve(context.Context, int64, int64, int64, string, time.Time) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) Reject(context.Context, int64, int64, int64, string) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) GenerateQR(context.Context, int64, int64, string, time.Time) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) CheckIn(context.Context, int64, int64, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) CheckOut(context.Context, int64, int64, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) AutoCloseExpired(context.Context) error { return nil }
+
+type noopTxManager struct{}
+
+func (noopTxManager) WithTransaction(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
+}
+
+func TestGetGuardDeskBootstrap(t *testing.T) {
+	societyID := int64(10)
+	society := &models.Society{ID: societyID, Name: "Test Society", SocietyCode: "TS001", Status: models.SocietyStatusActive}
+	stats := &models.VisitorEntryStatsResponse{
+		TodayVisitors:    5,
+		VisitorsInside:   2,
+		PendingApprovals: 1,
+	}
+	pending := []*models.VisitorPendingEntry{
+		{VisitorEntry: &models.VisitorEntry{ID: 99, SocietyID: societyID, FlatID: 3, Status: models.VisitorStatusWaitingApproval}},
+	}
+
+	_, entrySvc := visitorentrysvc.NewVisitorService(
+		nil,
+		nil,
+		&guardDeskEntryRepo{stats: stats, expectedTodayCount: 4, pending: pending},
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		&guardDeskSocietyRepo{society: society},
+		flatauthz.New(nil, nil, nil),
+		nil,
+		noopTxManager{},
+	)
+
+	got, err := entrySvc.GetGuardDeskBootstrap(context.Background(), societyID)
+	if err != nil {
+		t.Fatalf("GetGuardDeskBootstrap() error = %v", err)
+	}
+	if got.Society == nil || got.Society.Name != "Test Society" {
+		t.Fatalf("expected society name Test Society, got %+v", got.Society)
+	}
+	if got.Stats == nil || got.Stats.PendingApprovals != 1 {
+		t.Fatalf("expected pending approvals 1, got %+v", got.Stats)
+	}
+	if got.ExpectedTodayCount != 4 {
+		t.Fatalf("expected today count = 4, got %d", got.ExpectedTodayCount)
+	}
+	if len(got.PendingPreview) != 1 {
+		t.Fatalf("expected 1 pending preview entry, got %d", len(got.PendingPreview))
+	}
+}
+
+var _ repository.SocietyRepository = (*guardDeskSocietyRepo)(nil)
+var _ repository.VisitorEntryRepository = (*guardDeskEntryRepo)(nil)
+var _ repository.TransactionManager = noopTxManager{}

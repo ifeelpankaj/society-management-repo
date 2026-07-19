@@ -13,8 +13,6 @@ import {
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdRejectMutation,
 } from "@/lib/api/generated-api";
 
-const POLL_MS = 30_000;
-
 function isToday(value?: string | null) {
   if (!value) {
     return false;
@@ -44,7 +42,7 @@ export function useResidentDashboard() {
   const [actionEntryId, setActionEntryId] = useState<number | null>(null);
 
   const shouldSkip = !societyId || !flatId;
-  const queryOpts = { skip: shouldSkip, pollingInterval: POLL_MS };
+  const queryOpts = { skip: shouldSkip };
 
   const contextQuery = useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery(
     { societyId: societyId ?? 0, flatId: flatId ?? 0 },
@@ -64,28 +62,18 @@ export function useResidentDashboard() {
     },
     queryOpts,
   );
-  const entriesQuery = useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesQuery(
-    {
-      societyId: societyId ?? 0,
-      flatId: flatId ?? 0,
-      limit: 1,
-      offset: 0,
-    },
-    queryOpts,
-  );
 
   const [approveEntry, approveState] =
     usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveMutation();
   const [rejectEntry, rejectState] =
     usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdRejectMutation();
 
-  const queries = [contextQuery, pendingQuery, approvedQuery, entriesQuery];
+  const queries = [contextQuery, pendingQuery, approvedQuery];
   const failedQuery = queries.find((query) => query.isError);
 
   const { refetch: refetchContext } = contextQuery;
   const { refetch: refetchPending } = pendingQuery;
   const { refetch: refetchApproved } = approvedQuery;
-  const { refetch: refetchEntries } = entriesQuery;
 
   const refetchAll = useCallback(() => {
     refetchBootstrap();
@@ -103,18 +91,13 @@ export function useResidentDashboard() {
     if (!approvedQuery.isUninitialized) {
       void refetchApproved();
     }
-    if (!entriesQuery.isUninitialized) {
-      void refetchEntries();
-    }
   }, [
     approvedQuery.isUninitialized,
     contextQuery.isUninitialized,
-    entriesQuery.isUninitialized,
     pendingQuery.isUninitialized,
     refetchApproved,
     refetchBootstrap,
     refetchContext,
-    refetchEntries,
     refetchPending,
     shouldSkip,
   ]);
@@ -144,8 +127,7 @@ export function useResidentDashboard() {
 
   const displayName = user?.full_name ?? user?.first_name ?? "Resident";
   const membersCount = context?.total_residents ?? 0;
-  const visitorsCount =
-    entriesQuery.data?.data?.total ?? context?.recent_visitors?.length ?? 0;
+  const visitorsCount = context?.recent_visitors?.length ?? 0;
 
   const handleApprove = useCallback(
     async (entryId?: number) => {

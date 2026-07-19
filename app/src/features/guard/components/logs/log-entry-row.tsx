@@ -1,12 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
-  formatTimeOfDay,
+  formatActivityTimestamp,
   getFlatLabel,
   getVisitorName,
+  getVisitorStatusMeta,
   titleize,
 } from "@/features/guard/guard-utils";
-import type { ModelsVisitorEntry, ModelsVisitorStatus } from "@/lib/api/generated-api";
+import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { theme } from "@/lib/theme";
 
 const G = theme.guard;
@@ -17,56 +18,9 @@ type LogEntryRowProps = {
   onCheckOut?: () => void;
 };
 
-function getSoftStatusMeta(status?: ModelsVisitorStatus) {
-  switch (status) {
-    case "waiting_approval":
-      return {
-        bg: theme.status.warningSoft,
-        border: "#fde68a",
-        color: "#92400e",
-        label: "Pending",
-      };
-    case "approved":
-      return {
-        bg: theme.status.successSoft,
-        border: "#bbf7d0",
-        color: "#166534",
-        label: "Approved",
-      };
-    case "checked_in":
-      return {
-        bg: theme.status.successSoft,
-        border: "#bbf7d0",
-        color: "#166534",
-        label: "Checked In",
-      };
-    case "checked_out":
-      return {
-        bg: "#f8fafc",
-        border: theme.border.default,
-        color: G.textMuted,
-        label: "Checked Out",
-      };
-    case "rejected":
-      return {
-        bg: theme.status.errorSoft,
-        border: "#fecaca",
-        color: "#b91c1c",
-        label: "Rejected",
-      };
-    default:
-      return {
-        bg: "#f8fafc",
-        border: theme.border.default,
-        color: G.textMuted,
-        label: titleize(status),
-      };
-  }
-}
-
 export function LogEntryRow({ entry, isCheckingOut, onCheckOut }: LogEntryRowProps) {
-  const statusMeta = getSoftStatusMeta(entry.status);
-  const time = formatTimeOfDay(
+  const statusMeta = getVisitorStatusMeta(entry.status);
+  const timestamp = formatActivityTimestamp(
     entry.checked_out_at ?? entry.checked_in_at ?? entry.updated_at ?? entry.created_at,
   );
   const purpose = entry.purpose ? titleize(entry.purpose) : "Visitor";
@@ -90,7 +44,7 @@ export function LogEntryRow({ entry, isCheckingOut, onCheckOut }: LogEntryRowPro
           {purpose} • {getFlatLabel(entry)}
         </Text>
 
-        <Text style={styles.time}>{time || "—"}</Text>
+        <Text style={styles.time}>{timestamp || "—"}</Text>
       </View>
 
       {entry.status === "checked_in" && onCheckOut ? (

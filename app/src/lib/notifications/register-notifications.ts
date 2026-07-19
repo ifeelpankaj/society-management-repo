@@ -2,7 +2,22 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+export type DevicePlatform = "ios" | "android";
+
+export function getDevicePlatform(): DevicePlatform {
+  return Platform.OS === "ios" ? "ios" : "android";
+}
+
 export async function configureNotifications() {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "Default",
@@ -28,7 +43,8 @@ export async function requestNotificationPermissions() {
     return null;
   }
 
-  return Notifications.getExpoPushTokenAsync();
+  const devicePushToken = await Notifications.getDevicePushTokenAsync();
+  return devicePushToken.data;
 }
 
 export function addNotificationListeners({

@@ -13,6 +13,7 @@ import (
 	"go-server/internal/models"
 	repository "go-server/internal/repositories"
 	flatauthz "go-server/internal/services/flatAuthz"
+	notificationsvc "go-server/internal/services/notificationSvc"
 	service "go-server/internal/services"
 )
 
@@ -20,7 +21,9 @@ const defaultInviteDuration = 24 * time.Hour
 
 type VisitorInviteService interface {
 	CreateInvite(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, actorUserID int64, expiresAt *time.Time) (*models.VisitorEntryMutationResponse, *models.VisitorInvite, error)
+	CreateStaffInvite(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, staffUserID int64, expiresAt *time.Time) (*models.VisitorEntryMutationResponse, *models.VisitorInvite, error)
 	GetInviteByToken(ctx context.Context, rawToken string) (*models.VisitorInvite, error)
+	GetPublicInviteByToken(ctx context.Context, rawToken string) (*models.PublicVisitorInviteView, error)
 	SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error)
 	CancelInvite(ctx context.Context, societyID int64, inviteID int64, actorUserID int64) error
 	ExpireOldInvites(ctx context.Context) error
@@ -42,6 +45,7 @@ type VisitorEntryService interface {
 	ListEntries(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
 	ListEntriesPaginated(ctx context.Context, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)
 	GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	GetGuardDeskBootstrap(ctx context.Context, societyID int64) (*models.GuardDeskBootstrapResponse, error)
 	ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error)
 	GetFlatVisitorContext(ctx context.Context, societyID int64, flatID int64) (*models.FlatVisitorContextResponse, error)
 	GetFlatVisitorContextForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64) (*models.FlatVisitorContextResponse, error)
@@ -60,7 +64,9 @@ type visitorService struct {
 	memberRepo   repository.SocietyMemberRepository
 	residentRepo repository.FlatResidentRepository
 	flatRepo     repository.FlatRepository
+	societyRepo  repository.SocietyRepository
 	flatAuthz    *flatauthz.FlatVisitorAuthz
+	notifier     notificationsvc.NotificationService
 	txManager    repository.TransactionManager
 }
 
@@ -80,13 +86,15 @@ func NewVisitorService(
 	memberRepo repository.SocietyMemberRepository,
 	residentRepo repository.FlatResidentRepository,
 	flatRepo repository.FlatRepository,
+	societyRepo repository.SocietyRepository,
 	flatAuthz *flatauthz.FlatVisitorAuthz,
+	notifier notificationsvc.NotificationService,
 	txManager repository.TransactionManager,
 ) (VisitorInviteService, VisitorEntryService) {
 	svc := &visitorService{
 		visitorRepo: visitorRepo, inviteRepo: inviteRepo, entryRepo: entryRepo, eventRepo: eventRepo,
 		settingSvc: settingSvc, memberRepo: memberRepo, residentRepo: residentRepo, flatRepo: flatRepo,
-		flatAuthz: flatAuthz, txManager: txManager,
+		societyRepo: societyRepo, flatAuthz: flatAuthz, notifier: notifier, txManager: txManager,
 	}
 	return svc, svc
 }
@@ -101,6 +109,30 @@ func (s *visitorService) CreateInvite(ctx context.Context, societyID int64, flat
 	if err := s.ensureApprovalActor(ctx, societyID, flatID, actorUserID); err != nil {
 		return nil, nil, err
 	}
+	return s.createInvite(ctx, societyID, flatID, purpose, actorUserID, expiresAt)
+}
+
+func (s *visitorService) CreateStaffInvite(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, staffUserID int64, expiresAt *time.Time) (*models.VisitorEntryMutationResponse, *models.VisitorInvite, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	if societyID <= 0 || flatID <= 0 || staffUserID <= 0 || !purpose.IsValid() {
+		return nil, nil, ErrInvalidVisitorRequest
+	}
+	if err := s.ensureStaffActor(ctx, societyID, staffUserID); err != nil {
+		return nil, nil, err
+	}
+	flat, err := s.flatRepo.Get(ctx, &models.FlatFilter{ID: &flatID, SocietyID: &societyID})
+	if err != nil {
+		return nil, nil, err
+	}
+	if flat == nil {
+		return nil, nil, ErrVisitorFlatNotFound
+	}
+	return s.createInvite(ctx, societyID, flatID, purpose, staffUserID, expiresAt)
+}
+
+func (s *visitorService) createInvite(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, actorUserID int64, expiresAt *time.Time) (*models.VisitorEntryMutationResponse, *models.VisitorInvite, error) {
 	if _, err := s.settingSvc.ResolveApprovalRequirement(ctx, societyID, flatID, purpose, models.VisitorEntrySourceResidentLink); err != nil {
 		return nil, nil, err
 	}
@@ -134,6 +166,40 @@ func (s *visitorService) GetInviteByToken(ctx context.Context, rawToken string) 
 		return nil, ErrVisitorInviteUnavailable
 	}
 	return invite, nil
+}
+
+func (s *visitorService) GetPublicInviteByToken(ctx context.Context, rawToken string) (*models.PublicVisitorInviteView, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	invite, err := s.GetInviteByToken(ctx, rawToken)
+	if err != nil {
+		return nil, err
+	}
+	flat, err := s.flatRepo.Get(ctx, &models.FlatFilter{ID: &invite.FlatID, SocietyID: &invite.SocietyID})
+	if err != nil {
+		return nil, err
+	}
+	if flat == nil {
+		return nil, ErrVisitorFlatNotFound
+	}
+	society, err := s.societyRepo.Get(ctx, models.GetSocietyFilter{ID: &invite.SocietyID})
+	if err != nil {
+		return nil, err
+	}
+	if society == nil {
+		return nil, ErrVisitorFlatNotFound
+	}
+	return &models.PublicVisitorInviteView{
+		ID:          invite.ID,
+		Purpose:     invite.Purpose,
+		Status:      invite.Status,
+		ExpiresAt:   invite.ExpiresAt,
+		SocietyName: society.Name,
+		FlatNumber:  flat.FlatNumber,
+		Block:       flat.Block,
+		Floor:       flat.Floor,
+	}, nil
 }
 
 func (s *visitorService) SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error) {
@@ -177,6 +243,12 @@ func (s *visitorService) SubmitInviteForm(ctx context.Context, rawToken string, 
 		response = &models.VisitorEntryMutationResponse{Entry: entry, QR: qr.response()}
 		return nil
 	})
+	if err != nil {
+		return response, err
+	}
+	if response != nil && response.Entry != nil {
+		s.notifyVisitorApproved(response.Entry)
+	}
 	return response, err
 }
 
@@ -313,6 +385,16 @@ func (s *visitorService) createEntryFromForm(ctx context.Context, societyID int6
 		}
 		return nil
 	})
+	if err != nil {
+		return response, err
+	}
+	if response != nil && response.Entry != nil {
+		if response.Entry.Status == models.VisitorStatusWaitingApproval {
+			s.notifyVisitorPending(response.Entry)
+		} else {
+			s.notifyVisitorApproved(response.Entry)
+		}
+	}
 	return response, err
 }
 
@@ -349,6 +431,7 @@ func (s *visitorService) ApproveEntry(ctx context.Context, societyID int64, entr
 	if err != nil {
 		return nil, err
 	}
+	s.notifyVisitorApproved(approved)
 	return &models.VisitorEntryMutationResponse{Entry: approved, QR: qr.response()}, nil
 }
 
@@ -366,8 +449,10 @@ func (s *visitorService) RejectEntry(ctx context.Context, societyID int64, entry
 	if err := s.ensureApprovalActor(ctx, societyID, entry.FlatID, actorUserID); err != nil {
 		return err
 	}
-	return s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
-		rejected, err := s.entryRepo.Reject(txCtx, societyID, entryID, actorUserID, reason)
+	var rejected *models.VisitorEntry
+	err = s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		var err error
+		rejected, err = s.entryRepo.Reject(txCtx, societyID, entryID, actorUserID, reason)
 		if err != nil {
 			return err
 		}
@@ -376,6 +461,11 @@ func (s *visitorService) RejectEntry(ctx context.Context, societyID int64, entry
 		}
 		return s.recordEvents(txCtx, rejected, &actorUserID, models.VisitorEventTypeRejected)
 	})
+	if err != nil {
+		return err
+	}
+	s.notifyVisitorRejected(rejected)
+	return nil
 }
 
 func (s *visitorService) GenerateQR(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntryMutationResponse, error) {
@@ -450,6 +540,10 @@ func (s *visitorService) CheckIn(ctx context.Context, rawToken string, guardUser
 		}
 		return s.recordEvents(txCtx, checkedIn, &guardUserID, models.VisitorEventTypeQRUsed, models.VisitorEventTypeCheckedIn)
 	})
+	if err != nil {
+		return checkedIn, err
+	}
+	s.notifyVisitorCheckIn(checkedIn)
 	return checkedIn, err
 }
 
@@ -472,6 +566,10 @@ func (s *visitorService) CheckOut(ctx context.Context, societyID int64, entryID 
 		}
 		return s.recordEvents(txCtx, checkedOut, &guardUserID, models.VisitorEventTypeCheckedOut)
 	})
+	if err != nil {
+		return checkedOut, err
+	}
+	s.notifyVisitorCheckOut(checkedOut)
 	return checkedOut, err
 }
 

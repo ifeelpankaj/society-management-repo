@@ -65,7 +65,10 @@
     "api:fetch": "tsx src/scripts/fetch-swagger.ts",
     "api:convert": "tsx src/scripts/convert-swagger.ts",
     "api:generate": "tsx src/scripts/generate-api.ts",
-    "api:codegen": "npm run api:fetch && npm run api:convert && npm run api:generate"
+    "api:codegen": "npm run api:fetch && npm run api:convert && npm run api:generate",
+    "setup:firebase-local": "node ./scripts/sync-firebase-configs.js",
+    "eas:upload-firebase-files": "eas secret:create --scope project --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --force && eas secret:create --scope project --name GOOGLE_SERVICE_INFO_PLIST --type file --value ./GoogleService-Info.plist --force",
+    "eas:upload-fcm-service-account": "eas secret:create --scope project --name GOOGLE_SERVICE_ACCOUNT --type file --value ../configs/smartsociety-c6553-firebase-adminsdk-fbsvc-6b430a9e2c.json --force"
   },
   "private": true
 }

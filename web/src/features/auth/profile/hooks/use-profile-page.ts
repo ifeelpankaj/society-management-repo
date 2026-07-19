@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { useAdminSocietySession } from "@/features/admin/society/hooks/use-admin-society";
 import { resolveAuthenticatedRoute } from "@/features/auth/auth-routing";
-import { clearClientSession } from "@/features/auth/logout";
+import { completeClientSignOut } from "@/features/auth/logout";
 import {
   useGetV1AuthProfileQuery,
   usePostV1AuthChangePasswordMutation,
@@ -68,7 +68,7 @@ export function useProfilePage() {
     try {
       const response = await logout().unwrap();
 
-      clearClientSession(dispatch);
+      await completeClientSignOut(dispatch);
 
       toast.success(getApiMessage(response, "Signed out successfully."), {
         id: toastId,
@@ -96,7 +96,7 @@ export function useProfilePage() {
         id: toastId,
       });
 
-      clearClientSession(dispatch);
+      await completeClientSignOut(dispatch);
       router.replace("/login");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Could not change password."), {

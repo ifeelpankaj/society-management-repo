@@ -39,6 +39,7 @@ type VisitorEntryRepository interface {
 	CountSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) (int64, error)
 	ListRecentByFlat(ctx context.Context, societyID int64, flatID int64, limit int32) ([]*models.VisitorEntry, error)
 	GetStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	CountExpectedToday(ctx context.Context, societyID int64) (int64, error)
 	CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	Approve(ctx context.Context, societyID int64, entryID int64, actorUserID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error)
 	Reject(ctx context.Context, societyID int64, entryID int64, actorUserID int64, reason string) (*models.VisitorEntry, error)
@@ -249,6 +250,10 @@ func (r *visitorEntryRepository) GetStats(ctx context.Context, societyID int64) 
 		RejectedToday:    row.RejectedToday,
 		AutoClosedToday:  row.AutoClosedToday,
 	}, nil
+}
+
+func (r *visitorEntryRepository) CountExpectedToday(ctx context.Context, societyID int64) (int64, error) {
+	return GetQueries(ctx, r.db).CountExpectedTodayVisitorEntries(ctx, societyID)
 }
 
 func (r *visitorEntryRepository) CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error) {

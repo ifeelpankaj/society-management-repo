@@ -8,6 +8,10 @@
       "developmentClient": true,
       "distribution": "internal",
       "environment": "development",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "./google-services.json",
+        "GOOGLE_SERVICE_INFO_PLIST": "./GoogleService-Info.plist"
+      },
       "android": {
         "buildType": "apk"
       }
@@ -15,6 +19,10 @@
     "development-simulator": {
       "developmentClient": true,
       "environment": "development",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "./google-services.json",
+        "GOOGLE_SERVICE_INFO_PLIST": "./GoogleService-Info.plist"
+      },
       "ios": {
         "simulator": true
       }
@@ -22,13 +30,21 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "./google-services.json",
+        "GOOGLE_SERVICE_INFO_PLIST": "./GoogleService-Info.plist"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "environment": "production",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "./google-services.json",
+        "GOOGLE_SERVICE_INFO_PLIST": "./GoogleService-Info.plist"
+      }
     }
   },
   "submit": {

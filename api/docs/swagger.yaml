@@ -62,6 +62,29 @@ definitions:
     - AuthProviderGoogle
     - AuthProviderApple
     - AuthProviderPhone
+  models.AuthRefreshData:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+      message:
+        example: Access token refreshed successfully
+        type: string
+    type: object
+  models.AuthSessionData:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expires_at:
+        type: string
+      user:
+        $ref: '#/definitions/models.UserResponse'
+    type: object
   models.BillingCycle:
     enum:
     - monthly
@@ -437,6 +460,40 @@ definitions:
       total:
         type: integer
     type: object
+  models.DevicePlatform:
+    enum:
+    - ios
+    - android
+    - web
+    type: string
+    x-enum-varnames:
+    - DevicePlatformIOS
+    - DevicePlatformAndroid
+    - DevicePlatformWeb
+  models.DeviceToken:
+    properties:
+      created_at:
+        type: string
+      device_id:
+        type: string
+      id:
+        type: integer
+      last_seen_at:
+        type: string
+      platform:
+        $ref: '#/definitions/models.DevicePlatform'
+      token:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.DeviceTokenData:
+    properties:
+      device_token:
+        $ref: '#/definitions/models.DeviceToken'
+    type: object
   models.ErrorData:
     properties:
       code:
@@ -600,6 +657,19 @@ definitions:
     properties:
       flat:
         $ref: '#/definitions/models.FlatResponse'
+    type: object
+  models.FlatRecentVisitorSummary:
+    properties:
+      entry_id:
+        type: integer
+      full_name:
+        type: string
+      purpose:
+        $ref: '#/definitions/models.VisitorPurpose'
+      status:
+        $ref: '#/definitions/models.VisitorStatus'
+      visited_on:
+        type: string
     type: object
   models.FlatResidentAPIResponse:
     properties:
@@ -768,6 +838,52 @@ definitions:
     - FlatStatusVacant
     - FlatStatusOccupied
     - FlatStatusBlocked
+  models.FlatVisitorContextAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.FlatVisitorContextData'
+      message:
+        example: Flat visitor context fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.FlatVisitorContextData:
+    properties:
+      context:
+        $ref: '#/definitions/models.FlatVisitorContextResponse'
+    type: object
+  models.FlatVisitorContextResident:
+    properties:
+      full_name:
+        type: string
+      id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  models.FlatVisitorContextResponse:
+    properties:
+      inherits_society_mode:
+        type: boolean
+      occupancy_status:
+        $ref: '#/definitions/models.FlatStatus'
+      primary_resident:
+        $ref: '#/definitions/models.FlatVisitorContextResident'
+      recent_visitors:
+        items:
+          $ref: '#/definitions/models.FlatRecentVisitorSummary'
+        type: array
+      society_approval_mode:
+        $ref: '#/definitions/models.VisitorApprovalMode'
+      total_residents:
+        type: integer
+      visitor_settings:
+        items:
+          $ref: '#/definitions/models.FlatVisitorSettingsResponse'
+        type: array
+    type: object
   models.FlatVisitorSettingAPIResponse:
     properties:
       data:
@@ -899,6 +1015,35 @@ definitions:
       guard:
         $ref: '#/definitions/models.CreateGuardResponse'
     type: object
+  models.GuardDeskBootstrapAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.GuardDeskBootstrapData'
+      message:
+        example: Guard desk bootstrap fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.GuardDeskBootstrapData:
+    properties:
+      desk:
+        $ref: '#/definitions/models.GuardDeskBootstrapResponse'
+    type: object
+  models.GuardDeskBootstrapResponse:
+    properties:
+      expected_today_count:
+        type: integer
+      pending_preview:
+        items:
+          $ref: '#/definitions/models.VisitorPendingEntry'
+        type: array
+      society:
+        $ref: '#/definitions/models.SocietyResponse'
+      stats:
+        $ref: '#/definitions/models.VisitorEntryStatsResponse'
+    type: object
   models.HealthCheckResponseDoc:
     properties:
       app:
@@ -938,7 +1083,7 @@ definitions:
   models.LoginAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/models.UserData'
+        $ref: '#/definitions/models.AuthSessionData'
       message:
         example: Login successful
         type: string
@@ -971,6 +1116,29 @@ definitions:
       success:
         example: true
         type: boolean
+    type: object
+  models.MemberVisitorApprovalStatsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.MemberVisitorApprovalStatsData'
+      message:
+        example: Member visitor approval stats fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.MemberVisitorApprovalStatsData:
+    properties:
+      stats:
+        $ref: '#/definitions/models.MemberVisitorApprovalStatsResponse'
+    type: object
+  models.MemberVisitorApprovalStatsResponse:
+    properties:
+      approved_count:
+        type: integer
+      rejected_count:
+        type: integer
     type: object
   models.MessageAPIResponse:
     properties:
@@ -1239,6 +1407,25 @@ definitions:
       total_flats:
         type: integer
     type: object
+  models.PublicVisitorInviteView:
+    properties:
+      block:
+        type: string
+      expires_at:
+        type: string
+      flat_number:
+        type: string
+      floor:
+        type: string
+      id:
+        type: integer
+      purpose:
+        $ref: '#/definitions/models.VisitorPurpose'
+      society_name:
+        type: string
+      status:
+        $ref: '#/definitions/models.VisitorInviteStatus'
+    type: object
   models.QRTokenRequest:
     properties:
       token:
@@ -1266,7 +1453,7 @@ definitions:
   models.RefreshTokenAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/models.MessageData'
+        $ref: '#/definitions/models.AuthRefreshData'
       message:
         example: Access token refreshed successfully
         type: string
@@ -1284,6 +1471,29 @@ definitions:
       success:
         example: true
         type: boolean
+    type: object
+  models.RegisterDeviceTokenAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.DeviceTokenData'
+      message:
+        example: Device token registered successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.RegisterDeviceTokenRequest:
+    properties:
+      device_id:
+        type: string
+      platform:
+        $ref: '#/definitions/models.DevicePlatform'
+      token:
+        type: string
+    required:
+    - platform
+    - token
     type: object
   models.RegisterRequest:
     properties:
@@ -1574,6 +1784,47 @@ definitions:
         type: integer
       updated_at:
         type: string
+    type: object
+  models.SocietyFlatVisitorSettingRow:
+    properties:
+      approval_required:
+        type: boolean
+      block:
+        type: string
+      default_visit_duration_minutes:
+        type: integer
+      flat_id:
+        type: integer
+      flat_number:
+        type: string
+      is_enabled:
+        type: boolean
+      purpose:
+        $ref: '#/definitions/models.VisitorPurpose'
+    type: object
+  models.SocietyFlatVisitorSettingsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.SocietyFlatVisitorSettingsData'
+      message:
+        example: Society flat visitor settings fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.SocietyFlatVisitorSettingsData:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      settings:
+        items:
+          $ref: '#/definitions/models.SocietyFlatVisitorSettingRow'
+        type: array
+      total:
+        type: integer
     type: object
   models.SocietyMemberAPIResponse:
     properties:
@@ -2013,6 +2264,13 @@ definitions:
     required:
     - new_owner_user_id
     type: object
+  models.UnregisterDeviceTokenRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
   models.UpdateFlatRequest:
     properties:
       block:
@@ -2252,6 +2510,12 @@ definitions:
         items:
           $ref: '#/definitions/models.VisitorEntry'
         type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
     type: object
   models.VisitorEntry:
     properties:
@@ -2455,6 +2719,37 @@ definitions:
     - VisitorEntrySourcePublicQR
     - VisitorEntrySourceGuardEntry
     - VisitorEntrySourceQuickLink
+  models.VisitorEntryStatsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.VisitorEntryStatsData'
+      message:
+        example: Visitor entry stats fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.VisitorEntryStatsData:
+    properties:
+      stats:
+        $ref: '#/definitions/models.VisitorEntryStatsResponse'
+    type: object
+  models.VisitorEntryStatsResponse:
+    properties:
+      auto_closed_today:
+        type: integer
+      checked_out_today:
+        type: integer
+      pending_approvals:
+        type: integer
+      rejected_today:
+        type: integer
+      today_visitors:
+        type: integer
+      visitors_inside:
+        type: integer
+    type: object
   models.VisitorEventType:
     enum:
     - created
@@ -2565,7 +2860,7 @@ definitions:
   models.VisitorInviteData:
     properties:
       invite:
-        $ref: '#/definitions/models.VisitorInvite'
+        $ref: '#/definitions/models.PublicVisitorInviteView'
     type: object
   models.VisitorInviteStatus:
     enum:
@@ -2596,6 +2891,103 @@ definitions:
         $ref: '#/definitions/models.VisitorInvite'
       token:
         $ref: '#/definitions/models.QRTokenResponse'
+    type: object
+  models.VisitorPendingEntriesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.VisitorPendingEntriesData'
+      message:
+        example: Pending visitor approvals fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.VisitorPendingEntriesData:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/models.VisitorPendingEntry'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  models.VisitorPendingEntry:
+    properties:
+      approved_by:
+        type: integer
+      auto_closed_at:
+        type: string
+      checked_in_at:
+        type: string
+      checked_out_at:
+        type: string
+      companion_details:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      companions_count:
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      expected_at:
+        type: string
+      expected_checkout_at:
+        type: string
+      flat:
+        $ref: '#/definitions/models.VisitorFlatSummary'
+      flat_id:
+        type: integer
+      handled_by_guard_id:
+        type: integer
+      id:
+        type: integer
+      invite_id:
+        type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
+      notes:
+        type: string
+      primary_resident_id:
+        type: integer
+      primary_resident_name:
+        type: string
+      purpose:
+        $ref: '#/definitions/models.VisitorPurpose'
+      qr_expires_at:
+        type: string
+      qr_used_at:
+        type: string
+      rejected_by:
+        type: integer
+      rejection_reason:
+        type: string
+      society_id:
+        type: integer
+      source:
+        $ref: '#/definitions/models.VisitorEntrySource'
+      status:
+        $ref: '#/definitions/models.VisitorStatus'
+      updated_at:
+        type: string
+      vehicle_number:
+        type: string
+      vehicle_type:
+        $ref: '#/definitions/models.VisitorVehicleType'
+      visitor:
+        $ref: '#/definitions/models.VisitorSummary'
+      visitor_id:
+        type: integer
+      waiting_since:
+        type: string
     type: object
   models.VisitorPurpose:
     enum:
@@ -3438,6 +3830,78 @@ paths:
       summary: List flats
       tags:
       - Flats
+  /v1/me/device-tokens:
+    delete:
+      consumes:
+      - application/json
+      description: Removes the authenticated user's FCM device token, typically on
+        logout.
+      parameters:
+      - description: Device token payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UnregisterDeviceTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device token removed successfully
+          schema:
+            $ref: '#/definitions/models.MessageAPIResponse'
+        "400":
+          description: Invalid device token request
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Unregister a device push token
+      tags:
+      - Notifications
+    post:
+      consumes:
+      - application/json
+      description: Stores the authenticated user's FCM device token for push notifications.
+      parameters:
+      - description: Device token payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterDeviceTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device token registered successfully
+          schema:
+            $ref: '#/definitions/models.RegisterDeviceTokenAPIResponse'
+        "400":
+          description: Invalid device token request
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Register or refresh a device push token
+      tags:
+      - Notifications
   /v1/me/flat-claims:
     get:
       description: '[User] Lists flat claims submitted by the authenticated user.'
@@ -5418,6 +5882,143 @@ paths:
       summary: Unblock flat
       tags:
       - Flats
+  /v1/societies/{societyId}/flats/{flatId}/visitor-context:
+    get:
+      description: '[Owner/Admin/Staff] Returns occupancy, primary resident, visitor
+        settings summary, and recent visitors for a flat.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Flat visitor context fetched successfully
+          schema:
+            $ref: '#/definitions/models.FlatVisitorContextAPIResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Flat or visitor settings not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Get flat visitor context
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/flats/{flatId}/visitor-entries:
+    get:
+      description: '[Resident] Lists visitor entries for a resident flat with optional
+        status, purpose, and date filters.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      - description: Visitor status
+        enum:
+        - waiting_approval
+        - approved
+        - rejected
+        - checked_in
+        - checked_out
+        - cancelled
+        - expired
+        - auto_closed
+        in: query
+        name: status
+        type: string
+      - description: Visitor purpose
+        enum:
+        - guest
+        - delivery
+        - cab
+        - service
+        - maintenance
+        - staff
+        - other
+        in: query
+        name: purpose
+        type: string
+      - description: Created from (RFC3339)
+        in: query
+        name: created_from
+        type: string
+      - description: Created to (RFC3339)
+        in: query
+        name: created_to
+        type: string
+      - default: 50
+        description: Maximum records to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor entries fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntriesAPIResponse'
+        "400":
+          description: Invalid query or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Resident access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Flat not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List flat visitor entries
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/flats/{flatId}/visitor-entries/pending:
     get:
       description: '[Resident] Lists visitor entries waiting for approval for a resident
@@ -5524,9 +6125,68 @@ paths:
       summary: Create visitor invite
       tags:
       - Visitor Entries
+  /v1/societies/{societyId}/flats/{flatId}/visitor-invites/staff:
+    post:
+      consumes:
+      - application/json
+      description: '[Staff] Creates a visitor invite for a flat and returns the invite
+        plus shareable token details.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      - description: Visitor invite request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVisitorInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Visitor invite created successfully
+          schema:
+            $ref: '#/definitions/models.VisitorInviteTokenAPIResponse'
+        "400":
+          description: Invalid request, validation error, or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Society, flat, or visitor settings not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "409":
+          description: Visitor invite cannot be created in current state
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Create visitor invite (staff)
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/flats/{flatId}/visitor-settings:
     get:
-      description: '[Owner/Admin/Primary Resident] Fetches all visitor purpose settings
+      description: '[Owner/Admin/Flat Resident] Fetches all visitor purpose settings
         for a flat.'
       parameters:
       - description: Society ID
@@ -5555,7 +6215,7 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "403":
-          description: Owner/admin or primary resident access required
+          description: Owner/admin or flat resident access required
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "404":
@@ -5575,7 +6235,7 @@ paths:
     patch:
       consumes:
       - application/json
-      description: '[Owner/Admin/Primary Resident] Updates approval, duration override,
+      description: '[Owner/Admin/Flat Resident] Updates approval, duration override,
         or enabled state for one visitor purpose on a flat.'
       parameters:
       - description: Society ID
@@ -5623,7 +6283,7 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "403":
-          description: Owner/admin or primary resident access required
+          description: Owner/admin or flat resident access required
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "404":
@@ -5641,8 +6301,8 @@ paths:
       - Visitor Settings
   /v1/societies/{societyId}/flats/{flatId}/visitor-settings/reset:
     post:
-      description: '[Owner/Admin/Primary Resident] Resets a flat''s visitor purpose
-        settings back to the production defaults.'
+      description: '[Owner/Admin/Flat Resident] Resets a flat''s visitor purpose settings
+        back to the production defaults.'
       parameters:
       - description: Society ID
         in: path
@@ -5670,7 +6330,7 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "403":
-          description: Owner/admin or primary resident access required
+          description: Owner/admin or flat resident access required
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "404":
@@ -5764,6 +6424,44 @@ paths:
       summary: Get flat stats
       tags:
       - Flats
+  /v1/societies/{societyId}/guard-desk/bootstrap:
+    get:
+      description: '[Owner/Admin/Staff] Returns aggregated guard desk dashboard data
+        for a society.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Guard desk bootstrap fetched successfully
+          schema:
+            $ref: '#/definitions/models.GuardDeskBootstrapAPIResponse'
+        "400":
+          description: Invalid society ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Get guard desk bootstrap
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/guards:
     post:
       consumes:
@@ -5977,6 +6675,53 @@ paths:
       summary: Get society member
       tags:
       - Society Members
+  /v1/societies/{societyId}/members/{memberId}/visitor-approval-stats:
+    get:
+      description: '[Owner/Admin] Returns how many visitor entries a member has approved
+        or rejected.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Member ID
+        in: path
+        name: memberId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member visitor approval stats fetched successfully
+          schema:
+            $ref: '#/definitions/models.MemberVisitorApprovalStatsAPIResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Insufficient society role
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Member not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Get member visitor approval stats
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/members/{userId}:
     delete:
       consumes:
@@ -7000,6 +7745,100 @@ paths:
       summary: Create guard visitor entry
       tags:
       - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/pending:
+    get:
+      description: '[Owner/Admin/Staff] Lists visitor entries waiting for approval
+        across the society.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: query
+        name: flat_id
+        type: integer
+      - description: Block
+        in: query
+        name: block
+        type: string
+      - default: 50
+        description: Maximum records to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pending visitor approvals fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorPendingEntriesAPIResponse'
+        "400":
+          description: Invalid query or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List society pending visitor approvals
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/stats:
+    get:
+      description: '[Owner/Admin/Staff] Returns visitor dashboard statistics for a
+        society.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor entry stats fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryStatsAPIResponse'
+        "400":
+          description: Invalid society ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Get visitor entry stats
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/visitor-invites/{inviteId}/cancel:
     post:
       description: '[Resident] Cancels a visitor invite created for a society before
@@ -7141,6 +7980,74 @@ paths:
       security:
       - AccessToken: []
       summary: Update society visitor settings
+      tags:
+      - Visitor Settings
+  /v1/societies/{societyId}/visitor-settings/flats:
+    get:
+      description: '[Owner/Admin] Lists flat-level visitor purpose settings across
+        the society with pagination.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: query
+        name: flat_id
+        type: integer
+      - description: Block
+        in: query
+        name: block
+        type: string
+      - description: Visitor purpose
+        enum:
+        - guest
+        - delivery
+        - cab
+        - service
+        - maintenance
+        - staff
+        - other
+        in: query
+        name: purpose
+        type: string
+      - default: 50
+        description: Maximum records to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Society flat visitor settings fetched successfully
+          schema:
+            $ref: '#/definitions/models.SocietyFlatVisitorSettingsAPIResponse'
+        "400":
+          description: Invalid query or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Insufficient society role
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List society flat visitor settings
       tags:
       - Visitor Settings
   /v1/societies/my:

@@ -212,6 +212,23 @@ SELECT
 FROM visitor_entries ve
 WHERE ve.society_id = $1;
 
+-- name: CountExpectedTodayVisitorEntries :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.status = 'approved'
+  AND (
+    (
+      ve.expected_at IS NOT NULL
+      AND ve.expected_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+      AND ve.expected_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )
+    OR (
+      ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+      AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+    )
+  );
+
 -- name: ListSocietyPendingVisitorApprovals :many
 SELECT
     ve.*,

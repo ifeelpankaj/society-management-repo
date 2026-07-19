@@ -16,6 +16,7 @@ import (
 	subscriptionsvc "go-server/internal/services/subscriptionSvc"
 	visitorentrysvc "go-server/internal/services/visitorEntrySvc"
 	visitorsettingsvc "go-server/internal/services/visitorSettingSvc"
+	notificationsvc "go-server/internal/services/notificationSvc"
 	"time"
 
 	"go-server/pkg/database"
@@ -35,6 +36,7 @@ type Dependencies struct {
 	VisitorInvite  visitorentrysvc.VisitorInviteService
 	VisitorEntry   visitorentrysvc.VisitorEntryService
 	VisitorSetting visitorsettingsvc.VisitorSettingService
+	Notification   notificationsvc.NotificationService
 
 	cleanupCancel context.CancelFunc
 }
@@ -48,6 +50,7 @@ type V1Handlers struct {
 	Subscription   *handlers.SubscriptionHandler
 	VisitorEntry   *handlers.VisitorEntryHandler
 	VisitorSetting *handlers.VisitorSettingHandler
+	Notification   *handlers.NotificationHandler
 }
 
 type V2Handlers struct{}
@@ -56,6 +59,11 @@ func (d *Dependencies) Shutdown() {
 	logger.Info("shutting down background jobs")
 	if d.cleanupCancel != nil {
 		d.cleanupCancel()
+	}
+	if d.Notification != nil {
+		if err := d.Notification.Close(); err != nil {
+			logger.Warn("failed to close notification service", zap.Error(err))
+		}
 	}
 	logger.Info("background jobs stopped")
 }
@@ -77,11 +85,18 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 	visitorInviteRepo := repository.NewVisitorInviteRepository(db)
 	visitorEntryRepo := repository.NewVisitorEntryRepository(db)
 	visitorEntryEventRepo := repository.NewVisitorEntryEventRepository(db)
+	deviceTokenRepo := repository.NewDeviceTokenRepository(db)
 	txManager := repository.NewTransactionManager(db)
 
 	emailSvc, err := service.NewEmailService(cfg)
 	if err != nil {
 		logger.Error("failed to initialize email service", zap.Error(err))
+		return nil, err
+	}
+
+	notificationSvc, err := notificationsvc.NewNotificationService(context.Background(), deviceTokenRepo, cfg)
+	if err != nil {
+		logger.Error("failed to initialize notification service", zap.Error(err))
 		return nil, err
 	}
 
@@ -134,7 +149,9 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		societyMemberRepo,
 		flatResidentRepo,
 		flatRepo,
+		societyRepo,
 		flatVisitorAuthz,
+		notificationSvc,
 		txManager,
 	)
 
@@ -187,6 +204,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		Subscription:   handlers.NewSubscriptionHandler(subscriptionSvc),
 		VisitorEntry:   handlers.NewVisitorEntryHandler(visitorInviteSvc, visitorEntrySvc),
 		VisitorSetting: handlers.NewVisitorSettingHandler(visitorSettingSvc),
+		Notification:   handlers.NewNotificationHandler(notificationSvc),
 	}
 
 	v2Handlers := &V2Handlers{}
@@ -203,6 +221,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		VisitorInvite:  visitorInviteSvc,
 		VisitorEntry:   visitorEntrySvc,
 		VisitorSetting: visitorSettingSvc,
+		Notification:   notificationSvc,
 		cleanupCancel:  cleanupCancel,
 	}, nil
 }

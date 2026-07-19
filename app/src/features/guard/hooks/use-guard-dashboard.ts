@@ -3,73 +3,35 @@ import { useCallback, useMemo, useState } from "react";
 import { getApiMessage } from "@/features/auth/api-error";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
+import { useAppActivePollingInterval } from "@/features/shared/use-app-active-polling-interval";
 import {
-  useGetV1SocietiesBySocietyIdQuery,
-  useGetV1SocietiesBySocietyIdVisitorEntriesPendingQuery,
-  useGetV1SocietiesBySocietyIdVisitorEntriesQuery,
-  useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,
+  useGetV1SocietiesBySocietyIdGuardDeskBootstrapQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation,
 } from "@/lib/api/generated-api";
 
-const POLL_MS = 30_000;
-
-function isToday(value?: string | null) {
-  if (!value) {
-    return false;
-  }
-
-  const date = new Date(value);
-  const now = new Date();
-
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
-}
+const GUARD_POLL_MS = 60_000;
 
 export function useGuardDashboard() {
   const { selectedSocietyId, societyName } = useGuardScreen();
   const { showError, showSuccess } = useGuardFeedback();
   const [checkoutEntryId, setCheckoutEntryId] = useState<number | null>(null);
+  const pollingInterval = useAppActivePollingInterval(GUARD_POLL_MS);
 
   const shouldSkip = !selectedSocietyId;
-  const queryOpts = { skip: shouldSkip, pollingInterval: POLL_MS };
+  const queryOpts = { skip: shouldSkip, pollingInterval };
 
-  const societyQuery = useGetV1SocietiesBySocietyIdQuery(
+  const bootstrapQuery = useGetV1SocietiesBySocietyIdGuardDeskBootstrapQuery(
     { societyId: selectedSocietyId ?? 0 },
-    queryOpts,
-  );
-  const statsQuery = useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery(
-    { societyId: selectedSocietyId ?? 0 },
-    queryOpts,
-  );
-  const pendingQuery = useGetV1SocietiesBySocietyIdVisitorEntriesPendingQuery(
-    { societyId: selectedSocietyId ?? 0, limit: 3, offset: 0 },
-    queryOpts,
-  );
-  const approvedQuery = useGetV1SocietiesBySocietyIdVisitorEntriesQuery(
-    {
-      societyId: selectedSocietyId ?? 0,
-      limit: 50,
-      offset: 0,
-      status: "approved",
-    },
     queryOpts,
   );
   const [checkOut] =
     usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation();
 
-  const queries = [societyQuery, statsQuery, pendingQuery, approvedQuery];
-
-  const failedQuery = queries.find((query) => query.isError);
+  const desk = bootstrapQuery.data?.data?.desk;
 
   const refetchAll = useCallback(() => {
-    void societyQuery.refetch();
-    void statsQuery.refetch();
-    void pendingQuery.refetch();
-    void approvedQuery.refetch();
-  }, [approvedQuery, pendingQuery, societyQuery, statsQuery]);
+    void bootstrapQuery.refetch();
+  }, [bootstrapQuery]);
 
   const checkOutEntry = useCallback(
     async (entryId?: number) => {
@@ -82,49 +44,39 @@ export function useGuardDashboard() {
       try {
         await checkOut({ societyId: selectedSocietyId, entryId }).unwrap();
         showSuccess("Checked out", "Visitor has left the society.");
-        void statsQuery.refetch();
+        void bootstrapQuery.refetch();
       } catch (error) {
         showError("Checkout failed", error, "Please try again.");
       } finally {
         setCheckoutEntryId(null);
       }
     },
-    [checkOut, selectedSocietyId, showError, showSuccess, statsQuery],
+    [bootstrapQuery, checkOut, selectedSocietyId, showError, showSuccess],
   );
 
-  const stats = statsQuery.data?.data?.stats;
-  const pendingEntries = pendingQuery.data?.data?.entries ?? [];
-  const approvedEntries = approvedQuery.data?.data?.entries ?? [];
-
-  const expectedTodayCount = useMemo(
-    () =>
-      approvedEntries.filter(
-        (entry) => isToday(entry.expected_at) || isToday(entry.created_at),
-      ).length,
-    [approvedEntries],
-  );
+  const stats = desk?.stats;
+  const pendingEntries = desk?.pending_preview ?? [];
 
   const resolvedSocietyName = useMemo(
     () =>
-      societyQuery.data?.data?.society?.name ??
+      desk?.society?.name ??
       societyName ??
       `Society #${selectedSocietyId}`,
-    [selectedSocietyId, societyName, societyQuery.data?.data?.society?.name],
+    [desk?.society?.name, selectedSocietyId, societyName],
   );
 
-  const isInitialLoading =
-    shouldSkip || queries.some((query) => query.isLoading && !query.data);
+  const isInitialLoading = shouldSkip || (bootstrapQuery.isLoading && !bootstrapQuery.data);
 
   return {
     checkOutEntry,
     checkoutEntryId,
-    errorMessage: failedQuery
-      ? getApiMessage(failedQuery.error, "Unable to load guard desk data.")
+    errorMessage: bootstrapQuery.isError
+      ? getApiMessage(bootstrapQuery.error, "Unable to load guard desk data.")
       : null,
-    expectedTodayCount,
-    hasError: !!failedQuery,
+    expectedTodayCount: desk?.expected_today_count ?? 0,
+    hasError: bootstrapQuery.isError,
     isInitialLoading,
-    isRefreshing: queries.some((query) => query.isFetching && !query.isLoading),
+    isRefreshing: bootstrapQuery.isFetching && !bootstrapQuery.isLoading,
     pendingEntries,
     refetchAll,
     societyName: resolvedSocietyName,

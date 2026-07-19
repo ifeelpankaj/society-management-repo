@@ -1,3 +1,18 @@
+const path = require("path");
+
+const defaultGoogleServicesJson = path.join(
+  __dirname,
+  "..",
+  "configs",
+  "google-services.json",
+);
+const defaultGoogleServiceInfoPlist = path.join(
+  __dirname,
+  "..",
+  "configs",
+  "GoogleService-Info.plist",
+);
+
 module.exports = {
   expo: {
     name: "app",
@@ -10,6 +25,8 @@ module.exports = {
     ios: {
       icon: "./assets/expo.icon",
       bundleIdentifier: "com.apnagate",
+      googleServicesFile:
+        process.env.GOOGLE_SERVICE_INFO_PLIST ?? defaultGoogleServiceInfoPlist,
       supportsTablet: true,
       config: {
         usesNonExemptEncryption: false,
@@ -23,6 +40,8 @@ module.exports = {
     },
     android: {
       package: "com.apnagate",
+      googleServicesFile:
+        process.env.GOOGLE_SERVICES_JSON ?? defaultGoogleServicesJson,
       softwareKeyboardLayoutMode: "resize",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
@@ -31,7 +50,10 @@ module.exports = {
         monochromeImage: "./assets/images/android-icon-monochrome.png",
       },
       predictiveBackGestureEnabled: false,
-      permissions: ["android.permission.CAMERA"],
+      permissions: [
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+      ],
     },
     web: {
       output: "static",

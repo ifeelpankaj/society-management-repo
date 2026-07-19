@@ -68,6 +68,7 @@ func SetupRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 
 		authGuards := guards.New(cfg.Auth.JWTSecret, cfg.Auth.JWTIssuer, deps.Society, guards.WithSubscriptionService(deps.Subscription))
 		routes.SetupAuthRoutesV1(apiV1, deps.V1.Auth, authGuards)
+		routes.SetupMeRoutesV1(apiV1, deps.V1.Notification, authGuards)
 		routes.SetupPublicRoutesV1(apiV1, deps.V1)
 		routes.SetupBootstrapRoutesV1(apiV1, deps.V1.Bootstrap, authGuards)
 		routes.SetupResidentRoutesV1(apiV1, deps.V1, authGuards)
