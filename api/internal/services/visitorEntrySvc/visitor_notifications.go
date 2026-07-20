@@ -13,7 +13,7 @@ import (
 
 const notificationDispatchTimeout = 10 * time.Second
 
-func (s *visitorService) notifyVisitorPending(entry *models.VisitorEntry) {
+func (s *VisitorEntrySvc) notifyVisitorPending(entry *models.VisitorEntry) {
 	if entry == nil || s.notifier == nil {
 		return
 	}
@@ -27,7 +27,7 @@ func (s *visitorService) notifyVisitorPending(entry *models.VisitorEntry) {
 	s.dispatchNotification(userIDs, notificationsvc.VisitorPendingPayload(entry))
 }
 
-func (s *visitorService) notifyVisitorApproved(entry *models.VisitorEntry) {
+func (s *VisitorEntrySvc) notifyVisitorApproved(entry *models.VisitorEntry) {
 	if entry == nil || s.notifier == nil {
 		return
 	}
@@ -41,7 +41,7 @@ func (s *visitorService) notifyVisitorApproved(entry *models.VisitorEntry) {
 	s.dispatchNotification(userIDs, notificationsvc.VisitorApprovedPayload(entry))
 }
 
-func (s *visitorService) notifyVisitorRejected(entry *models.VisitorEntry) {
+func (s *VisitorEntrySvc) notifyVisitorRejected(entry *models.VisitorEntry) {
 	if entry == nil || s.notifier == nil {
 		return
 	}
@@ -62,7 +62,7 @@ func (s *visitorService) notifyVisitorRejected(entry *models.VisitorEntry) {
 	s.dispatchNotification(userIDs, notificationsvc.VisitorRejectedPayload(entry))
 }
 
-func (s *visitorService) notifyVisitorCheckIn(entry *models.VisitorEntry) {
+func (s *VisitorEntrySvc) notifyVisitorCheckIn(entry *models.VisitorEntry) {
 	if entry == nil || s.notifier == nil {
 		return
 	}
@@ -82,7 +82,7 @@ func (s *visitorService) notifyVisitorCheckIn(entry *models.VisitorEntry) {
 	s.dispatchNotification(mergeUserIDs(residents, staff), notificationsvc.VisitorCheckInPayload(entry))
 }
 
-func (s *visitorService) notifyVisitorCheckOut(entry *models.VisitorEntry) {
+func (s *VisitorEntrySvc) notifyVisitorCheckOut(entry *models.VisitorEntry) {
 	if entry == nil || s.notifier == nil {
 		return
 	}
@@ -102,7 +102,7 @@ func (s *visitorService) notifyVisitorCheckOut(entry *models.VisitorEntry) {
 	s.dispatchNotification(mergeUserIDs(residents, staff), notificationsvc.VisitorCheckOutPayload(entry))
 }
 
-func (s *visitorService) dispatchNotification(userIDs []int64, payload models.NotificationPayload) {
+func (s *VisitorEntrySvc) dispatchNotification(userIDs []int64, payload models.NotificationPayload) {
 	if len(userIDs) == 0 {
 		return
 	}
@@ -117,7 +117,7 @@ func (s *visitorService) dispatchNotification(userIDs []int64, payload models.No
 	}()
 }
 
-func (s *visitorService) listFlatResidentUserIDs(societyID int64, flatID int64) ([]int64, error) {
+func (s *VisitorEntrySvc) listFlatResidentUserIDs(societyID int64, flatID int64) ([]int64, error) {
 	active := string(models.FlatResidentStatusActive)
 	residents, err := s.residentRepo.List(context.Background(), &models.FlatResidentFilter{
 		SocietyID: &societyID,
@@ -140,7 +140,7 @@ func (s *visitorService) listFlatResidentUserIDs(societyID int64, flatID int64) 
 	return userIDs, nil
 }
 
-func (s *visitorService) listSocietyStaffUserIDs(societyID int64) ([]int64, error) {
+func (s *VisitorEntrySvc) listSocietyStaffUserIDs(societyID int64) ([]int64, error) {
 	staffRole := string(models.SocietyMemberRoleStaff)
 	activeStatus := string(models.SocietyMemberStatusActive)
 	members, err := s.memberRepo.List(context.Background(), models.ListSocietyMembersFilter{

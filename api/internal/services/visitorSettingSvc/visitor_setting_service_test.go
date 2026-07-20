@@ -121,6 +121,14 @@ func (r *fakeVisitorSettingRepository) ListFlat(context.Context, int64, int64) (
 	return nil, nil
 }
 
+func (r *fakeVisitorSettingRepository) ListSocietyFlat(context.Context, models.SocietyFlatVisitorSettingsFilter) ([]*models.SocietyFlatVisitorSettingRow, error) {
+	return nil, nil
+}
+
+func (r *fakeVisitorSettingRepository) CountSocietyFlat(context.Context, models.SocietyFlatVisitorSettingsFilter) (int64, error) {
+	return 0, nil
+}
+
 func (r *fakeVisitorSettingRepository) GetFlatPurpose(context.Context, int64, int64, models.VisitorPurpose) (*models.FlatVisitorSettings, error) {
 	return r.flat, nil
 }
