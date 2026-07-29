@@ -1,9 +1,12 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 
+import { Row, Stack } from "@/components/layout";
 import { Card, StatusPill } from "@/components/ui";
 import { titleize } from "@/features/guard/guard-utils";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type SocietyAccessCardProps = {
   membershipCount: number;
@@ -24,46 +27,82 @@ export function SocietyAccessCard({
   const statusLabel = status ? titleize(status) : "Active";
 
   return (
-    <Card className="gap-3">
-      <View className="flex-row items-start gap-3">
-        <View
-          className="h-11 w-11 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: theme.guard.tealSoft }}
-        >
+    <Card style={styles.card}>
+      <Row align="flex-start" gap="md" justify="flex-start">
+        <View style={styles.icon}>
           <SymbolView
             name={{ ios: "building.2.fill", android: "business", web: "business" }}
             size={20}
-            tintColor={theme.guard.teal}
+            tintColor={colors.guard.teal}
           />
         </View>
-        <View className="min-w-0 flex-1 gap-1">
-          <Text className="text-lg font-bold" style={{ color: theme.text.primary }}>
-            {societyName}
-          </Text>
-          <Text className="text-sm" style={{ color: theme.text.secondary }}>
+        <Stack gap="xs" style={styles.copy}>
+          <Text style={styles.title}>{societyName}</Text>
+          <Text style={styles.subtitle}>
             {roleLabel} • {statusLabel}
           </Text>
-        </View>
+        </Stack>
         {status ? <StatusPill status={status} /> : null}
-      </View>
+      </Row>
 
       {membershipCount > 1 && onSwitchPress ? (
         <Pressable
           accessibilityRole="button"
-          className="flex-row items-center justify-between rounded-xl px-3 py-2.5 active:opacity-85"
-          style={{ backgroundColor: theme.guard.tealSoft }}
+          style={({ pressed }) => [styles.switchButton, pressed && styles.switchButtonPressed]}
           onPress={onSwitchPress}
         >
-          <Text className="text-sm font-semibold" style={{ color: theme.guard.teal }}>
-            Switch society
-          </Text>
+          <Text style={styles.switchLabel}>Switch society</Text>
           <SymbolView
             name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
             size={14}
-            tintColor={theme.guard.teal}
+            tintColor={colors.guard.teal}
           />
         </Pressable>
       ) : null}
     </Card>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    gap: spacing.md,
+  },
+  copy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  icon: {
+    alignItems: "center",
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: radius["2xl"],
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  subtitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  switchButton: {
+    alignItems: "center",
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: radius.xl,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  switchButtonPressed: {
+    opacity: 0.85,
+  },
+  switchLabel: {
+    color: colors.guard.teal,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  title: {
+    color: colors.text.primary,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+});

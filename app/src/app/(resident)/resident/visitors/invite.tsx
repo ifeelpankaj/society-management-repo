@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, Card, LoadingState } from "@/components/ui";
@@ -20,7 +20,11 @@ import {
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesMutation,
 } from "@/lib/api/generated-api";
 import { buildVisitorInviteUrl } from "@/lib/config";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type CreatedInvite = {
   purpose: ModelsVisitorPurpose;
@@ -46,15 +50,13 @@ export default function ResidentInviteScreen() {
 
   if (!canManageFlatVisitors) {
     return (
-      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-        <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
-          <View className="gap-6">
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.content}>
             <GuardBackHeader title="Visitor Invite" />
-            <Card className="gap-2">
-              <Text className="text-base font-bold" style={{ color: theme.text.primary }}>
-                Flat owner required
-              </Text>
-              <Text className="text-sm" style={{ color: theme.text.secondary }}>
+            <Card style={styles.restrictedCard}>
+              <Text style={styles.restrictedTitle}>Flat owner required</Text>
+              <Text style={styles.restrictedBody}>
                 Only the flat owner can create pre-approved visitor invites.
               </Text>
             </Card>
@@ -142,55 +144,39 @@ export default function ResidentInviteScreen() {
     const formUrl = buildVisitorInviteUrl(createdInvite.token);
 
     return (
-      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-        <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
-          <View className="gap-6">
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.content}>
             <GuardBackHeader title="Visitor Invite" />
-            <View className="gap-1">
-              <Text className="text-2xl font-bold" style={{ color: theme.text.primary }}>
-                Invite ready
-              </Text>
-              <Text className="text-sm" style={{ color: theme.text.secondary }}>
+            <View style={styles.intro}>
+              <Text style={styles.pageTitle}>Invite ready</Text>
+              <Text style={styles.pageSubtitle}>
                 Share this form link with your visitor so they can complete entry details on web.
               </Text>
             </View>
 
-            <Card className="gap-4">
-              <View className="gap-1">
-                <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                  Purpose
-                </Text>
-                <Text className="text-lg font-semibold capitalize text-slate-950">
-                  {titleize(createdInvite.purpose)}
-                </Text>
+            <Card style={styles.detailsCard}>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Purpose</Text>
+                <Text style={styles.fieldValue}>{titleize(createdInvite.purpose)}</Text>
               </View>
 
-              <View className="gap-1">
-                <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                  Form link
-                </Text>
-                <Text
-                  className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-900"
-                  selectable
-                >
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Form link</Text>
+                <Text selectable style={styles.codeBlock}>
                   {formUrl}
                 </Text>
               </View>
 
-              <View className="gap-1">
-                <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                  Invite code
-                </Text>
-                <Text
-                  className="rounded-xl bg-slate-100 px-4 py-3 font-mono text-xs text-slate-900"
-                  selectable
-                >
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Invite code</Text>
+                <Text selectable style={styles.monoBlock}>
                   {createdInvite.token}
                 </Text>
               </View>
 
               {createdInvite.expiresAt ? (
-                <Text className="text-sm text-slate-600">
+                <Text style={styles.expiresText}>
                   Expires {new Date(createdInvite.expiresAt).toLocaleString()}
                 </Text>
               ) : null}
@@ -207,24 +193,20 @@ export default function ResidentInviteScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-      <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
-        <View className="gap-6">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
           <GuardBackHeader title="Visitor Invite" />
-          <View className="gap-1">
-            <Text className="text-2xl font-bold" style={{ color: theme.text.primary }}>
-              Create invite
-            </Text>
-            <Text className="text-sm" style={{ color: theme.text.secondary }}>
+          <View style={styles.intro}>
+            <Text style={styles.pageTitle}>Create invite</Text>
+            <Text style={styles.pageSubtitle}>
               Generate a shareable visitor form link for your flat.
             </Text>
           </View>
 
-          <Card className="gap-4">
-            <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
-              Visitor purpose
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
+          <Card style={styles.purposeCard}>
+            <Text style={styles.fieldLabel}>Visitor purpose</Text>
+            <View style={styles.purposeOptions}>
               {visitorPurposes.map((option) => {
                 const active = option === purpose;
 
@@ -232,17 +214,11 @@ export default function ResidentInviteScreen() {
                   <Pressable
                     key={option}
                     accessibilityRole="button"
-                    className={[
-                      "rounded-full border px-4 py-2",
-                      active ? "border-teal-600 bg-teal-50" : "border-slate-200 bg-white",
-                    ].join(" ")}
                     onPress={() => setPurpose(option)}
+                    style={[styles.purposeChip, active && styles.purposeChipActive]}
                   >
                     <Text
-                      className={[
-                        "text-sm font-semibold capitalize",
-                        active ? "text-teal-800" : "text-slate-700",
-                      ].join(" ")}
+                      style={[styles.purposeChipText, active && styles.purposeChipTextActive]}
                     >
                       {option.replace(/_/g, " ")}
                     </Text>
@@ -262,3 +238,107 @@ export default function ResidentInviteScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: layout.screenPaddingBottom,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: layout.screenPaddingTop,
+  },
+  content: {
+    gap: spacing["2xl"],
+  },
+  restrictedCard: {
+    gap: spacing.sm,
+  },
+  restrictedTitle: {
+    ...typography.body,
+    color: colors.text.primary,
+    fontWeight: "700",
+  },
+  restrictedBody: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  intro: {
+    gap: spacing.xs,
+  },
+  pageTitle: {
+    ...typography.title,
+    color: colors.text.primary,
+  },
+  pageSubtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  detailsCard: {
+    gap: spacing.lg,
+  },
+  purposeCard: {
+    gap: spacing.lg,
+  },
+  fieldGroup: {
+    gap: spacing.xs,
+  },
+  fieldLabel: {
+    ...typography.eyebrow,
+    color: colors.text.muted,
+  },
+  fieldValue: {
+    ...typography.subtitle,
+    color: colors.text.primary,
+    fontWeight: "600",
+    textTransform: "capitalize",
+  },
+  codeBlock: {
+    ...typography.bodySmall,
+    backgroundColor: colors.surface.screen,
+    borderRadius: radius.md,
+    color: colors.text.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  monoBlock: {
+    ...typography.caption,
+    backgroundColor: colors.surface.screen,
+    borderRadius: radius.md,
+    color: colors.text.primary,
+    fontFamily: "monospace",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  expiresText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  purposeOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  purposeChip: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
+    borderRadius: radius["2xl"],
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  purposeChipActive: {
+    backgroundColor: colors.operational.primarySoft,
+    borderColor: colors.operational.teal,
+  },
+  purposeChipText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    fontWeight: "600",
+    textTransform: "capitalize",
+  },
+  purposeChipTextActive: {
+    color: "#115e59",
+  },
+});

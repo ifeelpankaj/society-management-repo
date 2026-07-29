@@ -1,6 +1,8 @@
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { AppText } from "@/components/ui/app-text";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 type LoadingStateProps = {
   message?: string;
@@ -8,14 +10,25 @@ type LoadingStateProps = {
 
 export function LoadingState({ message = "Loading your workspace" }: LoadingStateProps) {
   return (
-    <View
-      className="flex-1 items-center justify-center gap-4 px-6"
-      style={{ backgroundColor: theme.surface.screen }}
-    >
-      <ActivityIndicator color={theme.brand.orange} size="large" />
-      <Text className="text-center text-base" style={{ color: theme.text.secondary }}>
+    <View style={styles.container}>
+      <ActivityIndicator color={colors.brand.orange} size="large" />
+      <AppText variant="body" color="secondary" style={styles.message}>
         {message}
-      </Text>
+      </AppText>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    backgroundColor: colors.surface.screen,
+    flex: 1,
+    gap: spacing.lg,
+    justifyContent: "center",
+    paddingHorizontal: spacing["2xl"],
+  },
+  message: {
+    textAlign: "center",
+  },
+});

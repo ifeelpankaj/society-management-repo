@@ -1,4 +1,10 @@
-import { Pressable, Switch, Text, View } from "react-native";
+import { Pressable, StyleSheet, Switch, View } from "react-native";
+
+import { Stack } from "@/components/layout";
+import { AppText } from "@/components/ui/app-text";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type SettingToggleRowProps = {
   title: string;
@@ -20,27 +26,61 @@ export function SettingToggleRow({
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}
       disabled={disabled}
-      className={[
-        "flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4",
-        disabled ? "opacity-55" : "active:opacity-90",
-      ].join(" ")}
+      style={({ pressed }) => [
+        styles.row,
+        disabled && styles.disabled,
+        pressed && !disabled && styles.pressed,
+      ]}
       onPress={() => {
         if (!disabled) {
           onValueChange(!value);
         }
       }}
     >
-      <View className="flex-1 gap-1">
-        <Text className="text-base font-semibold text-slate-950">{title}</Text>
-        {description ? <Text className="text-sm text-slate-600">{description}</Text> : null}
-      </View>
+      <Stack gap="xs" style={styles.copy}>
+        <AppText variant="body" color="primary" style={styles.title}>
+          {title}
+        </AppText>
+        {description ? (
+          <AppText variant="bodySmall" color="secondary">
+            {description}
+          </AppText>
+        ) : null}
+      </Stack>
       <Switch
         disabled={disabled}
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: "#cbd5e1", true: "#99f6e4" }}
-        thumbColor={value ? "#0f766e" : "#f8fafc"}
+        thumbColor={value ? colors.operational.teal : colors.surface.screen}
       />
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  copy: {
+    flex: 1,
+  },
+  disabled: {
+    opacity: 0.55,
+  },
+  pressed: {
+    opacity: 0.9,
+  },
+  row: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.lg,
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  title: {
+    fontWeight: "600",
+  },
+});

@@ -1,8 +1,10 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 
+import { Stack } from "@/components/layout";
 import type { ProfileSymbolName } from "@/features/profile/components/profile-info-row";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 type ProfileActionRowProps = {
   description?: string;
@@ -23,44 +25,66 @@ export function ProfileActionRow({
   onPress,
   showChevron = true,
 }: ProfileActionRowProps) {
-  const accent = destructive ? theme.status.error : theme.guard.teal;
-  const iconBg = destructive ? theme.status.errorSoft : theme.guard.tealSoft;
+  const accent = destructive ? colors.status.error : colors.guard.teal;
+  const iconBg = destructive ? colors.status.errorSoft : colors.guard.tealSoft;
 
   return (
     <Pressable
       accessibilityRole="button"
-      className={[
-        "flex-row items-center gap-3 px-4 py-3.5 active:opacity-85",
-        isLast ? "" : "border-b border-slate-100",
-      ].join(" ")}
+      style={[styles.row, !isLast && styles.rowBorder]}
       onPress={onPress}
     >
-      <View
-        className="h-10 w-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: iconBg }}
-      >
+      <View style={[styles.icon, { backgroundColor: iconBg }]}>
         <SymbolView name={icon} size={18} tintColor={accent} />
       </View>
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text
-          className="text-[15px] font-semibold"
-          style={{ color: destructive ? theme.status.error : theme.text.primary }}
-        >
-          {label}
-        </Text>
-        {description ? (
-          <Text className="text-sm" style={{ color: theme.text.secondary }}>
-            {description}
-          </Text>
-        ) : null}
-      </View>
+      <Stack gap="xs" style={styles.copy}>
+        <Text style={[styles.label, destructive && styles.labelDestructive]}>{label}</Text>
+        {description ? <Text style={styles.description}>{description}</Text> : null}
+      </Stack>
       {showChevron ? (
         <SymbolView
           name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
           size={16}
-          tintColor={theme.text.muted}
+          tintColor={colors.text.muted}
         />
       ) : null}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  copy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  description: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  icon: {
+    alignItems: "center",
+    borderRadius: 999,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  label: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  labelDestructive: {
+    color: colors.status.error,
+  },
+  row: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  rowBorder: {
+    borderBottomColor: "#f1f5f9",
+    borderBottomWidth: 1,
+  },
+});

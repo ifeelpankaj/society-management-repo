@@ -1,9 +1,11 @@
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Stack } from "@/components/layout";
 import { Button, Card, EmptyState, LoadingState, ScreenHeader, StatusPill } from "@/components/ui";
 import { useGuardSociety } from "@/features/guard/guard-context";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export function GuardSocietyGate() {
   const { isLoading, memberships, refetch, selectSociety } = useGuardSociety();
@@ -14,11 +16,8 @@ export function GuardSocietyGate() {
 
   if (memberships.length === 0) {
     return (
-      <SafeAreaView
-        className="flex-1"
-        style={{ backgroundColor: theme.surface.screen }}
-      >
-        <ScrollView contentContainerClassName="px-6 py-8">
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           <EmptyState
             title="No guard access"
             message="Your account is signed in, but active guard access is not linked yet."
@@ -31,35 +30,22 @@ export function GuardSocietyGate() {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: theme.surface.screen }}
-    >
-      <ScrollView contentContainerClassName="px-6 py-8">
-        <View className="gap-8">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Stack gap="3xl">
           <ScreenHeader
             eyebrow="Guard workspace"
             title="Select society"
             subtitle="Choose the society gate you are operating before continuing."
           />
 
-          <View className="gap-3">
+          <Stack gap="md">
             {memberships.map((membership) => (
-              <Card key={`guard-society-${membership.id ?? membership.society_id}`} className="gap-4">
-                <View className="flex-row items-start justify-between gap-4">
-                  <View className="flex-1">
-                    <Text
-                      className="text-xl font-bold"
-                      style={{ color: theme.text.primary }}
-                    >
-                      Society #{membership.society_id}
-                    </Text>
-                    <Text
-                      className="mt-1 text-base capitalize"
-                      style={{ color: theme.text.secondary }}
-                    >
-                      {membership.role ?? "staff"} access
-                    </Text>
+              <Card key={`guard-society-${membership.id ?? membership.society_id}`} style={styles.membershipCard}>
+                <View style={styles.membershipHeader}>
+                  <View style={styles.membershipCopy}>
+                    <Text style={styles.societyTitle}>Society #{membership.society_id}</Text>
+                    <Text style={styles.roleLabel}>{membership.role ?? "staff"} access</Text>
                   </View>
                   <StatusPill status={membership.status} />
                 </View>
@@ -73,9 +59,43 @@ export function GuardSocietyGate() {
                 />
               </Card>
             ))}
-          </View>
-        </View>
+          </Stack>
+        </Stack>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  membershipCard: {
+    gap: spacing.lg,
+  },
+  membershipCopy: {
+    flex: 1,
+  },
+  membershipHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.lg,
+    justifyContent: "space-between",
+  },
+  roleLabel: {
+    color: colors.text.secondary,
+    fontSize: 16,
+    marginTop: spacing.xs,
+    textTransform: "capitalize",
+  },
+  screen: {
+    backgroundColor: colors.surface.screen,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing["2xl"],
+    paddingVertical: spacing["3xl"],
+  },
+  societyTitle: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+});

@@ -1,11 +1,9 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { LoadingState } from "@/components/ui";
+import { ScreenShell } from "@/components/layout";
 import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
 import { useResident } from "@/features/resident/resident-context";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
 
 type ResidentScreenShellProps = PropsWithChildren<{
   backgroundColor?: string;
@@ -17,9 +15,9 @@ type ResidentScreenShellProps = PropsWithChildren<{
 }>;
 
 export function ResidentScreenShell({
-  backgroundColor = theme.guard.screenBg,
+  backgroundColor = colors.guard.screenBg,
   children,
-  contentPaddingBottom = 32,
+  contentPaddingBottom,
   footer,
   loadingMessage = "Opening resident home",
   onRefresh,
@@ -27,39 +25,19 @@ export function ResidentScreenShell({
 }: ResidentScreenShellProps) {
   const { isLoading, requiresSelection, selectedResidence } = useResident();
 
-  if (isLoading) {
-    return <LoadingState message={loadingMessage} />;
-  }
-
-  if (requiresSelection || !selectedResidence) {
-    return <ResidentSocietyGate />;
-  }
-
   return (
-    <SafeAreaView className="flex-1" edges={["top", "left", "right"]} style={{ backgroundColor }}>
-      <View className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{
-            paddingBottom: contentPaddingBottom,
-            paddingHorizontal: 20,
-            paddingTop: 12,
-          }}
-          nestedScrollEnabled
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={refreshing}
-                tintColor={theme.guard.teal}
-                onRefresh={onRefresh}
-              />
-            ) : undefined
-          }
-        >
-          {children}
-        </ScrollView>
-        {footer}
-      </View>
-    </SafeAreaView>
+    <ScreenShell
+      backgroundColor={backgroundColor}
+      contentPaddingBottom={contentPaddingBottom}
+      footer={footer}
+      gate={<ResidentSocietyGate />}
+      isLoading={isLoading}
+      isReady={!requiresSelection && Boolean(selectedResidence)}
+      loadingMessage={loadingMessage}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+    >
+      {children}
+    </ScreenShell>
   );
 }

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { getApiMessage } from "@/features/auth/api-error";
-import { formatSelectedFlatLabel, type SelectedFlat } from "@/features/guard/hooks/useGuardManualEntry";
+import { formatSelectedFlatLabel, type SelectedFlat } from "@/features/guard/hooks/use-guard-manual-entry";
 import {
   type ModelsVisitorPurpose,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesStaffMutation,

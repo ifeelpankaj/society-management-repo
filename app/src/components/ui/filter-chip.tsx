@@ -1,7 +1,9 @@
 import { type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type FilterChipProps = {
   label: string;
@@ -47,8 +49,6 @@ export function FilterChipCell({ children }: FilterChipCellProps) {
   return <View style={styles.cell}>{children}</View>;
 }
 
-const G = theme.guard;
-
 const styles = StyleSheet.create({
   cell: {
     width: "48%",
@@ -59,30 +59,30 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: "center",
     minHeight: 46,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
   chipDefault: {
-    backgroundColor: theme.surface.card,
-    borderColor: theme.border.default,
+    backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
   },
   chipPressed: {
     opacity: 0.88,
   },
   chipSelected: {
-    backgroundColor: G.tealSoft,
-    borderColor: G.teal,
+    backgroundColor: colors.guard.tealSoft,
+    borderColor: colors.guard.teal,
   },
   chipText: {
-    fontSize: 14,
+    ...typography.bodySmall,
     textAlign: "center",
   },
   chipTextDefault: {
-    color: G.textMuted,
+    color: colors.guard.textMuted,
     fontWeight: "500",
   },
   chipTextSelected: {
-    color: G.teal,
+    color: colors.guard.teal,
     fontWeight: "700",
   },
   grid: {

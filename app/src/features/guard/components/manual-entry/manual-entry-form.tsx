@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -15,13 +16,14 @@ import {
 import { SymbolView } from "expo-symbols";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Row, Stack } from "@/components/layout";
 import { getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import {
   flatFromResponse,
   formatSelectedFlatLabel,
   type SelectedFlat,
   useGuardManualEntry,
-} from "@/features/guard/hooks/useGuardManualEntry";
+} from "@/features/guard/hooks/use-guard-manual-entry";
 import { useGuardVisitorInvite } from "@/features/guard/hooks/useGuardVisitorInvite";
 import {
   copyVisitorInviteLink,
@@ -30,16 +32,21 @@ import {
   shareVisitorInviteOnWhatsApp,
 } from "@/features/visitors/visitor-invite-share";
 import {
+  type ModelsFlatResponse,
+  type ModelsVisitorEntry,
   type ModelsVisitorPurpose,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery,
   useGetV1SocietiesBySocietyIdFlatsQuery,
 } from "@/lib/api/generated-api";
 import { buildVisitorInviteUrl } from "@/lib/config";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
 
 type EntryMode = "full_entry" | "form_link";
 
-const G = theme.guard;
 const SEARCH_DEBOUNCE_MS = 400;
 const SEARCH_LIMIT = 8;
 
@@ -59,19 +66,12 @@ const PURPOSE_META = {
 
 function StepLabel({ step, title }: { step: number; title: string }) {
   return (
-    <View className="mb-3 flex-row items-center gap-2.5">
-      <View
-        className="h-7 w-7 items-center justify-center rounded-full"
-        style={{ backgroundColor: G.tealSoft }}
-      >
-        <Text className="text-[13px] font-bold" style={{ color: G.teal }}>
-          {step}
-        </Text>
+    <Row align="center" gap={10} style={styles.stepLabel}>
+      <View style={styles.stepBadge}>
+        <Text style={styles.stepBadgeText}>{step}</Text>
       </View>
-      <Text className="text-[15px] font-semibold tracking-tight" style={{ color: G.text }}>
-        {title}
-      </Text>
-    </View>
+      <Text style={styles.stepTitle}>{title}</Text>
+    </Row>
   );
 }
 
@@ -87,29 +87,24 @@ function Field({
   const [focused, setFocused] = useState(false);
 
   return (
-    <View className="gap-1.5">
-      <Text className="text-[13px] font-medium" style={{ color: G.textMuted }}>
-        {label}
-      </Text>
+    <Stack gap={6}>
+      <Text style={styles.fieldLabel}>{label}</Text>
       <View
-        className="rounded-2xl bg-white px-4"
-        style={{
-          height: multiline ? undefined : G.inputHeight,
-          minHeight: multiline ? 96 : undefined,
-          borderWidth: 1,
-          borderColor: error ? "#fca5a5" : focused ? G.teal : G.border,
-          boxShadow: focused ? `0 0 0 3px ${G.tealSoft}` : G.cardShadow,
-          justifyContent: multiline ? "flex-start" : "center",
-          paddingVertical: multiline ? 12 : 0,
-        }}
+        style={[
+          styles.fieldInputWrapper,
+          multiline && styles.fieldInputWrapperMultiline,
+          {
+            borderColor: error ? "#fca5a5" : focused ? colors.guard.teal : colors.guard.border,
+            ...(focused ? styles.fieldInputWrapperFocused : shadows.card),
+          },
+        ]}
       >
         <TextInput
-          cursorColor={G.teal}
+          cursorColor={colors.guard.teal}
           multiline={multiline}
-          placeholderTextColor={G.textMuted}
+          placeholderTextColor={colors.guard.textMuted}
           selectionColor="#99f6e4"
           underlineColorAndroid="transparent"
-          className="text-[16px]"
           onBlur={(e) => {
             setFocused(false);
             onBlur?.(e);
@@ -119,23 +114,16 @@ function Field({
             onFocus?.(e);
           }}
           style={[
-            {
-              color: G.text,
-              width: "100%",
-              borderWidth: 0,
-              backgroundColor: "transparent",
-              paddingVertical: 0,
-              lineHeight: 22,
-              textAlignVertical: multiline ? "top" : "center",
-            },
+            styles.fieldInput,
+            multiline && styles.fieldInputMultiline,
             webNoOutline,
             style,
           ]}
           {...props}
         />
       </View>
-      {error ? <Text className="text-sm text-rose-500">{error}</Text> : null}
-    </View>
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </Stack>
   );
 }
 
@@ -155,53 +143,41 @@ function SearchField({
   const [focused, setFocused] = useState(false);
 
   return (
-    <View className="gap-1.5">
-      <Text className="text-[13px] font-medium" style={{ color: G.textMuted }}>
-        {label}
-      </Text>
-      <View
-        className="flex-row items-center gap-3 rounded-2xl bg-white px-4"
-        style={{
-          height: G.inputHeight,
-          borderWidth: 1,
-          borderColor: focused ? G.teal : G.border,
-          boxShadow: focused ? `0 0 0 3px ${G.tealSoft}` : G.cardShadow,
-        }}
+    <Stack gap={6}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Row
+        align="center"
+        gap="md"
+        style={[
+          styles.searchFieldWrapper,
+          {
+            borderColor: focused ? colors.guard.teal : colors.guard.border,
+            ...(focused ? styles.fieldInputWrapperFocused : shadows.card),
+          },
+        ]}
       >
         <SymbolView
           name={{ ios: "magnifyingglass", android: "search", web: "search" }}
           size={20}
-          tintColor={focused ? G.teal : G.textMuted}
+          tintColor={focused ? colors.guard.teal : colors.guard.textMuted}
         />
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
           autoFocus={autoFocus}
-          className="flex-1 text-[16px]"
-          cursorColor={G.teal}
+          cursorColor={colors.guard.teal}
           placeholder={placeholder}
-          placeholderTextColor={G.textMuted}
+          placeholderTextColor={colors.guard.textMuted}
           selectionColor="#99f6e4"
           underlineColorAndroid="transparent"
           value={value}
           onBlur={() => setFocused(false)}
           onChangeText={onChangeText}
           onFocus={() => setFocused(true)}
-          style={[
-            {
-              color: G.text,
-              flex: 1,
-              height: "100%",
-              lineHeight: 22,
-              paddingVertical: 0,
-              borderWidth: 0,
-              backgroundColor: "transparent",
-            },
-            webNoOutline,
-          ]}
+          style={[styles.searchInput, webNoOutline]}
         />
-      </View>
-    </View>
+      </Row>
+    </Stack>
   );
 }
 
@@ -242,33 +218,22 @@ function FlatSearchModal({
 
   return (
     <Modal animationType="slide" visible={visible} onRequestClose={onClose}>
-      <SafeAreaView className="flex-1" style={{ backgroundColor: G.screenBg }}>
-        <View
-          className="flex-row items-center gap-2 border-b bg-white px-4 py-3.5"
-          style={{ borderColor: G.border }}
-        >
-          <Pressable
-            className="h-11 w-11 items-center justify-center rounded-full"
-            style={{ backgroundColor: G.screenBg }}
-            onPress={onClose}
-          >
+      <SafeAreaView style={styles.modalScreen}>
+        <Row align="center" gap="sm" style={styles.modalHeader}>
+          <Pressable style={styles.modalBackButton} onPress={onClose}>
             <SymbolView
               name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
               size={20}
-              tintColor={G.text}
+              tintColor={colors.guard.text}
             />
           </Pressable>
-          <View className="flex-1">
-            <Text className="text-[18px] font-bold tracking-tight" style={{ color: G.text }}>
-              Find flat
-            </Text>
-            <Text className="text-[13px]" style={{ color: G.textMuted }}>
-              Type to see matching flats
-            </Text>
+          <View style={styles.modalHeaderText}>
+            <Text style={styles.modalTitle}>Find flat</Text>
+            <Text style={styles.modalSubtitle}>Type to see matching flats</Text>
           </View>
-        </View>
+        </Row>
 
-        <View className="border-b px-5 pb-4 pt-3" style={{ borderColor: G.border, backgroundColor: G.screenBg }}>
+        <View style={styles.modalSearchSection}>
           <SearchField
             autoFocus={visible}
             placeholder="Flat no., resident, or wing"
@@ -278,34 +243,33 @@ function FlatSearchModal({
         </View>
 
         {!canSearch ? (
-          <View className="flex-1 items-center justify-center px-8">
-            <Text className="text-center text-[16px] text-slate-500">
+          <View style={styles.modalEmptyState}>
+            <Text style={styles.modalEmptyStateText}>
               Type to search flats{"\n"}e.g. G-02, left-wing
             </Text>
           </View>
         ) : isLoading ? (
-          <ActivityIndicator color={G.teal} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={colors.guard.teal} style={styles.modalLoading} />
         ) : flats.length === 0 ? (
-          <Text className="mt-10 text-center text-slate-500">No flats found</Text>
+          <Text style={styles.modalNoResults}>No flats found</Text>
         ) : (
           <FlatList
-            contentContainerClassName="gap-2 px-4 pb-8"
+            contentContainerStyle={styles.modalListContent}
             data={flats}
             keyExtractor={(item) => String(item.id)}
             keyboardShouldPersistTaps="handled"
             ListFooterComponent={
               total > flats.length ? (
-                <Text className="py-3 text-center text-[13px] text-slate-400">
+                <Text style={styles.modalListFooter}>
                   {flats.length} of {total} — type more to refine
                 </Text>
               ) : isFetching ? (
-                <ActivityIndicator color={G.teal} style={{ marginVertical: 8 }} />
+                <ActivityIndicator color={colors.guard.teal} style={styles.modalListLoading} />
               ) : null
             }
             renderItem={({ item }) => (
               <Pressable
-                className="flex-row items-center gap-3 rounded-2xl bg-white px-5 py-4"
-                style={{ borderWidth: 1, borderColor: G.border, boxShadow: G.cardShadow }}
+                style={styles.flatListItem}
                 onPress={() => {
                   const flat = flatFromResponse(item);
                   if (flat) {
@@ -314,10 +278,10 @@ function FlatSearchModal({
                   }
                 }}
               >
-                <Text className="flex-1 text-[17px] font-semibold text-slate-900">
+                <Text style={styles.flatListItemNumber}>
                   {item.flat_number ?? `#${item.id}`}
                 </Text>
-                <Text className="text-[14px] text-slate-500">
+                <Text style={styles.flatListItemMeta}>
                   {item.block ? `Wing ${item.block}` : item.floor ? `Floor ${item.floor}` : ""}
                 </Text>
               </Pressable>
@@ -347,71 +311,53 @@ function ResidentPreviewCard({
       : null;
 
   return (
-    <Pressable
-      className="overflow-hidden rounded-[20px] bg-white"
-      style={{
-        borderWidth: 1,
-        borderColor: "#99f6e4",
-        boxShadow: G.heroShadow,
-      }}
-      onPress={onPress}
-    >
-      <View className="h-[3px] bg-teal-600" />
-      <View className="gap-4 p-5">
-        <View className="flex-row items-start justify-between">
-          <View className="h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: G.tealSoft }}>
+    <Pressable style={styles.previewCard} onPress={onPress}>
+      <View style={styles.previewCardAccent} />
+      <Stack gap="lg" style={styles.previewCardBody}>
+        <Row align="flex-start" justify="space-between">
+          <View style={styles.previewIcon}>
             <SymbolView
               name={{ ios: "house.fill", android: "home", web: "home" }}
               size={24}
-              tintColor={G.teal}
+              tintColor={colors.guard.teal}
             />
           </View>
-          <View className="flex-row items-center gap-1 rounded-full px-3 py-1.5" style={{ backgroundColor: G.tealSoft }}>
-            <Text className="text-[12px] font-semibold" style={{ color: G.teal }}>
-              Change
-            </Text>
+          <Row align="center" gap="xs" style={styles.changeBadge}>
+            <Text style={styles.changeBadgeText}>Change</Text>
             <SymbolView
               name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
               size={10}
-              tintColor={G.teal}
+              tintColor={colors.guard.teal}
             />
-          </View>
-        </View>
+          </Row>
+        </Row>
 
         {loading ? (
-          <View className="flex-row items-center gap-2">
-            <ActivityIndicator color={G.teal} size="small" />
-            <Text className="text-[14px]" style={{ color: G.textMuted }}>
-              Loading resident...
-            </Text>
-          </View>
+          <Row align="center" gap="sm">
+            <ActivityIndicator color={colors.guard.teal} size="small" />
+            <Text style={styles.loadingResidentText}>Loading resident...</Text>
+          </Row>
         ) : (
-          <View className="gap-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: G.textMuted }}>
-              Flat number
-            </Text>
-            <Text className="text-[26px] font-bold tracking-tight" style={{ color: G.text }}>
+          <Stack gap="xs">
+            <Text style={styles.previewEyebrow}>Flat number</Text>
+            <Text style={styles.previewFlatNumber}>
               {flat.flat_number ?? `Flat ${flat.id}`}
             </Text>
-            <Text className="mt-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: G.textMuted }}>
-              Resident
-            </Text>
-            <Text className="text-[17px] font-semibold" style={{ color: G.text }}>
+            <Text style={[styles.previewEyebrow, styles.previewEyebrowSpaced]}>Resident</Text>
+            <Text style={styles.previewResidentName}>
               {resident ?? "No primary resident"}
             </Text>
             {wingLabel ? (
               <>
-                <Text className="mt-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: G.textMuted }}>
+                <Text style={[styles.previewEyebrow, styles.previewEyebrowSpaced]}>
                   Wing / Tower
                 </Text>
-                <Text className="text-[15px] font-medium" style={{ color: G.textMuted }}>
-                  {wingLabel}
-                </Text>
+                <Text style={styles.previewWingLabel}>{wingLabel}</Text>
               </>
             ) : null}
-          </View>
+          </Stack>
         )}
-      </View>
+      </Stack>
     </Pressable>
   );
 }
@@ -447,37 +393,27 @@ function FlatPicker({
         />
       ) : (
         <Pressable
-          className="overflow-hidden rounded-[20px] bg-white"
-          style={{
-            borderWidth: 1,
-            borderColor: error ? "#fca5a5" : G.border,
-            boxShadow: G.heroShadow,
-            minHeight: 120,
-          }}
+          style={[styles.emptyFlatPicker, error && styles.emptyFlatPickerError]}
           onPress={() => setOpen(true)}
         >
-          <View className="h-[3px] bg-teal-600" />
-          <View className="flex-1 justify-center gap-3 p-5">
-            <View className="h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: G.tealSoft }}>
+          <View style={styles.previewCardAccent} />
+          <Stack gap="md" style={styles.emptyFlatPickerBody}>
+            <View style={styles.previewIcon}>
               <SymbolView
                 name={{ ios: "magnifyingglass", android: "search", web: "search" }}
                 size={22}
-                tintColor={G.teal}
+                tintColor={colors.guard.teal}
               />
             </View>
-            <View className="gap-1">
-              <Text className="text-[18px] font-bold" style={{ color: G.text }}>
-                Search flat
-              </Text>
-              <Text className="text-[14px]" style={{ color: G.textMuted }}>
-                Flat no., resident, or wing
-              </Text>
-            </View>
-          </View>
+            <Stack gap="xs">
+              <Text style={styles.emptyFlatPickerTitle}>Search flat</Text>
+              <Text style={styles.emptyFlatPickerSubtitle}>Flat no., resident, or wing</Text>
+            </Stack>
+          </Stack>
         </Pressable>
       )}
 
-      {error ? <Text className="mt-2 text-sm text-rose-500">{error}</Text> : null}
+      {error ? <Text style={styles.flatPickerError}>{error}</Text> : null}
       <FlatSearchModal
         societyId={societyId}
         visible={open}
@@ -498,39 +434,36 @@ function PurposePicker({
   return (
     <View>
       <StepLabel step={2} title="Select purpose" />
-      <ScrollView horizontal contentContainerClassName="gap-2.5 pb-1" showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        horizontal
+        contentContainerStyle={styles.purposeScrollContent}
+        showsHorizontalScrollIndicator={false}
+      >
         {visitorPurposes.map((p) => {
           const meta = PURPOSE_META[p];
           const active = value === p;
           return (
             <Pressable
               key={p}
-              className="items-center justify-center rounded-[16px]"
-              style={{
-                width: G.purposeCardWidth,
-                height: G.purposeCardHeight,
-                backgroundColor: active ? G.teal : "#ffffff",
-                borderWidth: active ? 0 : 1,
-                borderColor: G.border,
-                boxShadow: active ? G.ctaShadow : G.cardShadow,
-                transform: active ? [{ scale: 1.04 }] : [{ scale: 1 }],
-              }}
+              style={[
+                styles.purposeCard,
+                active ? styles.purposeCardActive : styles.purposeCardInactive,
+              ]}
               onPress={() => onChange(p)}
             >
               <View
-                className="mb-1 h-8 w-8 items-center justify-center rounded-xl"
-                style={{ backgroundColor: active ? "rgba(255,255,255,0.2)" : G.tealSoft }}
+                style={[
+                  styles.purposeIcon,
+                  { backgroundColor: active ? "rgba(255,255,255,0.2)" : colors.guard.tealSoft },
+                ]}
               >
                 <SymbolView
                   name={{ ios: meta.ios, android: meta.android, web: meta.web }}
                   size={18}
-                  tintColor={active ? "#ffffff" : G.teal}
+                  tintColor={active ? colors.text.inverse : colors.guard.teal}
                 />
               </View>
-              <Text
-                className="text-[12px] font-bold"
-                style={{ color: active ? "#ffffff" : G.text }}
-              >
+              <Text style={[styles.purposeLabel, active && styles.purposeLabelActive]}>
                 {meta.label}
               </Text>
             </Pressable>
@@ -549,7 +482,7 @@ function EntryModeToggle({
   onChange: (mode: EntryMode) => void;
 }) {
   return (
-    <View className="flex-row gap-2 rounded-2xl bg-white p-1" style={{ borderWidth: 1, borderColor: G.border }}>
+    <Row gap="sm" style={styles.entryModeToggle}>
       {(
         [
           { id: "full_entry" as const, label: "Full entry" },
@@ -561,20 +494,16 @@ function EntryModeToggle({
         return (
           <Pressable
             key={option.id}
-            className="flex-1 items-center rounded-[14px] py-3"
-            style={{ backgroundColor: active ? G.teal : "transparent" }}
+            style={[styles.entryModeOption, active && styles.entryModeOptionActive]}
             onPress={() => onChange(option.id)}
           >
-            <Text
-              className="text-[14px] font-semibold"
-              style={{ color: active ? "#ffffff" : G.textMuted }}
-            >
+            <Text style={[styles.entryModeLabel, active && styles.entryModeLabelActive]}>
               {option.label}
             </Text>
           </Pressable>
         );
       })}
-    </View>
+    </Row>
   );
 }
 
@@ -594,59 +523,63 @@ function InviteLinkSuccessCard({
   const shareMessage = formatVisitorInviteShareMessage(invite);
 
   return (
-    <View
-      className="gap-3 rounded-[20px] bg-white p-5"
-      style={{ borderWidth: 1, borderColor: "#99f6e4", boxShadow: G.heroShadow }}
-    >
-      <Text className="text-[15px] font-semibold text-teal-700">Form link ready</Text>
-      <Text className="text-[16px] font-medium text-slate-900">
+    <Stack gap="md" style={styles.successCard}>
+      <Text style={styles.successCardTitle}>Form link ready</Text>
+      <Text style={styles.successCardSubtitle}>
         {titleize(invite.purpose)} · {formatSelectedFlatLabel(invite.flat)}
       </Text>
-      <Text className="rounded-xl bg-slate-100 px-3 py-3 text-[13px] text-slate-800" selectable>
+      <Text selectable style={styles.successCardUrl}>
         {formUrl}
       </Text>
       {invite.expiresAt ? (
-        <Text className="text-[13px] text-slate-500">
+        <Text style={styles.successCardExpiry}>
           Expires {new Date(invite.expiresAt).toLocaleString()}
         </Text>
       ) : null}
-      <View className="gap-2">
+      <Stack gap="sm">
         <Pressable
-          className="items-center rounded-xl bg-teal-700 py-3"
+          style={styles.primaryButton}
           onPress={() => shareVisitorInviteOnWhatsApp(shareMessage)}
         >
-          <Text className="font-semibold text-white">Share on WhatsApp</Text>
+          <Text style={styles.primaryButtonText}>Share on WhatsApp</Text>
         </Pressable>
-        <View className="flex-row gap-2">
+        <Row gap="sm">
           <Pressable
-            className="flex-1 items-center rounded-xl bg-slate-100 py-3"
+            style={styles.secondaryButton}
             onPress={() => copyVisitorInviteLink(invite.token)}
           >
-            <Text className="font-semibold text-slate-700">Copy link</Text>
+            <Text style={styles.secondaryButtonText}>Copy link</Text>
           </Pressable>
           <Pressable
-            className="flex-1 items-center rounded-xl bg-slate-100 py-3"
+            style={styles.secondaryButton}
             onPress={() => shareVisitorInvite(shareMessage)}
           >
-            <Text className="font-semibold text-slate-700">Share</Text>
+            <Text style={styles.secondaryButtonText}>Share</Text>
           </Pressable>
-        </View>
-        <Pressable className="items-center rounded-xl bg-slate-100 py-3" onPress={onClear}>
-          <Text className="font-semibold text-slate-700">New link</Text>
+        </Row>
+        <Pressable style={styles.secondaryButton} onPress={onClear}>
+          <Text style={styles.secondaryButtonText}>New link</Text>
         </Pressable>
-      </View>
-    </View>
+      </Stack>
+    </Stack>
   );
 }
 
 type ManualEntryFormProps = {
   societyId: number;
   societyName?: string | null;
+  onEntryCreated?: (result: { entry?: ModelsVisitorEntry; qrToken?: string }) => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
 };
 
-export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: ManualEntryFormProps) {
+export function ManualEntryForm({
+  societyId,
+  societyName,
+  onEntryCreated,
+  onSuccess,
+  onError,
+}: ManualEntryFormProps) {
   const insets = useSafeAreaInsets();
   const form = useGuardManualEntry(societyId);
   const inviteForm = useGuardVisitorInvite(societyId);
@@ -662,14 +595,10 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
     }
 
     const result = await form.submit();
-    if (result.success) onSuccess(result.message);
-    else onError(result.message);
-  };
-
-  const handleCheckIn = async () => {
-    const result = await form.handleCheckIn();
-    if (result.success) onSuccess(result.message);
-    else onError(result.message);
+    if (result.success) {
+      onEntryCreated?.({ entry: result.entry, qrToken: result.qrToken });
+      onSuccess(result.message);
+    } else onError(result.message);
   };
 
   const isFormLinkMode = entryMode === "form_link";
@@ -686,21 +615,19 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
   const setPurpose = isFormLinkMode ? inviteForm.setPurpose : form.setPurpose;
 
   return (
-    <View className="flex-1">
+    <View style={styles.formRoot}>
       <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-6 px-5 pb-4 pt-3"
+        contentContainerStyle={styles.formScrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        style={styles.formScroll}
       >
-        <View className="gap-1">
-          <Text className="text-[26px] font-bold tracking-tight" style={{ color: G.text }}>
-            Add Visitor
-          </Text>
-          <Text className="text-[14px]" style={{ color: G.textMuted }}>
+        <Stack gap="xs">
+          <Text style={styles.formTitle}>Add Visitor</Text>
+          <Text style={styles.formSubtitle}>
             {societyName ? `Gate entry · ${societyName}` : "Quick gate entry"}
           </Text>
-        </View>
+        </Stack>
 
         <EntryModeToggle value={entryMode} onChange={setEntryMode} />
 
@@ -715,7 +642,7 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
 
         {!isFormLinkMode ? (
           <>
-            <View className="gap-4">
+            <Stack gap="lg">
               <StepLabel step={3} title="Visitor details" />
               <Field
                 autoCapitalize="words"
@@ -733,9 +660,9 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
                 value={form.phoneNumber}
                 onChangeText={form.setPhoneNumber}
               />
-            </View>
+            </Stack>
 
-            <Pressable className="flex-row items-center gap-2 py-1" onPress={() => setShowExtra((v) => !v)}>
+            <Pressable style={styles.extraToggle} onPress={() => setShowExtra((v) => !v)}>
               <SymbolView
                 name={{
                   ios: showExtra ? "minus.circle" : "plus.circle",
@@ -743,20 +670,20 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
                   web: showExtra ? "remove_circle" : "add_circle",
                 }}
                 size={18}
-                tintColor={G.teal}
+                tintColor={colors.guard.teal}
               />
-              <Text className="text-[14px] font-medium text-teal-700">
+              <Text style={styles.extraToggleText}>
                 {showExtra ? "Hide details" : "Additional details"}
               </Text>
               {form.optionalFieldsCount > 0 ? (
-                <View className="rounded-full bg-teal-50 px-2 py-0.5">
-                  <Text className="text-[11px] font-bold text-teal-700">{form.optionalFieldsCount}</Text>
+                <View style={styles.optionalCountBadge}>
+                  <Text style={styles.optionalCountText}>{form.optionalFieldsCount}</Text>
                 </View>
               ) : null}
             </Pressable>
 
             {showExtra ? (
-              <View className="gap-4">
+              <Stack gap="lg">
                 <Field
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -779,46 +706,41 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
                   value={form.notes}
                   onChangeText={form.setNotes}
                 />
-              </View>
+              </Stack>
             ) : null}
 
             {form.createdEntry?.entry ? (
-              <View
-                className="gap-3 rounded-[20px] bg-white p-5"
-                style={{ borderWidth: 1, borderColor: "#99f6e4", boxShadow: G.heroShadow }}
-              >
-                <Text className="text-[15px] font-semibold text-teal-700">Entry created</Text>
-                <Text className="text-[16px] font-medium text-slate-900">
+              <Stack gap="md" style={styles.successCard}>
+                <Text style={styles.successCardTitle}>Entry created</Text>
+                <Text style={styles.successCardSubtitle}>
                   {getVisitorName(form.createdEntry.entry)}
                 </Text>
-                <Text className="text-[14px] text-slate-500">
+                <Text style={styles.entryCreatedMeta}>
                   {getFlatLabel(form.createdEntry.entry)} · {titleize(form.createdEntry.entry.purpose)}
                 </Text>
-                <View className="flex-row gap-2">
-                  {form.createdEntry.qrToken && form.createdEntry.entry.status === "approved" ? (
-                    <Pressable
-                      className="flex-1 items-center rounded-xl bg-teal-700 py-3"
-                      disabled={form.checkInState.isLoading}
-                      onPress={handleCheckIn}
-                    >
-                      <Text className="font-semibold text-white">Check in</Text>
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    className="flex-1 items-center rounded-xl bg-slate-100 py-3"
-                    onPress={form.clearCreatedEntry}
-                  >
-                    <Text className="font-semibold text-slate-700">New entry</Text>
-                  </Pressable>
-                </View>
-              </View>
+                {form.createdEntry.qrToken ? (
+                  <Text style={styles.successHint}>
+                    QR token generated. You can proceed to check-in.
+                  </Text>
+                ) : (
+                  <Text style={styles.successHint}>
+                    Check-in will be available when a QR token is generated.
+                  </Text>
+                )}
+                <Pressable
+                  style={[styles.secondaryButton, styles.flexButton]}
+                  onPress={form.clearCreatedEntry}
+                >
+                  <Text style={styles.secondaryButtonText}>New entry</Text>
+                </Pressable>
+              </Stack>
             ) : null}
           </>
         ) : (
           <>
-            <View className="rounded-[20px] bg-white p-4" style={{ borderWidth: 1, borderColor: G.border }}>
-              <Text className="text-[15px] font-semibold text-slate-900">Send a web form link</Text>
-              <Text className="mt-2 text-[14px] leading-5 text-slate-500">
+            <View style={styles.formLinkInfoCard}>
+              <Text style={styles.formLinkInfoTitle}>Send a web form link</Text>
+              <Text style={styles.formLinkInfoBody}>
                 The visitor will open the link, fill their details on web, and receive a gate QR code.
               </Text>
             </View>
@@ -834,30 +756,27 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
       </ScrollView>
 
       <View
-        className="bg-white px-5 pt-4"
-        style={{
-          paddingBottom: Math.max(insets.bottom, 14),
-          borderTopWidth: 1,
-          borderTopColor: G.border,
-          boxShadow: "0 -6px 20px rgba(15, 23, 42, 0.06)",
-        }}
+        style={[
+          styles.formFooter,
+          { paddingBottom: Math.max(insets.bottom, 14) },
+        ]}
       >
         <Pressable
-          className="items-center justify-center rounded-[18px]"
           disabled={!canSubmit}
-          style={{
-            height: G.buttonHeight,
-            backgroundColor: canSubmit ? G.teal : "#e2e8f0",
-            boxShadow: canSubmit ? G.ctaShadow : undefined,
-          }}
+          style={[
+            styles.submitButton,
+            canSubmit ? styles.submitButtonEnabled : styles.submitButtonDisabled,
+          ]}
           onPress={handleSubmit}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.text.inverse} />
           ) : (
             <Text
-              className="text-[17px] font-bold tracking-wide"
-              style={{ color: canSubmit ? "#ffffff" : G.textMuted }}
+              style={[
+                styles.submitButtonText,
+                !canSubmit && styles.submitButtonTextDisabled,
+              ]}
             >
               {isFormLinkMode ? "Create form link" : "Create Entry"}
             </Text>
@@ -867,3 +786,490 @@ export function ManualEntryForm({ societyId, societyName, onSuccess, onError }: 
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  changeBadge: {
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  changeBadgeText: {
+    color: colors.guard.teal,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  emptyFlatPicker: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    minHeight: 120,
+    overflow: "hidden",
+    ...shadows.hero,
+  },
+  emptyFlatPickerBody: {
+    flex: 1,
+    justifyContent: "center",
+    padding: layout.screenPaddingHorizontal,
+  },
+  emptyFlatPickerError: {
+    borderColor: "#fca5a5",
+  },
+  emptyFlatPickerSubtitle: {
+    color: colors.guard.textMuted,
+    fontSize: 14,
+  },
+  emptyFlatPickerTitle: {
+    color: colors.guard.text,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  entryCreatedMeta: {
+    color: colors.text.muted,
+    fontSize: 14,
+  },
+  entryModeLabel: {
+    color: colors.guard.textMuted,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  entryModeLabelActive: {
+    color: colors.text.inverse,
+  },
+  entryModeOption: {
+    alignItems: "center",
+    borderRadius: 14,
+    flex: 1,
+    paddingVertical: spacing.md,
+  },
+  entryModeOptionActive: {
+    backgroundColor: colors.guard.teal,
+  },
+  entryModeToggle: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.xs,
+  },
+  extraToggle: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  extraToggleText: {
+    color: colors.guard.teal,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  fieldError: {
+    color: colors.status.error,
+    fontSize: 14,
+  },
+  fieldInput: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    color: colors.guard.text,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingVertical: 0,
+    width: "100%",
+  },
+  fieldInputMultiline: {
+    textAlignVertical: "top",
+  },
+  fieldInputWrapper: {
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: layout.inputHeight,
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  fieldInputWrapperFocused: {
+    boxShadow: `0 0 0 3px ${colors.guard.tealSoft}`,
+  },
+  fieldInputWrapperMultiline: {
+    height: undefined,
+    justifyContent: "flex-start",
+    minHeight: 96,
+    paddingVertical: spacing.md,
+  },
+  fieldLabel: {
+    color: colors.guard.textMuted,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  flatListItem: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingVertical: spacing.lg,
+    ...shadows.card,
+  },
+  flatListItemMeta: {
+    color: colors.text.muted,
+    fontSize: 14,
+  },
+  flatListItemNumber: {
+    color: colors.text.primary,
+    flex: 1,
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  flatPickerError: {
+    color: colors.status.error,
+    fontSize: 14,
+    marginTop: spacing.sm,
+  },
+  flexButton: {
+    flex: 1,
+  },
+  formFooter: {
+    backgroundColor: colors.surface.card,
+    borderTopColor: colors.guard.border,
+    borderTopWidth: 1,
+    boxShadow: "0 -6px 20px rgba(15, 23, 42, 0.06)",
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.lg,
+  },
+  formLinkInfoBody: {
+    color: colors.text.muted,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: spacing.sm,
+  },
+  formLinkInfoCard: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: spacing.lg,
+  },
+  formLinkInfoTitle: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  formRoot: {
+    flex: 1,
+  },
+  formScroll: {
+    flex: 1,
+  },
+  formScrollContent: {
+    gap: spacing["2xl"],
+    paddingBottom: spacing.lg,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.md,
+  },
+  formSubtitle: {
+    color: colors.guard.textMuted,
+    fontSize: 14,
+  },
+  formTitle: {
+    color: colors.guard.text,
+    fontSize: 26,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  loadingResidentText: {
+    color: colors.guard.textMuted,
+    fontSize: 14,
+  },
+  modalBackButton: {
+    alignItems: "center",
+    backgroundColor: colors.guard.screenBg,
+    borderRadius: 999,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  modalEmptyState: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: spacing["3xl"],
+  },
+  modalEmptyStateText: {
+    color: colors.text.muted,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  modalHeader: {
+    backgroundColor: colors.surface.card,
+    borderBottomColor: colors.guard.border,
+    borderBottomWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  modalHeaderText: {
+    flex: 1,
+  },
+  modalListContent: {
+    gap: spacing.sm,
+    paddingBottom: spacing["2xl"],
+    paddingHorizontal: spacing.lg,
+  },
+  modalListFooter: {
+    color: colors.text.placeholder,
+    fontSize: 13,
+    paddingVertical: spacing.md,
+    textAlign: "center",
+  },
+  modalListLoading: {
+    marginVertical: spacing.sm,
+  },
+  modalLoading: {
+    marginTop: 40,
+  },
+  modalNoResults: {
+    color: colors.text.muted,
+    marginTop: 40,
+    textAlign: "center",
+  },
+  modalScreen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  modalSearchSection: {
+    backgroundColor: colors.guard.screenBg,
+    borderBottomColor: colors.guard.border,
+    borderBottomWidth: 1,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing.md,
+  },
+  modalSubtitle: {
+    color: colors.guard.textMuted,
+    fontSize: 13,
+  },
+  modalTitle: {
+    color: colors.guard.text,
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  optionalCountBadge: {
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  optionalCountText: {
+    color: colors.guard.teal,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  previewCard: {
+    backgroundColor: colors.surface.card,
+    borderColor: "#99f6e4",
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: "hidden",
+    ...shadows.hero,
+  },
+  previewCardAccent: {
+    backgroundColor: colors.guard.teal,
+    height: 3,
+  },
+  previewCardBody: {
+    padding: layout.screenPaddingHorizontal,
+  },
+  previewEyebrow: {
+    color: colors.guard.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
+  previewEyebrowSpaced: {
+    marginTop: spacing.sm,
+  },
+  previewFlatNumber: {
+    color: colors.guard.text,
+    fontSize: 26,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+  },
+  previewIcon: {
+    alignItems: "center",
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: radius.lg,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+  previewResidentName: {
+    color: colors.guard.text,
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  previewWingLabel: {
+    color: colors.guard.textMuted,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  primaryButton: {
+    alignItems: "center",
+    backgroundColor: colors.guard.teal,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+  },
+  primaryButtonText: {
+    color: colors.text.inverse,
+    fontWeight: "600",
+  },
+  purposeCard: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    height: layout.purposeCardHeight,
+    justifyContent: "center",
+    width: layout.purposeCardWidth,
+  },
+  purposeCardActive: {
+    backgroundColor: colors.guard.teal,
+    transform: [{ scale: 1.04 }],
+    ...shadows.cta,
+  },
+  purposeCardInactive: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderWidth: 1,
+    transform: [{ scale: 1 }],
+    ...shadows.card,
+  },
+  purposeIcon: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    height: 32,
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+    width: 32,
+  },
+  purposeLabel: {
+    color: colors.guard.text,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  purposeLabelActive: {
+    color: colors.text.inverse,
+  },
+  purposeScrollContent: {
+    gap: 10,
+    paddingBottom: spacing.xs,
+  },
+  searchFieldWrapper: {
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: layout.inputHeight,
+    paddingHorizontal: spacing.lg,
+  },
+  searchInput: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    color: colors.guard.text,
+    flex: 1,
+    fontSize: 16,
+    height: "100%",
+    lineHeight: 22,
+    paddingVertical: 0,
+  },
+  secondaryButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface.screen,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+  },
+  secondaryButtonText: {
+    color: colors.text.secondary,
+    fontWeight: "600",
+  },
+  stepBadge: {
+    alignItems: "center",
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: 999,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+  stepBadgeText: {
+    color: colors.guard.teal,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  stepLabel: {
+    marginBottom: spacing.md,
+  },
+  stepTitle: {
+    color: colors.guard.text,
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: -0.3,
+  },
+  submitButton: {
+    alignItems: "center",
+    borderRadius: radius.xl,
+    height: layout.buttonHeight,
+    justifyContent: "center",
+  },
+  submitButtonDisabled: {
+    backgroundColor: colors.border.default,
+  },
+  submitButtonEnabled: {
+    backgroundColor: colors.guard.teal,
+    ...shadows.cta,
+  },
+  submitButtonText: {
+    color: colors.text.inverse,
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  submitButtonTextDisabled: {
+    color: colors.guard.textMuted,
+  },
+  successCard: {
+    backgroundColor: colors.surface.card,
+    borderColor: "#99f6e4",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: layout.screenPaddingHorizontal,
+    ...shadows.hero,
+  },
+  successCardExpiry: {
+    color: colors.text.muted,
+    fontSize: 13,
+  },
+  successCardSubtitle: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  successCardTitle: {
+    color: colors.guard.teal,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  successHint: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  successCardUrl: {
+    backgroundColor: colors.surface.screen,
+    borderRadius: radius.lg,
+    color: colors.text.secondary,
+    fontSize: 13,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+});

@@ -1,6 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type SelectionCardProps = {
   title: string;
@@ -15,16 +18,16 @@ type SelectionCardProps = {
 
 const badgeStyles = {
   active: {
-    backgroundColor: "#ecfdf3",
-    color: "#15803d",
+    backgroundColor: colors.status.successSoft,
+    color: colors.status.success,
   },
   pending: {
-    backgroundColor: "#fff7ed",
-    color: "#c2410c",
+    backgroundColor: colors.status.warningSoft,
+    color: colors.status.warning,
   },
   default: {
-    backgroundColor: "#f3f4f6",
-    color: "#4b5563",
+    backgroundColor: colors.guard.sectionBg,
+    color: colors.text.muted,
   },
 } as const;
 
@@ -41,12 +44,7 @@ export function SelectionCard({
   const badge = badgeStyles[badgeTone];
 
   return (
-    <View
-      style={[
-        styles.card,
-        selected && styles.cardSelected,
-      ]}
-    >
+    <View style={[styles.card, selected && styles.cardSelected]}>
       <View style={styles.cardHeader}>
         <View style={styles.cardCopy}>
           <Text style={styles.cardTitle}>{title}</Text>
@@ -72,16 +70,16 @@ export function SelectionCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.selection.cardBg,
-    borderColor: theme.selection.cardBorder,
-    borderRadius: theme.selection.cardRadius,
+    backgroundColor: colors.selection.cardBg,
+    borderColor: colors.selection.cardBorder,
+    borderRadius: radius.xl,
     borderWidth: 1,
     gap: 14,
-    padding: 16,
+    padding: spacing.lg,
   },
   cardButton: {
     alignItems: "center",
-    backgroundColor: theme.brand.orange,
+    backgroundColor: colors.brand.orange,
     borderRadius: 14,
     justifyContent: "center",
     minHeight: 46,
@@ -90,30 +88,30 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   cardButtonText: {
-    color: "#ffffff",
+    ...typography.bodySmall,
+    color: colors.text.inverse,
     fontSize: 15,
     fontWeight: "700",
   },
   cardCopy: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   cardHeader: {
     alignItems: "flex-start",
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
   },
   cardSelected: {
-    borderColor: theme.guard.teal,
+    borderColor: colors.guard.teal,
     borderWidth: 2,
   },
   cardSubtitle: {
-    color: theme.text.secondary,
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
   cardTitle: {
-    color: theme.text.primary,
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: "700",
   },

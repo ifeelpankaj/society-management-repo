@@ -13,12 +13,15 @@ export default function GuardStackLayout() {
   return (
     <GuardSocietyProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="dashboard" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="scanner" />
+        <Stack.Screen name="check-in" />
+        <Stack.Screen name="entries" />
         <Stack.Screen name="add-entry" />
-        <Stack.Screen name="scan" />
-        <Stack.Screen name="logs" />
-        <Stack.Screen name="profile" />
         <Stack.Screen name="pending" />
+        <Stack.Screen name="dashboard" options={{ animation: "none" }} />
+        <Stack.Screen name="scan" options={{ animation: "none" }} />
+        <Stack.Screen name="logs" options={{ animation: "none" }} />
       </Stack>
     </GuardSocietyProvider>
   );

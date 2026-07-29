@@ -1,7 +1,8 @@
-import { Redirect, Stack } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 
 import { useAuth } from "@/features/auth/use-auth";
 import { ResidentProvider } from "@/features/resident/resident-context";
+import { ResidentTabBar } from "@/features/resident/components/resident-tab-bar";
 
 export default function ResidentStackLayout() {
   const { status } = useAuth();
@@ -12,15 +13,18 @@ export default function ResidentStackLayout() {
 
   return (
     <ResidentProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="dashboard" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="logs" />
-        <Stack.Screen name="members/add" />
-        <Stack.Screen name="visitors/index" />
-        <Stack.Screen name="visitors/invite" />
-        <Stack.Screen name="visitors/settings" />
-      </Stack>
+      <Tabs
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => <ResidentTabBar {...props} />}
+      >
+        <Tabs.Screen name="dashboard" options={{ title: "Home" }} />
+        <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+        <Tabs.Screen name="logs" options={{ href: null }} />
+        <Tabs.Screen name="members/add" options={{ href: null }} />
+        <Tabs.Screen name="visitors/index" options={{ href: null }} />
+        <Tabs.Screen name="visitors/invite" options={{ href: null }} />
+        <Tabs.Screen name="visitors/settings" options={{ href: null }} />
+      </Tabs>
     </ResidentProvider>
   );
 }

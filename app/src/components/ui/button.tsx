@@ -1,6 +1,11 @@
-import { ActivityIndicator, Pressable, Text, type PressableProps } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -12,20 +17,6 @@ type ButtonProps = PressableProps & {
   compact?: boolean;
 };
 
-const variantClasses: Record<ButtonVariant, string> = {
-  primary: "shadow-sm",
-  secondary: "border border-[#e4dcd6] bg-[#fffaf6]",
-  ghost: "bg-transparent",
-  danger: "bg-rose-600",
-};
-
-const textClasses: Record<ButtonVariant, string> = {
-  primary: "text-white",
-  secondary: "text-[#211714]",
-  ghost: "text-[#625852]",
-  danger: "text-white",
-};
-
 export function Button({
   title,
   variant = "primary",
@@ -33,33 +24,22 @@ export function Button({
   disabled,
   fullWidth = true,
   compact = false,
-  className,
   style,
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const primaryStyle =
-    variant === "primary"
-      ? {
-          backgroundColor: theme.brand.orange,
-          boxShadow: `0 10px 20px ${theme.brand.orangeShadow}`,
-        }
-      : undefined;
 
   return (
     <Pressable
       accessibilityRole="button"
       disabled={isDisabled}
-      className={[
-        "flex-row items-center justify-center rounded-2xl px-5",
-        compact ? "min-h-11" : "min-h-14",
-        fullWidth ? "w-full" : "",
-        variantClasses[variant],
-        isDisabled ? "opacity-55" : "active:opacity-80",
-        className ?? "",
-      ].join(" ")}
       style={(state) => [
-        primaryStyle,
+        styles.base,
+        compact ? styles.compact : styles.default,
+        fullWidth && styles.fullWidth,
+        styles[variant],
+        isDisabled && styles.disabled,
+        state.pressed && !isDisabled && styles.pressed,
         typeof style === "function" ? style(state) : style,
       ]}
       {...props}
@@ -68,20 +48,67 @@ export function Button({
         <ActivityIndicator
           color={
             variant === "secondary" || variant === "ghost"
-              ? theme.text.primary
-              : "#ffffff"
+              ? colors.text.primary
+              : colors.text.inverse
           }
         />
       ) : (
-        <Text
-          className={[
-            compact ? "text-sm font-bold" : "text-base font-semibold",
-            textClasses[variant],
-          ].join(" ")}
-        >
+        <Text style={[compact ? typography.buttonCompact : typography.button, styles[`${variant}Text` as keyof typeof styles]]}>
           {title}
         </Text>
       )}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  compact: {
+    minHeight: layout.buttonHeightCompact,
+  },
+  danger: {
+    backgroundColor: colors.status.danger,
+  },
+  dangerText: {
+    color: colors.text.inverse,
+  },
+  default: {
+    minHeight: layout.buttonHeight,
+  },
+  disabled: {
+    opacity: 0.55,
+  },
+  fullWidth: {
+    width: "100%",
+  },
+  ghost: {
+    backgroundColor: "transparent",
+  },
+  ghostText: {
+    color: colors.text.ghost,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  primary: {
+    backgroundColor: colors.brand.orange,
+    ...shadows.brand,
+  },
+  primaryText: {
+    color: colors.text.inverse,
+  },
+  secondary: {
+    backgroundColor: colors.surface.secondary,
+    borderColor: colors.border.input,
+    borderWidth: 1,
+  },
+  secondaryText: {
+    color: colors.text.secondaryDark,
+  },
+});

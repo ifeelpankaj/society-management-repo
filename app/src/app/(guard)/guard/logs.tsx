@@ -1,5 +1,7 @@
-import { GuardLogsScreen } from "@/features/guard/components/logs/guard-logs-screen";
+import { Redirect } from "expo-router";
 
-export default function GuardLogsRoute() {
-  return <GuardLogsScreen />;
+import { guardEntriesRoute } from "@/features/guard/guard-routes";
+
+export default function LegacyGuardLogsRoute() {
+  return <Redirect href={guardEntriesRoute("today")} />;
 }

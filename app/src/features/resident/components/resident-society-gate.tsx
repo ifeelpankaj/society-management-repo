@@ -1,8 +1,11 @@
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Stack } from "@/components/layout";
 import { Button, Card, EmptyState, LoadingState, ScreenHeader, StatusPill } from "@/components/ui";
 import { useResident } from "@/features/resident/resident-context";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export function ResidentSocietyGate() {
   const { isLoading, refetch, residences, selectResidence } = useResident();
@@ -12,24 +15,24 @@ export function ResidentSocietyGate() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <ScrollView contentContainerClassName="px-6 py-8">
-        <View className="gap-8">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Stack gap="3xl">
           <ScreenHeader
             eyebrow="Resident workspace"
             title="Select residence"
             subtitle="Choose the flat you want to manage before continuing."
           />
 
-          <View className="gap-3">
+          <Stack gap="md">
             {residences.map((residence) => (
-              <Card key={`residence-${residence.id ?? residence.flat_id}`} className="gap-4">
-                <View className="flex-row items-start justify-between gap-4">
-                  <View className="flex-1">
-                    <Text className="text-xl font-bold text-slate-950">
+              <Card key={`residence-${residence.id ?? residence.flat_id}`} style={styles.residenceCard}>
+                <View style={styles.residenceHeader}>
+                  <View style={styles.residenceCopy}>
+                    <Text style={styles.societyTitle}>
                       {residence.society_name ?? "Your society"}
                     </Text>
-                    <Text className="mt-1 text-base text-slate-600">
+                    <Text style={styles.flatLabel}>
                       Flat {residence.flat_number ?? "-"}
                       {residence.block ? ` · Block ${residence.block}` : ""}
                     </Text>
@@ -55,9 +58,42 @@ export function ResidentSocietyGate() {
                 onAction={refetch}
               />
             ) : null}
-          </View>
-        </View>
+          </Stack>
+        </Stack>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  flatLabel: {
+    color: colors.text.secondary,
+    fontSize: 16,
+    marginTop: spacing.xs,
+  },
+  residenceCard: {
+    gap: spacing.lg,
+  },
+  residenceCopy: {
+    flex: 1,
+  },
+  residenceHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.lg,
+    justifyContent: "space-between",
+  },
+  screen: {
+    backgroundColor: colors.surface.screen,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing["2xl"],
+    paddingVertical: spacing["3xl"],
+  },
+  societyTitle: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+});

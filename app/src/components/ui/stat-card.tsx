@@ -1,6 +1,10 @@
-import { Text, View, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View, type ViewStyle } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type StatCardProps = {
   label: string;
@@ -10,36 +14,43 @@ type StatCardProps = {
 };
 
 const toneColors: Record<NonNullable<StatCardProps["tone"]>, string> = {
-  default: theme.text.primary,
-  success: theme.status.success,
-  teal: theme.operational.primary,
-  warning: theme.status.warning,
+  default: colors.text.primary,
+  success: colors.status.success,
+  teal: colors.operational.primary,
+  warning: colors.status.warning,
 };
 
 export function StatCard({ label, style, tone = "default", value }: StatCardProps) {
   return (
-    <View
-      className="min-w-[46%] flex-1 gap-2 rounded-[18px] p-4"
-      style={[
-        {
-          backgroundColor: theme.surface.card,
-          boxShadow: "0 4px 20px rgba(15, 23, 42, 0.05)",
-        },
-        style,
-      ]}
-    >
-      <Text
-        className="text-[11px] font-medium uppercase tracking-[0.08em]"
-        style={{ color: theme.text.muted }}
-      >
-        {label}
-      </Text>
-      <Text
-        className="text-[30px] font-bold leading-none"
-        style={{ color: toneColors[tone], letterSpacing: -0.5 }}
-      >
-        {value}
-      </Text>
+    <View style={[styles.card, style]}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.value, { color: toneColors[tone] }]}>{value}</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.xl,
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: "46%",
+    padding: spacing.lg,
+    ...shadows.sm,
+  },
+  label: {
+    ...typography.caption,
+    color: colors.text.muted,
+    fontSize: 11,
+    fontWeight: "500",
+    letterSpacing: 0.88,
+    textTransform: "uppercase",
+  },
+  value: {
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+    lineHeight: 30,
+  },
+});

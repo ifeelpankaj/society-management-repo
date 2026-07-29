@@ -1,7 +1,8 @@
 import { useCallback } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Stack } from "@/components/layout";
 import { LoadingState, PaginatedList, ScreenHeader } from "@/components/ui";
 import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
 import { LogEntryDivider, LogEntryRow } from "@/features/guard/components/logs/log-entry-row";
@@ -12,7 +13,8 @@ import {
   type ModelsVisitorEntry,
   generatedApi,
 } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export function ResidentLogsScreen() {
   const { flatId, isLoading, requiresSelection, selectedResidence, societyId } = useResident();
@@ -59,23 +61,22 @@ export function ResidentLogsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
+    <SafeAreaView style={styles.screen}>
       <PaginatedList
         ItemSeparatorComponent={LogEntryDivider}
-        contentContainerClassName="px-5 pb-8 pt-3"
         data={pagination.items}
         emptyMessage="Visitor movement for your flat will appear here."
         emptyTitle="No visitor logs yet"
-        footer={<View className="h-4" />}
+        footer={<View style={styles.footerSpacer} />}
         hasMore={pagination.hasMore}
         header={
-          <View className="gap-4 pb-2">
+          <Stack gap="lg" style={styles.header}>
             <GuardBackHeader title="Visitor Logs" />
             <ScreenHeader
               subtitle={`Flat ${selectedResidence.flat_number ?? "-"} visitor history`}
               title="Logs"
             />
-          </View>
+          </Stack>
         }
         isLoading={pagination.isLoading}
         isLoadingMore={pagination.isLoadingMore}
@@ -88,3 +89,16 @@ export function ResidentLogsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  footerSpacer: {
+    height: spacing.lg,
+  },
+  header: {
+    paddingBottom: spacing.sm,
+  },
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+});

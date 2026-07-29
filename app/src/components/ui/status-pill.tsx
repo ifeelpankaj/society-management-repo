@@ -1,24 +1,28 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type StatusPillProps = {
   status?: string | null;
 };
 
-function getStatusClasses(status?: string | null) {
+function getStatusStyle(status?: string | null) {
   switch (status) {
     case "active":
     case "approved":
     case "verified":
-      return "bg-emerald-50 text-emerald-700";
+      return { backgroundColor: "#ecfdf5", color: "#047857" };
     case "pending":
     case "trial":
-      return "bg-amber-50 text-amber-700";
+      return { backgroundColor: "#fffbeb", color: "#b45309" };
     case "suspended":
     case "blocked":
     case "rejected":
-      return "bg-rose-50 text-rose-700";
+      return { backgroundColor: "#fff1f2", color: "#be123c" };
     default:
-      return "bg-slate-100 text-slate-700";
+      return { backgroundColor: "#f1f5f9", color: "#334155" };
   }
 }
 
@@ -34,11 +38,27 @@ function formatStatus(status?: string | null) {
 }
 
 export function StatusPill({ status }: StatusPillProps) {
+  const statusStyle = getStatusStyle(status);
+
   return (
-    <View className="self-start rounded-full">
-      <Text className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(status)}`}>
+    <View style={styles.wrapper}>
+      <Text style={[styles.pill, { backgroundColor: statusStyle.backgroundColor, color: statusStyle.color }]}>
         {formatStatus(status)}
       </Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: {
+    ...typography.caption,
+    borderRadius: radius["2xl"],
+    fontWeight: "600",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  wrapper: {
+    alignSelf: "flex-start",
+    borderRadius: radius["2xl"],
+  },
+});

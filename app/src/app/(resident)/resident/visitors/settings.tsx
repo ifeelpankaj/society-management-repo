@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -20,7 +20,11 @@ import {
   usePatchV1SocietiesBySocietyIdFlatsAndFlatIdVisitorSettingsPurposeMutation,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorSettingsResetMutation,
 } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 function SettingsList({
   editable,
@@ -35,12 +39,12 @@ function SettingsList({
   ) => void;
 }) {
   return (
-    <View className="gap-3">
+    <View style={styles.settingsList}>
       {settings.map((setting) => (
-        <Card key={`setting-${setting.purpose}`} className="gap-4">
-          <View className="flex-row items-center justify-between gap-3">
+        <Card key={`setting-${setting.purpose}`} style={styles.settingCard}>
+          <View style={styles.settingHeader}>
             <PurposeBadge purpose={setting.purpose} />
-            <Text className="text-sm font-semibold text-slate-600">
+            <Text style={styles.settingStatus}>
               {setting.approval_required ? "Approval required" : "Auto allowed"}
             </Text>
           </View>
@@ -82,16 +86,11 @@ function ErrorBanner({
   return (
     <Pressable
       accessibilityRole="button"
-      className="flex-row items-center justify-between rounded-[14px] px-4 py-3"
-      style={{ backgroundColor: theme.status.errorSoft }}
       onPress={onRetry}
+      style={styles.errorBanner}
     >
-      <Text className="flex-1 pr-3 text-[13px] font-medium" style={{ color: "#991b1b" }}>
-        {message}
-      </Text>
-      <Text className="text-[13px] font-semibold" style={{ color: "#b91c1c" }}>
-        Retry
-      </Text>
+      <Text style={styles.errorMessage}>{message}</Text>
+      <Text style={styles.errorAction}>Retry</Text>
     </Pressable>
   );
 }
@@ -186,15 +185,13 @@ export default function ResidentVisitorSettingsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-      <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
-        <View className="gap-6">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
           <GuardBackHeader title="Approval Settings" />
-          <View className="gap-1">
-            <Text className="text-2xl font-bold" style={{ color: theme.text.primary }}>
-              Approval settings
-            </Text>
-            <Text className="text-sm" style={{ color: theme.text.secondary }}>
+          <View style={styles.intro}>
+            <Text style={styles.pageTitle}>Approval settings</Text>
+            <Text style={styles.pageSubtitle}>
               {isHybrid
                 ? "Choose which visitor purposes require your approval on this flat."
                 : `Society mode is ${titleize(approvalMode)}. Flat-level hybrid controls are not editable.`}
@@ -211,14 +208,10 @@ export default function ResidentVisitorSettingsScreen() {
             />
           ) : null}
 
-          <Card className="gap-3">
-            <Text className="text-sm font-bold uppercase tracking-wider text-slate-500">
-              Society mode
-            </Text>
-            <Text className="text-2xl font-bold capitalize text-slate-950">
-              {titleize(approvalMode)}
-            </Text>
-            <Text className="text-sm text-slate-600">
+          <Card style={styles.modeCard}>
+            <Text style={styles.fieldLabel}>Society mode</Text>
+            <Text style={styles.modeValue}>{titleize(approvalMode)}</Text>
+            <Text style={styles.modeDescription}>
               {isHybrid
                 ? "Hybrid mode lets each flat decide approval rules per visitor purpose."
                 : context?.inherits_society_mode
@@ -242,8 +235,8 @@ export default function ResidentVisitorSettingsScreen() {
           {isHybrid && !canManageFlatVisitors ? (
             <>
               <Card>
-                <Text className="text-base font-bold text-slate-950">Read-only access</Text>
-                <Text className="mt-1 text-sm text-slate-600">
+                <Text style={styles.readOnlyTitle}>Read-only access</Text>
+                <Text style={styles.readOnlyBody}>
                   Only the flat owner can change hybrid visitor settings for this flat.
                 </Text>
               </Card>
@@ -255,3 +248,93 @@ export default function ResidentVisitorSettingsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: layout.screenPaddingBottom,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: layout.screenPaddingTop,
+  },
+  content: {
+    gap: spacing["2xl"],
+  },
+  intro: {
+    gap: spacing.xs,
+  },
+  pageTitle: {
+    ...typography.title,
+    color: colors.text.primary,
+  },
+  pageSubtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  settingsList: {
+    gap: spacing.md,
+  },
+  settingCard: {
+    gap: spacing.lg,
+  },
+  settingHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+  },
+  settingStatus: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    fontWeight: "600",
+  },
+  errorBanner: {
+    alignItems: "center",
+    backgroundColor: colors.status.errorSoft,
+    borderRadius: radius.xl,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  errorMessage: {
+    color: "#991b1b",
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
+    paddingRight: spacing.md,
+  },
+  errorAction: {
+    color: "#b91c1c",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  modeCard: {
+    gap: spacing.md,
+  },
+  fieldLabel: {
+    ...typography.eyebrow,
+    color: colors.text.muted,
+  },
+  modeValue: {
+    ...typography.title,
+    color: colors.text.primary,
+    textTransform: "capitalize",
+  },
+  modeDescription: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  readOnlyTitle: {
+    ...typography.body,
+    color: colors.text.primary,
+    fontWeight: "700",
+  },
+  readOnlyBody: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+});

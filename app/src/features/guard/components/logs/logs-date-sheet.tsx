@@ -6,7 +6,7 @@ import {
   DATE_RANGE_OPTIONS,
   type DateRangePreset,
 } from "@/features/guard/guard-routes";
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 const G = theme.guard;
 

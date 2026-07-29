@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, StatusPill } from "@/components/ui";
 import { titleize } from "@/features/guard/guard-utils";
 import type { ModelsFlatResidentResponse } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 type ResidenceSwitchSheetProps = {
   onClose: () => void;

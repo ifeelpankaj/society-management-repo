@@ -8,6 +8,11 @@ import {
 } from "react";
 import { Platform, StyleSheet, Text, ToastAndroid, View } from "react-native";
 
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
+
 type ToastVariant = "error" | "success" | "info";
 
 type ToastOptions = {
@@ -52,9 +57,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
         <View style={[StyleSheet.absoluteFill, styles.host]}>
           <View style={[styles.toast, styles[toast.variant ?? "info"]]}>
             <Text style={styles.title}>{toast.title}</Text>
-            {toast.message ? (
-              <Text style={styles.message}>{toast.message}</Text>
-            ) : null}
+            {toast.message ? <Text style={styles.message}>{toast.message}</Text> : null}
           </View>
         </View>
       ) : null}
@@ -74,7 +77,7 @@ export function useToast() {
 
 const styles = StyleSheet.create({
   error: {
-    borderLeftColor: "#dc2626",
+    borderLeftColor: colors.status.error,
   },
   host: {
     justifyContent: "flex-start",
@@ -84,31 +87,40 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   info: {
-    borderLeftColor: "#ff6a1a",
+    borderLeftColor: colors.brand.orange,
   },
   message: {
-    color: "#5f5753",
+    ...typography.bodySmall,
+    color: colors.text.ghost,
     fontSize: 13,
     lineHeight: 18,
   },
   success: {
-    borderLeftColor: "#16a34a",
+    borderLeftColor: colors.status.success,
   },
   title: {
-    color: "#211714",
-    fontSize: 14,
+    ...typography.bodySmall,
+    color: colors.text.secondaryDark,
     fontWeight: "700",
   },
   toast: {
     alignSelf: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface.card,
     borderLeftWidth: 4,
-    borderRadius: 14,
-    boxShadow: "0 12px 26px rgba(0, 0, 0, 0.16)",
+    borderRadius: radius.md,
     gap: 3,
     maxWidth: 420,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     width: "100%",
+    ...(Platform.OS === "web"
+      ? { boxShadow: "0 12px 26px rgba(0, 0, 0, 0.16)" }
+      : {
+          elevation: 8,
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.16,
+          shadowRadius: 26,
+        }),
   },
 });

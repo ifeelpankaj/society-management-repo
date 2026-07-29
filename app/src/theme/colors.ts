@@ -1,4 +1,4 @@
-export const theme = {
+export const colors = {
   brand: {
     primary: "#ff6a1a",
     primarySoft: "#fff7f1",
@@ -12,6 +12,9 @@ export const theme = {
     secondary: "#475569",
     muted: "#64748b",
     placeholder: "#a89e97",
+    inverse: "#ffffff",
+    secondaryDark: "#211714",
+    ghost: "#625852",
   },
   border: {
     default: "#e2e8f0",
@@ -22,6 +25,8 @@ export const theme = {
     card: "#ffffff",
     muted: "#faf8f6",
     elevated: "#ffffff",
+    input: "#fffbf5",
+    secondary: "#fffaf6",
   },
   operational: {
     primary: "#0d9488",
@@ -38,6 +43,7 @@ export const theme = {
     errorSoft: "#fef2f2",
     info: "#0d9488",
     infoSoft: "#f0fdfa",
+    danger: "#e11d48",
   },
   announcement: {
     bg: "#eef2ff",
@@ -53,17 +59,29 @@ export const theme = {
     text: "#0f172a",
     textMuted: "#64748b",
     border: "#e2e8f0",
-    cardShadow: "0 2px 12px rgba(15, 23, 42, 0.06)",
-    heroShadow: "0 8px 28px rgba(13, 148, 136, 0.14)",
-    ctaShadow: "0 10px 28px rgba(13, 148, 136, 0.32)",
-    inputHeight: 56,
-    buttonHeight: 56,
-    purposeCardWidth: 67,
-    purposeCardHeight: 61,
   },
   selection: {
     cardBg: "#fffaf6",
     cardBorder: "#f1e4da",
-    cardRadius: 18,
+  },
+  dashboard: {
+    actionOrange: "#ff6a1a",
+    actionOrangeSoft: "#fff4eb",
+    actionBlue: "#2563eb",
+    actionBlueSoft: "#eff6ff",
+    actionPurple: "#7c3aed",
+    actionPurpleSoft: "#f5f3ff",
+    actionNeutral: "#334155",
+    actionNeutralSoft: "#f1f5f9",
+    statGreen: "#16a34a",
+    statGreenSoft: "#ecfdf3",
+    statOrange: "#ea580c",
+    statOrangeSoft: "#fff7ed",
+    statBlue: "#2563eb",
+    statBlueSoft: "#eff6ff",
+    statNeutral: "#64748b",
+    statNeutralSoft: "#f8fafc",
+    announcementGradientStart: "#fff4eb",
+    announcementGradientEnd: "#ffe8d6",
   },
 } as const;

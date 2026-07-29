@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Alert, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LoadingState, PaginatedList } from "@/components/ui";
@@ -12,7 +12,8 @@ import {
   type ModelsVisitorPendingEntry,
   generatedApi,
 } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export default function GuardPendingScreen() {
   const { isLoading, memberships, requiresSelection, selectedSocietyId } = useGuardSociety();
@@ -58,7 +59,7 @@ export default function GuardPendingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
+    <SafeAreaView style={styles.screen}>
       <PaginatedList
         data={pagination.items}
         keyExtractor={(item) => `pending-${item.id}`}
@@ -86,12 +87,25 @@ export default function GuardPendingScreen() {
         emptyTitle="No pending approvals"
         emptyMessage="Visitors waiting for resident approval will appear here."
         header={
-          <View className="gap-2">
+          <View style={styles.header}>
             <GuardBackHeader title="Pending Approvals" />
           </View>
         }
-        footer={<View className="h-4" />}
+        footer={<View style={styles.footerSpacer} />}
       />
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  header: {
+    gap: spacing.sm,
+  },
+  footerSpacer: {
+    height: spacing.lg,
+  },
+});

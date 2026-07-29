@@ -1,4 +1,5 @@
 export { AnnouncementBanner } from "./announcement-banner";
+export { AppText } from "./app-text";
 export { Badge } from "./badge";
 export { Button } from "./button";
 export { Card } from "./card";
@@ -9,10 +10,10 @@ export { PaginatedList } from "./paginated-list";
 export { ProfileHero } from "./profile-hero";
 export { PurposeBadge } from "./purpose-badge";
 export { QuickAction } from "./quick-action";
-export { ScreenHeader } from "./screen-header";
+export { ScreenHeader, Title } from "./title";
 export { FilterChip, FilterChipCell, FilterChipGrid } from "./filter-chip";
 export { SelectionCard } from "./selection-card";
-export { SectionHeader } from "./section-header";
+export { SectionHeader, SectionTitle } from "./section-title";
 export { SegmentTabs } from "./segment-tabs";
 export { SettingToggleRow } from "./setting-toggle-row";
 export { StatCard } from "./stat-card";

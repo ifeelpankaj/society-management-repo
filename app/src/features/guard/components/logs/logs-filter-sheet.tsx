@@ -14,7 +14,7 @@ import type {
   ModelsVisitorPurpose,
   ModelsVisitorStatus,
 } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 const G = theme.guard;
 

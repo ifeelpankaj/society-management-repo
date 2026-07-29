@@ -1,8 +1,10 @@
 import type { SymbolViewProps } from "expo-symbols";
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 
-import { theme } from "@/lib/theme";
+import { Stack } from "@/components/layout";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export type ProfileSymbolName = SymbolViewProps["name"];
 
@@ -22,33 +24,57 @@ export function ProfileInfoRow({
   isLast = false,
 }: ProfileInfoRowProps) {
   return (
-    <View
-      className={[
-        "flex-row items-center gap-3 px-4 py-3.5",
-        isLast ? "" : "border-b border-slate-100",
-      ].join(" ")}
-    >
-      <View
-        className="h-10 w-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: theme.guard.tealSoft }}
-      >
-        <SymbolView name={icon} size={18} tintColor={theme.guard.teal} />
+    <View style={[styles.row, !isLast && styles.rowBorder]}>
+      <View style={styles.icon}>
+        <SymbolView name={icon} size={18} tintColor={colors.guard.teal} />
       </View>
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text
-          className="text-[11px] font-semibold uppercase tracking-[0.12em]"
-          style={{ color: theme.text.muted }}
-        >
-          {label}
-        </Text>
-        <Text
-          className="text-[15px] font-semibold"
-          numberOfLines={2}
-          style={{ color: valueMuted ? theme.text.muted : theme.text.primary }}
-        >
+      <Stack gap="xs" style={styles.copy}>
+        <Text style={styles.label}>{label}</Text>
+        <Text numberOfLines={2} style={[styles.value, valueMuted && styles.valueMuted]}>
           {value}
         </Text>
-      </View>
+      </Stack>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  copy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  icon: {
+    alignItems: "center",
+    backgroundColor: colors.guard.tealSoft,
+    borderRadius: 999,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  label: {
+    color: colors.text.muted,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 1.32,
+    textTransform: "uppercase",
+  },
+  row: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  rowBorder: {
+    borderBottomColor: "#f1f5f9",
+    borderBottomWidth: 1,
+  },
+  value: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  valueMuted: {
+    color: colors.text.muted,
+  },
+});

@@ -1,4 +1,6 @@
-import { Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+
+import { spacing } from "@/theme/spacing";
 
 import { StatCard } from "./stat-card";
 
@@ -17,7 +19,7 @@ const toneMap: Record<NonNullable<StatItem["tone"]>, "default" | "teal" | "warni
 
 export function StatGrid({ stats }: { stats: StatItem[] }) {
   return (
-    <View className="flex-row flex-wrap gap-3">
+    <View style={styles.grid}>
       {stats.map((stat) => (
         <StatCard
           key={stat.label}
@@ -29,3 +31,11 @@ export function StatGrid({ stats }: { stats: StatItem[] }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+  },
+});

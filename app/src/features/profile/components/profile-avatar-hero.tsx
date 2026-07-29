@@ -1,8 +1,11 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { Stack } from "@/components/layout";
 import { UserAvatar } from "@/components/ui";
 import { formatPhoneDisplay } from "@/features/profile/profile-formatters";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type ProfileAvatarHeroProps = {
   avatarUrl?: string | null;
@@ -24,7 +27,7 @@ export function ProfileAvatarHero({
   const phoneDisplay = formatPhoneDisplay(phone);
 
   return (
-    <View className="items-center gap-3 py-2">
+    <Stack align="center" gap="md" style={styles.hero}>
       <UserAvatar
         imageUrl={avatarUrl}
         name={name}
@@ -33,44 +36,66 @@ export function ProfileAvatarHero({
         onPress={onChangePhoto}
       />
 
-      <View className="items-center gap-1">
-        <Text
-          className="text-center text-2xl font-bold tracking-tight"
-          style={{ color: theme.text.primary }}
-        >
-          {name}
-        </Text>
-        {email ? (
-          <Text className="text-sm" style={{ color: theme.text.secondary }}>
-            {email}
-          </Text>
-        ) : null}
-        {phone && phoneDisplay !== "—" ? (
-          <Text className="text-sm" style={{ color: theme.text.secondary }}>
-            {phoneDisplay}
-          </Text>
-        ) : null}
-      </View>
+      <Stack align="center" gap="xs">
+        <Text style={styles.name}>{name}</Text>
+        {email ? <Text style={styles.detail}>{email}</Text> : null}
+        {phone && phoneDisplay !== "—" ? <Text style={styles.detail}>{phoneDisplay}</Text> : null}
+      </Stack>
 
       <View
-        className="flex-row items-center gap-2 rounded-full px-3 py-1.5"
-        style={{
-          backgroundColor: isActive ? theme.status.successSoft : theme.surface.muted,
-        }}
+        style={[
+          styles.statusBadge,
+          { backgroundColor: isActive ? colors.status.successSoft : colors.surface.muted },
+        ]}
       >
         <View
-          className="h-2 w-2 rounded-full"
-          style={{
-            backgroundColor: isActive ? theme.status.success : theme.text.muted,
-          }}
+          style={[
+            styles.statusDot,
+            { backgroundColor: isActive ? colors.status.success : colors.text.muted },
+          ]}
         />
         <Text
-          className="text-xs font-semibold"
-          style={{ color: isActive ? theme.status.success : theme.text.muted }}
+          style={[
+            styles.statusText,
+            { color: isActive ? colors.status.success : colors.text.muted },
+          ]}
         >
           {isActive ? "Active Account" : "Inactive Account"}
         </Text>
       </View>
-    </View>
+    </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  detail: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  hero: {
+    paddingVertical: spacing.sm,
+  },
+  name: {
+    ...typography.title,
+    color: colors.text.primary,
+    letterSpacing: -0.5,
+    textAlign: "center",
+  },
+  statusBadge: {
+    alignItems: "center",
+    borderRadius: 999,
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  statusDot: {
+    borderRadius: 999,
+    height: 8,
+    width: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+});

@@ -7,7 +7,7 @@ import {
   type DateRangePreset,
   type LogsPreset,
   type LogsSegment,
-  parseLogsPreset,
+  parseGuardEntriesPreset,
   presetToInitialState,
 } from "@/features/guard/guard-routes";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
@@ -22,10 +22,6 @@ const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
 
 function segmentStatus(segment: LogsSegment): ModelsVisitorStatus | undefined {
-  if (segment === "pending") {
-    return "waiting_approval";
-  }
-
   if (segment === "inside") {
     return "checked_in";
   }
@@ -41,7 +37,7 @@ function segmentUsesExpectedFilter(segment: LogsSegment) {
   return segment === "expected";
 }
 
-export function useGuardLogs(initialPreset: LogsPreset = "all") {
+export function useGuardLogs(initialPreset: LogsPreset = "today") {
   const initial = presetToInitialState(initialPreset);
   const { selectedSocietyId } = useGuardScreen();
   const [searchInput, setSearchInput] = useState("");
@@ -64,6 +60,8 @@ export function useGuardLogs(initialPreset: LogsPreset = "all") {
     setDatePreset(next.datePreset);
     setSheetStatus(next.sheetStatus);
     setPurpose(undefined);
+    setSearchInput("");
+    setDebouncedSearch("");
   }, [initialPreset]);
 
   const activeStatus = sheetStatus ?? segmentStatus(segment);
@@ -156,7 +154,8 @@ export function useGuardLogs(initialPreset: LogsPreset = "all") {
       setSheetStatus(next.status);
 
       if (next.status === "waiting_approval") {
-        setSegment("pending");
+        setSegment("today");
+        setSheetStatus("waiting_approval");
       } else if (next.status === "checked_in") {
         setSegment("inside");
       } else if (next.status === "approved") {
@@ -195,5 +194,5 @@ export function useGuardLogs(initialPreset: LogsPreset = "all") {
 }
 
 export function useGuardLogsFromParams(presetParam?: string | string[]) {
-  return useGuardLogs(parseLogsPreset(presetParam));
+  return useGuardLogs(parseGuardEntriesPreset(presetParam));
 }

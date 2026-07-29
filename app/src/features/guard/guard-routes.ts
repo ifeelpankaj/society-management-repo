@@ -1,7 +1,10 @@
 import type { Href } from "expo-router";
 
-export type LogsPreset = "all" | "today" | "expected" | "inside" | "checked_out";
-export type LogsSegment = "today" | "expected" | "pending" | "inside";
+import type { ModelsVisitorStatus } from "@/lib/api/generated-api";
+
+export type GuardEntriesPreset = "all" | "today" | "expected" | "inside" | "checked_out";
+export type LogsPreset = GuardEntriesPreset;
+export type LogsSegment = "today" | "expected" | "inside";
 export type DateRangePreset =
   | "today"
   | "yesterday"
@@ -9,26 +12,92 @@ export type DateRangePreset =
   | "this_month"
   | "all";
 
-export function guardLogsRoute(preset: LogsPreset = "all"): Href {
-  return {
-    pathname: "/guard/logs",
-    params: { preset },
-  } as Href;
+export type GuardCheckInInput = {
+  source: "qr";
+  token: string;
+};
+
+export function firstParam(value?: string | string[]): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export function parseLogsPreset(value?: string | string[]): LogsPreset {
-  const raw = Array.isArray(value) ? value[0] : value;
+export function parseCheckInParams(params: {
+  source?: string | string[];
+  token?: string | string[];
+}): GuardCheckInInput | null {
+  const source = firstParam(params.source);
+  const token = firstParam(params.token)?.trim();
 
-  if (
-    raw === "today" ||
-    raw === "expected" ||
-    raw === "inside" ||
-    raw === "checked_out"
-  ) {
-    return raw;
+  if (source === "qr" && token) {
+    return { source: "qr", token };
   }
 
-  return "all";
+  return null;
+}
+
+export const guardHomeRoute = (): Href =>
+  ({
+    pathname: "/guard/home",
+  }) as unknown as Href;
+
+export const guardProfileRoute = (): Href =>
+  ({
+    pathname: "/guard/profile",
+  }) as unknown as Href;
+
+export const guardScannerRoute = (): Href =>
+  ({
+    pathname: "/guard/scanner",
+  }) as unknown as Href;
+
+export const guardAddEntryRoute = (): Href =>
+  ({
+    pathname: "/guard/add-entry",
+  }) as unknown as Href;
+
+export const guardPendingRoute = (): Href =>
+  ({
+    pathname: "/guard/pending",
+  }) as unknown as Href;
+
+export const guardCheckInRoute = (params: GuardCheckInInput): Href =>
+  ({
+    pathname: "/guard/check-in",
+    params,
+  }) as unknown as Href;
+
+export const guardEntriesRoute = (preset: GuardEntriesPreset = "today"): Href =>
+  ({
+    pathname: "/guard/entries",
+    params: { preset },
+  }) as unknown as Href;
+
+/** @deprecated Use guardEntriesRoute instead */
+export function guardLogsRoute(preset: GuardEntriesPreset = "today"): Href {
+  return guardEntriesRoute(preset);
+}
+
+const VALID_PRESETS = new Set<GuardEntriesPreset>([
+  "today",
+  "all",
+  "expected",
+  "inside",
+  "checked_out",
+]);
+
+export function parseGuardEntriesPreset(value?: string | string[]): GuardEntriesPreset {
+  const preset = firstParam(value);
+
+  if (preset && VALID_PRESETS.has(preset as GuardEntriesPreset)) {
+    return preset as GuardEntriesPreset;
+  }
+
+  return "today";
+}
+
+/** @deprecated Use parseGuardEntriesPreset instead */
+export function parseLogsPreset(value?: string | string[]): GuardEntriesPreset {
+  return parseGuardEntriesPreset(value);
 }
 
 function startOfDay(date: Date) {
@@ -103,23 +172,42 @@ export const DATE_RANGE_OPTIONS: { label: string; value: DateRangePreset }[] = [
   { label: "All Time", value: "all" },
 ];
 
-export function presetToInitialState(preset: LogsPreset): {
+export type PresetState = {
   datePreset: DateRangePreset;
   segment: LogsSegment;
-  sheetStatus?: "approved" | "checked_out";
-} {
-  switch (preset) {
-    case "today":
-      return { segment: "today", datePreset: "today" };
-    case "expected":
-      return { segment: "expected", datePreset: "today" };
-    case "inside":
-      return { segment: "inside", datePreset: "today" };
-    case "checked_out":
-      return { segment: "today", datePreset: "today", sheetStatus: "checked_out" };
-    default:
-      return { segment: "today", datePreset: "all" };
-  }
+  sheetStatus?: ModelsVisitorStatus;
+};
+
+export const PRESET_CONFIG = {
+  today: {
+    segment: "today" as LogsSegment,
+    datePreset: "today" as DateRangePreset,
+    sheetStatus: undefined,
+  },
+  expected: {
+    segment: "expected" as LogsSegment,
+    datePreset: "today" as DateRangePreset,
+    sheetStatus: undefined,
+  },
+  inside: {
+    segment: "inside" as LogsSegment,
+    datePreset: "today" as DateRangePreset,
+    sheetStatus: undefined,
+  },
+  checked_out: {
+    segment: "today" as LogsSegment,
+    datePreset: "today" as DateRangePreset,
+    sheetStatus: "checked_out" as ModelsVisitorStatus,
+  },
+  all: {
+    segment: "today" as LogsSegment,
+    datePreset: "all" as DateRangePreset,
+    sheetStatus: undefined,
+  },
+} satisfies Record<GuardEntriesPreset, PresetState>;
+
+export function presetToInitialState(preset: GuardEntriesPreset): PresetState {
+  return PRESET_CONFIG[preset];
 }
 
 export function getTodayRange() {

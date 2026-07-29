@@ -1,5 +1,7 @@
-import { GuardCommandCenter } from "@/features/guard/components/guard-command-center";
+import { Redirect } from "expo-router";
 
-export default function GuardDashboardScreen() {
-  return <GuardCommandCenter />;
+import { guardHomeRoute } from "@/features/guard/guard-routes";
+
+export default function LegacyGuardDashboardRoute() {
+  return <Redirect href={guardHomeRoute()} />;
 }

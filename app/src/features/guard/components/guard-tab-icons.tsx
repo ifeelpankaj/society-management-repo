@@ -1,7 +1,7 @@
 import { SymbolView } from "expo-symbols";
 import type { ColorValue } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 type GuardTabName = "dashboard" | "add-entry" | "scan" | "logs" | "profile";
 

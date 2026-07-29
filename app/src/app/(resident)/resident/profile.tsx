@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LoadingState } from "@/components/ui";
@@ -29,7 +29,10 @@ import {
   residentMembersAddRoute,
   residentVisitorSettingsRoute,
 } from "@/features/resident/resident-routes";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 function formatFlatLabel(residence?: {
   block?: string | null;
@@ -79,9 +82,9 @@ export default function ResidentProfileScreen() {
   const flatLabel = formatFlatLabel(selectedResidence);
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-      <ScrollView contentContainerClassName="px-5 pb-10 pt-3">
-        <View className="gap-6">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
           <GuardBackHeader title="Profile" />
 
           <ProfileAvatarHero
@@ -229,13 +232,15 @@ export default function ResidentProfileScreen() {
 
           <Pressable
             accessibilityRole="button"
-            className="items-center py-3 active:opacity-75"
             disabled={isSigningOut}
             onPress={signOut}
+            style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutButtonPressed]}
           >
             <Text
-              className="text-base font-semibold"
-              style={{ color: isSigningOut ? theme.text.muted : theme.status.error }}
+              style={[
+                styles.signOutText,
+                { color: isSigningOut ? colors.text.muted : colors.status.error },
+              ]}
             >
               {isSigningOut ? "Signing out..." : "Sign Out"}
             </Text>
@@ -253,3 +258,28 @@ export default function ResidentProfileScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: layout.screenPaddingTop,
+  },
+  content: {
+    gap: spacing["2xl"],
+  },
+  signOutButton: {
+    alignItems: "center",
+    paddingVertical: spacing.md,
+  },
+  signOutButtonPressed: {
+    opacity: 0.75,
+  },
+  signOutText: {
+    ...typography.button,
+  },
+});

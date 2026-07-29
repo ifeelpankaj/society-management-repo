@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 const G = theme.guard;
 

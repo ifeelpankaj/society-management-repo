@@ -8,7 +8,7 @@ import {
   titleize,
 } from "@/features/guard/guard-utils";
 import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 const G = theme.guard;
 

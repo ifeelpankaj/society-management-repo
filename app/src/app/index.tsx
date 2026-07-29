@@ -14,6 +14,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/features/auth/use-auth";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 const images = [
   require("../../assets/images/public/soc_img_one.png"),
@@ -29,6 +35,11 @@ const features = [
     "Manage residents, staff, and visitors from one place.",
   ],
 ] as const;
+
+const HERO_BG = "#17110f";
+const DIVIDER = "#eee7e2";
+const FEATURE_DESC = "#81766f";
+const FOOTER_MUTED = "#c9c1bb";
 
 export default function Index() {
   const { width } = useWindowDimensions();
@@ -54,10 +65,10 @@ export default function Index() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#17110f]">
+    <SafeAreaView style={styles.screen}>
       <StatusBar style="light" />
-      <ScrollView bounces={false} contentContainerClassName="flex-grow">
-        <View className="relative h-[340px] overflow-hidden bg-[#17110f]">
+      <ScrollView bounces={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.hero}>
           <ScrollView
             ref={carouselRef}
             horizontal
@@ -88,106 +99,70 @@ export default function Index() {
               "rgba(23,17,15,0.88)",
             ]}
             locations={[0, 0.48, 1]}
-            style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
+            style={[StyleSheet.absoluteFill, styles.noPointerEvents]}
           />
 
-          <View
-            className="absolute left-6 right-6 gap-2"
-            style={{ bottom: 76 }}
-          >
-            <Text
-              className="text-[27px] font-medium leading-9 text-white"
-              style={{
-                textShadowColor: "rgba(0, 0, 0, 0.45)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 6,
-              }}
-            >
-              APNA GATE
-            </Text>
-            <Text
-              className="text-xs font-semibold uppercase tracking-widest text-white/90"
-              style={{
-                textShadowColor: "rgba(0, 0, 0, 0.45)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 5,
-              }}
-            >
-              Modern Security for Modern Societies.
-            </Text>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroTitle}>APNA GATE</Text>
+            <Text style={styles.heroSubtitle}>Modern Security for Modern Societies.</Text>
           </View>
 
-          <View
-            className="absolute left-0 right-0 items-center"
-            style={{ bottom: 42 }}
-          >
-            <View className="flex-row justify-center gap-2 rounded-full bg-black/35 px-3 py-2">
+          <View style={styles.paginationWrap}>
+            <View style={styles.pagination}>
               {images.map((_, index) => (
                 <View
                   key={index}
-                  className={[
-                    "h-2 rounded-full",
-                    activeSlide === index ? "w-6 bg-white" : "w-2 bg-white/55",
-                  ].join(" ")}
+                  style={[
+                    styles.dot,
+                    activeSlide === index ? styles.dotActive : styles.dotInactive,
+                  ]}
                 />
               ))}
             </View>
           </View>
         </View>
 
-        <View
-          className="-mt-5 flex-grow gap-6 rounded-t-[28px] bg-white px-6 pb-8 pt-8"
-          style={{ boxShadow: "0 -10px 24px rgba(0, 0, 0, 0.1)" }}
-        >
-          <View className="gap-2">
-            <Text className="text-[25px] font-medium leading-8 text-[#211714]">
-              Welcome to Apna Gate
-            </Text>
-            <Text className="text-[15px] leading-6 text-[#211714]">
+        <View style={styles.sheet}>
+          <View style={styles.intro}>
+            <Text style={styles.title}>Welcome to Apna Gate</Text>
+            <Text style={styles.subtitle}>
               A smarter way to welcome visitors and keep your community secure.
             </Text>
           </View>
 
-          <View className="h-px bg-[#eee7e2]" />
+          <View style={styles.divider} />
 
-          <View className="gap-5">
+          <View style={styles.features}>
             {features.map(([icon, title, description]) => (
-              <View key={title} className="flex-row items-start gap-3.5">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-[#fff1e8]">
-                  <Text className="text-lg">{icon}</Text>
+              <View key={title} style={styles.featureRow}>
+                <View style={styles.featureIconWrap}>
+                  <Text style={styles.featureIcon}>{icon}</Text>
                 </View>
-                <View className="flex-1 gap-1">
-                  <Text className="text-[15px] font-semibold text-[#211714]">
-                    {title}
-                  </Text>
-                  <Text className="text-sm leading-5 text-[#81766f]">
-                    {description}
-                  </Text>
+                <View style={styles.featureCopy}>
+                  <Text style={styles.featureTitle}>{title}</Text>
+                  <Text style={styles.featureDescription}>{description}</Text>
                 </View>
               </View>
             ))}
           </View>
 
-          <View className="h-px bg-[#eee7e2]" />
+          <View style={styles.divider} />
 
-          <View className="gap-4">
-            <Text className="text-center text-xs font-medium uppercase tracking-wide text-[#a89e97]">
+          <View style={styles.footer}>
+            <Text style={styles.trustLabel}>
               Trusted by modern residential communities.
             </Text>
             <Pressable
               accessibilityRole="button"
-              className="min-h-14 items-center justify-center rounded-2xl bg-[#ff6a1a] active:opacity-90"
               onPress={() => router.push("/login")}
-              style={{ boxShadow: "0 10px 20px rgba(255, 106, 26, 0.18)" }}
+              style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
             >
-              <Text className="text-base font-semibold text-white">
-                Continue to your community.
-              </Text>
+              <Text style={styles.ctaText}>Continue to your community.</Text>
             </Pressable>
-            <View className="flex-row justify-center gap-2">
-              <Text className="text-xs text-[#a89e97]">Terms</Text>
-              <Text className="text-xs text-[#c9c1bb]">{"\u2022"}</Text>
-              <Text className="text-xs text-[#a89e97]">Privacy</Text>
+            <View style={styles.legalRow}>
+              <Text style={styles.legalText}>Terms</Text>
+              <Text style={styles.legalSeparator}>{"\u2022"}</Text>
+              <Text style={styles.legalText}>Privacy</Text>
             </View>
           </View>
         </View>
@@ -195,3 +170,174 @@ export default function Index() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: HERO_BG,
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  noPointerEvents: {
+    pointerEvents: "none",
+  },
+  hero: {
+    backgroundColor: HERO_BG,
+    height: 340,
+    overflow: "hidden",
+    position: "relative",
+  },
+  heroCopy: {
+    bottom: 76,
+    gap: spacing.sm,
+    left: spacing["2xl"],
+    position: "absolute",
+    right: spacing["2xl"],
+  },
+  heroTitle: {
+    color: colors.text.inverse,
+    fontSize: 27,
+    fontWeight: "500",
+    lineHeight: 36,
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  heroSubtitle: {
+    ...typography.label,
+    color: "rgba(255, 255, 255, 0.9)",
+    textShadowColor: "rgba(0, 0, 0, 0.45)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
+  },
+  paginationWrap: {
+    alignItems: "center",
+    bottom: 42,
+    left: 0,
+    position: "absolute",
+    right: 0,
+  },
+  pagination: {
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    borderRadius: radius["2xl"],
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  dot: {
+    borderRadius: radius.sm,
+    height: spacing.sm,
+  },
+  dotActive: {
+    backgroundColor: colors.text.inverse,
+    width: spacing["2xl"],
+  },
+  dotInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.55)",
+    width: spacing.sm,
+  },
+  sheet: {
+    backgroundColor: colors.surface.card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    flexGrow: 1,
+    gap: spacing["2xl"],
+    marginTop: -20,
+    paddingBottom: layout.screenPaddingBottom,
+    paddingHorizontal: spacing["2xl"],
+    paddingTop: spacing["3xl"],
+    boxShadow: "0 -10px 24px rgba(0, 0, 0, 0.1)",
+  },
+  intro: {
+    gap: spacing.sm,
+  },
+  title: {
+    color: colors.text.secondaryDark,
+    fontSize: 25,
+    fontWeight: "500",
+    lineHeight: 32,
+  },
+  subtitle: {
+    color: colors.text.secondaryDark,
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  divider: {
+    backgroundColor: DIVIDER,
+    height: 1,
+  },
+  features: {
+    gap: spacing.xl,
+  },
+  featureRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 14,
+  },
+  featureIconWrap: {
+    alignItems: "center",
+    backgroundColor: "#fff1e8",
+    borderRadius: radius["2xl"],
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  featureIcon: {
+    fontSize: 18,
+  },
+  featureCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  featureTitle: {
+    color: colors.text.secondaryDark,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  featureDescription: {
+    color: FEATURE_DESC,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: 20,
+  },
+  footer: {
+    gap: spacing.lg,
+  },
+  trustLabel: {
+    ...typography.label,
+    color: colors.text.placeholder,
+    letterSpacing: 0.8,
+    textAlign: "center",
+    textTransform: "uppercase",
+  },
+  ctaButton: {
+    alignItems: "center",
+    backgroundColor: colors.brand.primary,
+    borderRadius: radius.lg,
+    justifyContent: "center",
+    minHeight: layout.buttonHeight,
+    ...shadows.brand,
+  },
+  ctaButtonPressed: {
+    opacity: 0.9,
+  },
+  ctaText: {
+    ...typography.button,
+    color: colors.text.inverse,
+  },
+  legalRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "center",
+  },
+  legalText: {
+    ...typography.caption,
+    color: colors.text.placeholder,
+  },
+  legalSeparator: {
+    ...typography.caption,
+    color: FOOTER_MUTED,
+  },
+});

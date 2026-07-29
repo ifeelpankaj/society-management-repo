@@ -1,4 +1,11 @@
-import { Pressable, Text } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
+
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type QuickActionProps = {
   label: string;
@@ -10,22 +17,51 @@ export function QuickAction({ label, onPress, tone = "light" }: QuickActionProps
   return (
     <Pressable
       accessibilityRole="button"
-      className={[
-        "min-h-16 flex-1 items-center justify-center rounded-2xl border px-3 active:opacity-80",
-        tone === "danger"
-          ? "border-rose-200 bg-rose-50"
-          : "border-amber-100 bg-[#fffbf5] shadow-sm shadow-amber-100",
-      ].join(" ")}
+      style={({ pressed }) => [
+        styles.base,
+        tone === "danger" ? styles.danger : styles.light,
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
     >
-      <Text
-        className={[
-          "text-center text-sm font-bold",
-          tone === "danger" ? "text-rose-700" : "text-slate-900",
-        ].join(" ")}
-      >
+      <Text style={[styles.label, tone === "danger" ? styles.dangerLabel : styles.lightLabel]}>
         {label}
       </Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: layout.buttonHeightCompact + 20,
+    paddingHorizontal: spacing.md,
+  },
+  danger: {
+    backgroundColor: colors.status.errorSoft,
+    borderColor: "#fecdd3",
+  },
+  dangerLabel: {
+    color: "#be123c",
+  },
+  label: {
+    ...typography.bodySmall,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  light: {
+    backgroundColor: colors.surface.input,
+    borderColor: "#fef3c7",
+    ...shadows.sm,
+  },
+  lightLabel: {
+    color: colors.text.primary,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+});

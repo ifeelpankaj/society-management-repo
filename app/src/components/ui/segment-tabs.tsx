@@ -1,6 +1,8 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type SegmentTabsProps<T extends string> = {
   compact?: boolean;
@@ -16,10 +18,7 @@ export function SegmentTabs<T extends string>({
   onChange,
 }: SegmentTabsProps<T>) {
   return (
-    <View
-      className="flex-row rounded-xl p-1"
-      style={{ backgroundColor: theme.surface.card, borderColor: theme.border.default, borderWidth: 1 }}
-    >
+    <View style={styles.container}>
       {options.map((option) => {
         const active = option.value === value;
 
@@ -27,20 +26,10 @@ export function SegmentTabs<T extends string>({
           <Pressable
             key={option.value}
             accessibilityRole="button"
-            className="flex-1 items-center rounded-lg"
-            style={{
-              backgroundColor: active ? theme.guard.teal : "transparent",
-              paddingVertical: compact ? 8 : 10,
-            }}
+            style={[styles.tab, active && styles.tabActive, { paddingVertical: compact ? spacing.sm : 10 }]}
             onPress={() => onChange(option.value)}
           >
-            <Text
-              className="font-semibold"
-              style={{
-                color: active ? "#ffffff" : theme.guard.textMuted,
-                fontSize: compact ? 11 : 13,
-              }}
-            >
+            <Text style={[styles.tabText, active && styles.tabTextActive, { fontSize: compact ? 11 : 13 }]}>
               {option.label}
             </Text>
           </Pressable>
@@ -49,3 +38,29 @@ export function SegmentTabs<T extends string>({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    padding: spacing.xs,
+  },
+  tab: {
+    alignItems: "center",
+    borderRadius: radius.sm,
+    flex: 1,
+  },
+  tabActive: {
+    backgroundColor: colors.guard.teal,
+  },
+  tabText: {
+    color: colors.guard.textMuted,
+    fontWeight: "600",
+  },
+  tabTextActive: {
+    color: colors.text.inverse,
+  },
+});

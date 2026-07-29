@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, Card, Input, LoadingState, SegmentTabs } from "@/components/ui";
@@ -8,7 +8,10 @@ import { useProfileAction } from "@/features/profile/use-profile-action";
 import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
 import { useResident } from "@/features/resident/resident-context";
 import type { ModelsFlatResidentRole } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 const ROLE_OPTIONS: { label: string; value: ModelsFlatResidentRole }[] = [
   { label: "Family", value: "family" },
@@ -33,15 +36,13 @@ export default function AddFlatMemberScreen() {
 
   if (!canManageFlatMembers) {
     return (
-      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-        <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
-          <View className="gap-6">
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.content}>
             <GuardBackHeader title="Add Member" />
-            <Card className="gap-2">
-              <Text className="text-base font-bold" style={{ color: theme.text.primary }}>
-                Flat owner only
-              </Text>
-              <Text className="text-sm" style={{ color: theme.text.secondary }}>
+            <Card style={styles.restrictedCard}>
+              <Text style={styles.restrictedTitle}>Flat owner only</Text>
+              <Text style={styles.restrictedBody}>
                 Only the flat owner can add members to this flat.
               </Text>
             </Card>
@@ -52,22 +53,20 @@ export default function AddFlatMemberScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-      <ScrollView contentContainerClassName="px-5 pb-8 pt-3">
-        <View className="gap-6">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
           <GuardBackHeader title="Add Member" />
 
-          <View className="gap-1">
-            <Text className="text-2xl font-bold" style={{ color: theme.text.primary }}>
-              Add flat member
-            </Text>
-            <Text className="text-sm" style={{ color: theme.text.secondary }}>
+          <View style={styles.intro}>
+            <Text style={styles.pageTitle}>Add flat member</Text>
+            <Text style={styles.pageSubtitle}>
               Invite a family member or tenant to your flat at{" "}
               {selectedResidence.society_name ?? "your society"}.
             </Text>
           </View>
 
-          <Card className="gap-4">
+          <Card style={styles.formCard}>
             <Input
               autoCapitalize="words"
               label="Full name"
@@ -90,10 +89,8 @@ export default function AddFlatMemberScreen() {
               onChangeText={setEmail}
             />
 
-            <View className="gap-2">
-              <Text className="text-sm font-semibold" style={{ color: theme.text.secondary }}>
-                Role
-              </Text>
+            <View style={styles.roleSection}>
+              <Text style={styles.roleLabel}>Role</Text>
               <SegmentTabs options={ROLE_OPTIONS} value={role} onChange={setRole} />
             </View>
           </Card>
@@ -107,3 +104,52 @@ export default function AddFlatMemberScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: layout.screenPaddingBottom,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: layout.screenPaddingTop,
+  },
+  content: {
+    gap: spacing["2xl"],
+  },
+  restrictedCard: {
+    gap: spacing.sm,
+  },
+  restrictedTitle: {
+    ...typography.body,
+    color: colors.text.primary,
+    fontWeight: "700",
+  },
+  restrictedBody: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  intro: {
+    gap: spacing.xs,
+  },
+  pageTitle: {
+    ...typography.title,
+    color: colors.text.primary,
+  },
+  pageSubtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  formCard: {
+    gap: spacing.lg,
+  },
+  roleSection: {
+    gap: spacing.sm,
+  },
+  roleLabel: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    fontWeight: "600",
+  },
+});

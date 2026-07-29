@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Stack } from "@/components/layout";
 import { LoadingState, PaginatedList } from "@/components/ui";
 import { getApiMessage } from "@/features/auth/api-error";
 import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
@@ -18,10 +19,11 @@ import {
   useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation,
 } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { spacing } from "@/theme/spacing";
 
 export function GuardLogsScreen() {
-  const { preset: presetParam } = useLocalSearchParams<{ preset?: string }>();
+  const { preset: presetParam } = useLocalSearchParams<{ preset?: string | string[] }>();
   const { isLoading, memberships, requiresSelection, selectedSocietyId } = useGuardSociety();
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
@@ -69,14 +71,9 @@ export function GuardLogsScreen() {
     : "Visitor movement will appear here as entries are created.";
 
   return (
-    <SafeAreaView
-      className="flex-1"
-      edges={["top", "left", "right"]}
-      style={{ backgroundColor: theme.guard.screenBg }}
-    >
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
       <PaginatedList<ModelsVisitorEntry>
         ItemSeparatorComponent={LogEntryDivider}
-        contentContainerClassName="px-5 pb-8 pt-3"
         data={logs.items}
         emptyMessage={emptyMessage}
         emptyTitle={emptyTitle}
@@ -95,7 +92,7 @@ export function GuardLogsScreen() {
           />
         )}
         header={
-          <View className="gap-3 pb-2">
+          <Stack gap="md" style={styles.header}>
             <LogsSearchHeader
               activeFilterCount={logs.activeFilterCount}
               datePreset={logs.datePreset}
@@ -115,9 +112,9 @@ export function GuardLogsScreen() {
                 visitorsInside={stats?.visitors_inside ?? 0}
               />
             ) : null}
-          </View>
+          </Stack>
         }
-        footer={<View className="h-2" />}
+        footer={<View style={styles.footerSpacer} />}
         onLoadMore={logs.loadMore}
         onRefresh={() => {
           void logs.refresh();
@@ -144,3 +141,16 @@ export function GuardLogsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  footerSpacer: {
+    height: spacing.sm,
+  },
+  header: {
+    paddingBottom: spacing.sm,
+  },
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+});

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { saveWorkspace } from "@/features/auth/auth-storage";
+import { guardHomeRoute } from "@/features/guard/guard-routes";
 import {
   formatGlobalRole,
   formatMembershipRole,
@@ -167,7 +168,7 @@ export default function SelectSocietyScreen() {
     if (membership.role === "staff" && membership.society_id) {
       dispatch(setSelectedSociety(membership.society_id));
       void saveWorkspace({ societyId: membership.society_id });
-      router.replace("/guard/dashboard");
+      router.replace(guardHomeRoute());
       return;
     }
 

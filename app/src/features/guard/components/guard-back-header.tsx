@@ -1,8 +1,12 @@
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
-import { SymbolView } from "expo-symbols";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { AppIcon } from "@/components/icons";
+import { Row } from "@/components/layout";
+import { guardHomeRoute } from "@/features/guard/guard-routes";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type GuardBackHeaderProps = {
   title: string;
@@ -11,29 +15,54 @@ type GuardBackHeaderProps = {
 export function GuardBackHeader({ title }: GuardBackHeaderProps) {
   const router = useRouter();
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace(guardHomeRoute());
+  };
+
   return (
-    <View className="flex-row items-center gap-3 pb-2 pt-1">
+    <Row align="center" gap="md" style={styles.header}>
       <Pressable
         accessibilityLabel="Go back"
         accessibilityRole="button"
-        className="h-11 w-11 items-center justify-center rounded-full"
         hitSlop={8}
-        style={({ pressed }) => ({
-          backgroundColor: pressed ? theme.guard.tealSoft : theme.surface.card,
-          borderColor: theme.border.default,
-          borderWidth: 1,
-        })}
-        onPress={() => router.back()}
+        style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+        onPress={handleBack}
       >
-        <SymbolView
-          name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
-          size={18}
-          tintColor={theme.guard.text}
-        />
+        <AppIcon color={colors.guard.text} name="back" size={18} />
       </Pressable>
-      <Text className="flex-1 text-[18px] font-bold" style={{ color: theme.guard.text }}>
-        {title}
-      </Text>
-    </View>
+      <Text style={styles.title}>{title}</Text>
+    </Row>
   );
 }
+
+const styles = StyleSheet.create({
+  backButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
+    borderRadius: radius["2xl"],
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  backButtonPressed: {
+    backgroundColor: colors.guard.tealSoft,
+  },
+  header: {
+    justifyContent: "flex-start",
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  title: {
+    color: colors.guard.text,
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+});

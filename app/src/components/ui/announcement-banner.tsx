@@ -1,6 +1,9 @@
-import { Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { AppText } from "@/components/ui/app-text";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type AnnouncementBannerProps = {
   message?: string;
@@ -12,24 +15,34 @@ export function AnnouncementBanner({
   title = "Society Announcement",
 }: AnnouncementBannerProps) {
   return (
-    <View
-      className="rounded-[18px] px-4 py-3.5"
-      style={{
-        backgroundColor: theme.announcement.bg,
-      }}
-    >
-      <Text
-        className="text-[11px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color: theme.announcement.text, opacity: 0.75 }}
-      >
+    <View style={styles.container}>
+      <AppText variant="caption" color="announcement" style={styles.title}>
         {title}
-      </Text>
-      <Text
-        className="mt-1 text-[15px] font-semibold leading-5"
-        style={{ color: theme.announcement.text }}
-      >
+      </AppText>
+      <AppText variant="bodySmall" color="announcement" style={styles.message}>
         {message}
-      </Text>
+      </AppText>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.announcement.bg,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  message: {
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 20,
+    marginTop: spacing.xs,
+  },
+  title: {
+    fontWeight: "600",
+    letterSpacing: 1.32,
+    opacity: 0.75,
+    textTransform: "uppercase",
+  },
+});

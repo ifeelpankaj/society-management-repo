@@ -3,11 +3,16 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  StyleSheet,
   View,
   type ListRenderItem,
+  type ViewStyle,
 } from "react-native";
 
-import { theme } from "@/lib/theme";
+import { Stack } from "@/components/layout";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
 
 import { EmptyState } from "./empty-state";
 
@@ -25,7 +30,7 @@ type PaginatedListProps<T> = {
   emptyMessage: string;
   header?: ReactNode;
   footer?: ReactNode;
-  contentContainerClassName?: string;
+  contentContainerStyle?: ViewStyle;
   ItemSeparatorComponent?: ComponentType<unknown> | null;
 };
 
@@ -43,13 +48,13 @@ export function PaginatedList<T>({
   emptyMessage,
   header,
   footer,
-  contentContainerClassName = "px-5 pb-8 pt-6 gap-4",
+  contentContainerStyle,
   ItemSeparatorComponent,
 }: PaginatedListProps<T>) {
   if (isLoading && data.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center py-16">
-        <ActivityIndicator color={theme.guard.teal} />
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.guard.teal} />
       </View>
     );
   }
@@ -57,8 +62,8 @@ export function PaginatedList<T>({
   const listFooter = (
     <>
       {isLoadingMore ? (
-        <View className="items-center py-4">
-          <ActivityIndicator color={theme.guard.teal} />
+        <View style={styles.loadingMore}>
+          <ActivityIndicator color={colors.guard.teal} />
         </View>
       ) : null}
       {footer}
@@ -74,21 +79,23 @@ export function PaginatedList<T>({
       renderItem={renderItem}
       ListHeaderComponent={
         header ? (
-          <View className="gap-4 pb-4">{header}</View>
+          <Stack gap="lg" style={styles.header}>
+            {header}
+          </Stack>
         ) : (
-          <View className="h-6" />
+          <View style={styles.headerSpacer} />
         )
       }
       ListFooterComponent={listFooter}
       ListEmptyComponent={
         <EmptyState title={emptyTitle} message={emptyMessage} onAction={onRefresh} actionLabel="Refresh" />
       }
-      contentContainerClassName={contentContainerClassName}
+      contentContainerStyle={[styles.content, contentContainerStyle]}
       refreshControl={
         onRefresh ? (
           <RefreshControl
             refreshing={Boolean(isRefreshing)}
-            tintColor={theme.guard.teal}
+            tintColor={colors.guard.teal}
             onRefresh={onRefresh}
           />
         ) : undefined
@@ -102,3 +109,28 @@ export function PaginatedList<T>({
     />
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["2xl"],
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing["2xl"],
+  },
+  header: {
+    paddingBottom: spacing.lg,
+  },
+  headerSpacer: {
+    height: spacing["2xl"],
+  },
+  loading: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    paddingVertical: spacing["3xl"],
+  },
+  loadingMore: {
+    alignItems: "center",
+    paddingVertical: spacing.lg,
+  },
+});

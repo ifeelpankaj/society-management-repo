@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LoadingState } from "@/components/ui";
@@ -23,7 +23,10 @@ import {
   useProfileAction,
 } from "@/features/profile";
 import { useGetV1SocietiesBySocietyIdQuery } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 export default function GuardProfileScreen() {
   const {
@@ -54,9 +57,9 @@ export default function GuardProfileScreen() {
     (selectedSocietyId ? `Society #${selectedSocietyId}` : "No society selected");
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
-      <ScrollView contentContainerClassName="px-5 pb-10 pt-3">
-        <View className="gap-6">
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
           <GuardBackHeader title="Profile" />
 
           <ProfileAvatarHero
@@ -158,13 +161,15 @@ export default function GuardProfileScreen() {
 
           <Pressable
             accessibilityRole="button"
-            className="items-center py-3 active:opacity-75"
             disabled={isSigningOut}
             onPress={signOut}
+            style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutButtonPressed]}
           >
             <Text
-              className="text-base font-semibold"
-              style={{ color: isSigningOut ? theme.text.muted : theme.status.error }}
+              style={[
+                styles.signOutText,
+                { color: isSigningOut ? colors.text.muted : colors.status.error },
+              ]}
             >
               {isSigningOut ? "Signing out..." : "Sign Out"}
             </Text>
@@ -182,3 +187,28 @@ export default function GuardProfileScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: layout.screenPaddingTop,
+  },
+  content: {
+    gap: spacing["2xl"],
+  },
+  signOutButton: {
+    alignItems: "center",
+    paddingVertical: spacing.md,
+  },
+  signOutButtonPressed: {
+    opacity: 0.75,
+  },
+  signOutText: {
+    ...typography.button,
+  },
+});

@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
 
 type UserAvatarProps = {
   imageUrl?: string | null;
@@ -47,51 +47,31 @@ export function UserAvatar({
       style={{ borderRadius: size / 2, height: size, width: size }}
     />
   ) : (
-    <View
-      className="items-center justify-center"
-      style={{
-        backgroundColor: theme.guard.tealSoft,
-        borderRadius: size / 2,
-        height: size,
-        width: size,
-      }}
-    >
-      <Text className="font-bold" style={{ color: theme.guard.teal, fontSize }}>
-        {initials}
-      </Text>
+    <View style={[styles.initials, { borderRadius: size / 2, height: size, width: size }]}>
+      <Text style={[styles.initialsText, { fontSize }]}>{initials}</Text>
     </View>
   );
 
   const ring = (
-    <View style={{ position: "relative" }}>
-      <View
-        style={{
-          borderColor: "rgba(15, 23, 42, 0.08)",
-          borderRadius: size / 2 + 2,
-          borderWidth: 1.5,
-          padding: 1.5,
-        }}
-      >
+    <View style={styles.ringWrapper}>
+      <View style={[styles.ring, { borderRadius: size / 2 + 2, padding: 1.5 }]}>
         {content}
       </View>
       {showCameraBadge ? (
         <View
-          className="absolute items-center justify-center"
-          style={{
-            backgroundColor: theme.guard.teal,
-            borderColor: theme.surface.card,
-            borderRadius: badgeSize / 2,
-            borderWidth: 2,
-            bottom: 0,
-            height: badgeSize,
-            right: 0,
-            width: badgeSize,
-          }}
+          style={[
+            styles.badge,
+            {
+              borderRadius: badgeSize / 2,
+              height: badgeSize,
+              width: badgeSize,
+            },
+          ]}
         >
           <SymbolView
             name={{ ios: "camera.fill", android: "photo_camera", web: "photo_camera" }}
             size={Math.round(badgeSize * 0.45)}
-            tintColor="#ffffff"
+            tintColor={colors.text.inverse}
           />
         </View>
       ) : null}
@@ -113,3 +93,32 @@ export function UserAvatar({
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: {
+    alignItems: "center",
+    backgroundColor: colors.guard.teal,
+    borderColor: colors.surface.card,
+    borderWidth: 2,
+    bottom: 0,
+    justifyContent: "center",
+    position: "absolute",
+    right: 0,
+  },
+  initials: {
+    alignItems: "center",
+    backgroundColor: colors.guard.tealSoft,
+    justifyContent: "center",
+  },
+  initialsText: {
+    color: colors.guard.teal,
+    fontWeight: "700",
+  },
+  ring: {
+    borderColor: "rgba(15, 23, 42, 0.08)",
+    borderWidth: 1.5,
+  },
+  ringWrapper: {
+    position: "relative",
+  },
+});

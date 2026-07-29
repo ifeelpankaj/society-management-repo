@@ -1,7 +1,10 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
+import { Row, Stack } from "@/components/layout";
 import { SectionHeader } from "@/components/ui";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { spacing } from "@/theme/spacing";
 
 type ProfileQuickActionsProps = {
   onChangePhoto: () => void;
@@ -10,36 +13,46 @@ type ProfileQuickActionsProps = {
 
 export function ProfileQuickActions({ onChangePhoto, onEditProfile }: ProfileQuickActionsProps) {
   return (
-    <View className="gap-2.5">
+    <Stack gap={10}>
       <SectionHeader title="Quick Actions" />
-      <View className="flex-row gap-3">
+      <Row align="center" gap="md" justify="flex-start">
         <Pressable
           accessibilityRole="button"
-          className="min-h-12 flex-1 items-center justify-center rounded-2xl border px-3 active:opacity-85"
-          style={{
-            backgroundColor: theme.surface.card,
-            borderColor: theme.guard.teal,
-          }}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           onPress={onEditProfile}
         >
-          <Text className="text-sm font-bold" style={{ color: theme.guard.teal }}>
-            Edit Profile
-          </Text>
+          <Text style={styles.buttonText}>Edit Profile</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          className="min-h-12 flex-1 items-center justify-center rounded-2xl border px-3 active:opacity-85"
-          style={{
-            backgroundColor: theme.surface.card,
-            borderColor: theme.guard.teal,
-          }}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           onPress={onChangePhoto}
         >
-          <Text className="text-sm font-bold" style={{ color: theme.guard.teal }}>
-            Change Photo
-          </Text>
+          <Text style={styles.buttonText}>Change Photo</Text>
         </Pressable>
-      </View>
-    </View>
+      </Row>
+    </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.teal,
+    borderRadius: radius["2xl"],
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+  },
+  buttonPressed: {
+    opacity: 0.85,
+  },
+  buttonText: {
+    color: colors.guard.teal,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+});

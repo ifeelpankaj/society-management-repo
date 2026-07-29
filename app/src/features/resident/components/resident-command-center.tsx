@@ -1,12 +1,21 @@
 import { useRouter, type Href } from "expo-router";
-import { SymbolView } from "expo-symbols";
-import { useCallback } from "react";
-import { Pressable, Text, View, type ViewStyle } from "react-native";
+import { useCallback, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { SectionHeader, StatCard } from "@/components/ui";
+import { Stack } from "@/components/layout";
+import {
+  DashboardActionGrid,
+  DashboardActivityFeed,
+  DashboardAlertBar,
+  DashboardAnnouncement,
+  DashboardHeader,
+  DashboardOverviewGrid,
+  DashboardSection,
+  DashboardSkeleton,
+  type DashboardActionTileConfig,
+  type DashboardOverviewStatConfig,
+} from "@/components/dashboard";
 import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
-import { TodayActivityFeed } from "@/features/guard/components/today-activity-feed";
-import { ResidentDashboardHeader } from "@/features/resident/components/resident-dashboard-header";
 import { ResidentScreenShell } from "@/features/resident/components/resident-screen-shell";
 import { useResidentActivityFeed } from "@/features/resident/hooks/use-resident-activity-feed";
 import { useResidentDashboard } from "@/features/resident/hooks/use-resident-dashboard";
@@ -17,213 +26,27 @@ import {
   residentVisitorSettingsRoute,
   residentVisitorsRoute,
 } from "@/features/resident/resident-routes";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
 
-const G = theme.guard;
-
-const QUICK_ACTIONS = [
-  {
-    id: "approvals",
-    label: "Approvals",
-    route: residentVisitorsRoute(),
-    icon: { ios: "checkmark.seal.fill", android: "verified", web: "verified" },
-  },
-  {
-    id: "invite",
-    label: "Invite",
-    route: residentVisitorInviteRoute(),
-    icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
-  },
-  {
-    id: "logs",
-    label: "Logs",
-    route: residentLogsRoute(),
-    icon: { ios: "list.bullet.rectangle", android: "list_alt", web: "list_alt" },
-  },
-  {
-    id: "settings",
-    label: "Approval",
-    route: residentVisitorSettingsRoute(),
-    icon: { ios: "slider.horizontal.3", android: "tune", web: "tune" },
-    requiresHybrid: true,
-  },
-  {
-    id: "members",
-    label: "Members",
-    route: residentMembersAddRoute(),
-    icon: { ios: "person.2.fill", android: "group", web: "group" },
-    requiresPrimary: true,
-  },
-] as const;
-
-function Skeleton({ className, style }: { className?: string; style?: ViewStyle }) {
-  return (
-    <View
-      className={className}
-      style={[{ backgroundColor: "rgba(226, 232, 240, 0.7)", borderRadius: 8 }, style]}
-    />
-  );
-}
-
-function CommandCenterSkeleton() {
-  return (
-    <View className="gap-6">
-      <View className="gap-4">
-        <View className="flex-row justify-between">
-          <Skeleton className="h-11 w-11" style={{ borderRadius: 22 }} />
-          <Skeleton className="h-6 w-6" style={{ borderRadius: 12 }} />
-        </View>
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-4 w-36" />
-        <Skeleton className="h-[72px] w-full" style={{ borderRadius: 18 }} />
-      </View>
-      <View className="flex-row justify-between px-2">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-10 w-10" style={{ borderRadius: 14 }} />
-        ))}
-      </View>
-      <View className="flex-row flex-wrap gap-3">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-[88px] min-w-[46%] flex-1" style={{ borderRadius: 18 }} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function PendingBanner({
-  count,
-  onPress,
-}: {
-  count: number;
-  onPress: () => void;
-}) {
-  if (count <= 0) {
-    return null;
+function getGreeting(name: string) {
+  const hour = new Date().getHours();
+  const firstName = name.split(" ")[0] ?? name;
+  if (hour < 12) {
+    return `Good Morning, ${firstName}`;
   }
-
-  return (
-    <Pressable
-      accessibilityLabel={`${count} visitor awaiting approval`}
-      accessibilityRole="button"
-      className="flex-row items-center gap-3 rounded-[18px] px-4 py-3.5"
-      style={({ pressed }) => ({
-        backgroundColor: theme.announcement.bg,
-        opacity: pressed ? 0.85 : 1,
-      })}
-      onPress={onPress}
-    >
-      <SymbolView
-        name={{ ios: "megaphone.fill", android: "campaign", web: "campaign" }}
-        size={18}
-        tintColor={theme.announcement.text}
-      />
-      <Text className="flex-1 text-[15px] font-semibold" style={{ color: theme.announcement.text }}>
-        {count} visitor{count === 1 ? "" : "s"} awaiting approval
-      </Text>
-      <SymbolView
-        name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-        size={14}
-        tintColor={theme.announcement.text}
-      />
-    </Pressable>
-  );
+  if (hour < 17) {
+    return `Good Afternoon, ${firstName}`;
+  }
+  return `Good Evening, ${firstName}`;
 }
 
-function QuickActionsRow({
-  canManageFlatMembers,
-  isHybrid,
-  onNavigate,
-}: {
-  canManageFlatMembers: boolean;
-  isHybrid: boolean;
-  onNavigate: (route: Href) => void;
-}) {
-  const actions = QUICK_ACTIONS.filter((action) => {
-    if ("requiresPrimary" in action && action.requiresPrimary && !canManageFlatMembers) {
-      return false;
-    }
-    if ("requiresHybrid" in action && action.requiresHybrid && !isHybrid) {
-      return false;
-    }
-    return true;
-  });
-
+function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View className="gap-4">
-      <SectionHeader title="Quick Actions" />
-      <View className="flex-row flex-wrap items-start justify-between px-1">
-        {actions.map((action) => (
-          <Pressable
-            key={action.id}
-            accessibilityLabel={action.label}
-            accessibilityRole="button"
-            className="mb-2 min-w-[20%] flex-1 items-center gap-2.5"
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.65 : 1,
-              transform: [{ scale: pressed ? 0.96 : 1 }],
-            })}
-            onPress={() => onNavigate(action.route)}
-          >
-            <SymbolView name={action.icon} size={28} tintColor={G.teal} />
-            <Text
-              className="text-center text-[11px] font-medium"
-              numberOfLines={1}
-              style={{ color: G.textMuted }}
-            >
-              {action.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function OverviewGrid({
-  expectedCount,
-  membersCount,
-  pendingCount,
-  visitorsCount,
-}: {
-  expectedCount: number;
-  membersCount: number;
-  pendingCount: number;
-  visitorsCount: number;
-}) {
-  return (
-    <View className="gap-4">
-      <SectionHeader title="Overview" />
-      <View className="flex-row flex-wrap gap-3">
-        <StatCard label="Pending" tone="warning" value={pendingCount} />
-        <StatCard label="Expected" tone="success" value={expectedCount} />
-        <StatCard label="Visitors" tone="teal" value={visitorsCount} />
-        <StatCard label="Members" value={membersCount} />
-      </View>
-    </View>
-  );
-}
-
-function ErrorBanner({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      className="flex-row items-center justify-between rounded-[14px] px-4 py-3"
-      style={{ backgroundColor: theme.status.errorSoft }}
-      onPress={onRetry}
-    >
-      <Text className="flex-1 pr-3 text-[13px] font-medium" style={{ color: "#991b1b" }}>
-        {message}
-      </Text>
-      <Text className="text-[13px] font-semibold" style={{ color: "#b91c1c" }}>
-        Retry
-      </Text>
+    <Pressable accessibilityRole="button" style={styles.errorBanner} onPress={onRetry}>
+      <Text style={styles.errorBannerMessage}>{message}</Text>
+      <Text style={styles.errorBannerAction}>Retry</Text>
     </Pressable>
   );
 }
@@ -242,23 +65,138 @@ export function ResidentCommandCenter() {
     void activityFeed.refresh();
   }, [activityFeed, refetchAll]);
 
+  const actions = useMemo(() => {
+    const all: DashboardActionTileConfig[] = [
+      {
+        id: "approvals",
+        title: "Approvals",
+        subtitle: "Review pending",
+        tone: "orange",
+        icon: { ios: "checkmark.seal.fill", android: "verified", web: "verified" },
+        onPress: goApprovals,
+      },
+      {
+        id: "invite",
+        title: "Invite",
+        subtitle: "Add visitor",
+        tone: "blue",
+        icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
+        onPress: () => router.push(residentVisitorInviteRoute()),
+      },
+      {
+        id: "logs",
+        title: "Logs",
+        subtitle: "View history",
+        tone: "neutral",
+        icon: { ios: "list.bullet.rectangle", android: "list_alt", web: "list_alt" },
+        onPress: goLogs,
+      },
+    ];
+
+    if (dashboard.isHybrid) {
+      all.push({
+        id: "settings",
+        title: "Approval",
+        subtitle: "Flat settings",
+        tone: "purple",
+        icon: { ios: "slider.horizontal.3", android: "tune", web: "tune" },
+        onPress: () => router.push(residentVisitorSettingsRoute()),
+      });
+    }
+
+    if (dashboard.canManageFlatMembers) {
+      all.push({
+        id: "members",
+        title: "Members",
+        subtitle: "Manage flat",
+        tone: "blue",
+        icon: { ios: "person.2.fill", android: "group", web: "group" },
+        onPress: () => router.push(residentMembersAddRoute()),
+      });
+    }
+
+    return all;
+  }, [dashboard.canManageFlatMembers, dashboard.isHybrid, goApprovals, goLogs, router]);
+
+  const overviewStats = useMemo<DashboardOverviewStatConfig[]>(
+    () => [
+      {
+        id: "pending",
+        label: "Pending Approval",
+        value: dashboard.pendingCount,
+        tone: "orange",
+        icon: { ios: "hourglass", android: "hourglass_top", web: "hourglass_top" },
+      },
+      {
+        id: "expected",
+        label: "Expected Today",
+        value: dashboard.expectedCount,
+        tone: "blue",
+        icon: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
+      },
+      {
+        id: "visitors",
+        label: "Recent Visitors",
+        value: dashboard.visitorsCount,
+        tone: "green",
+        icon: { ios: "person.2.fill", android: "groups", web: "groups" },
+      },
+      {
+        id: "members",
+        label: "Flat Members",
+        value: dashboard.membersCount,
+        tone: "neutral",
+        icon: { ios: "person.2.fill", android: "group", web: "group" },
+      },
+    ],
+    [
+      dashboard.expectedCount,
+      dashboard.membersCount,
+      dashboard.pendingCount,
+      dashboard.visitorsCount,
+    ],
+  );
+
   return (
-    <View className="flex-1" style={{ backgroundColor: G.screenBg }}>
+    <View style={styles.screen}>
       <ResidentScreenShell
-        backgroundColor={G.screenBg}
-        contentPaddingBottom={24}
+        backgroundColor={colors.guard.screenBg}
+        contentPaddingBottom={layout.tabBarHeight + spacing.lg}
         onRefresh={handleRefresh}
         refreshing={dashboard.isRefreshing || activityFeed.isRefreshing}
       >
         {dashboard.isInitialLoading ? (
-          <CommandCenterSkeleton />
+          <DashboardSkeleton />
         ) : (
-          <View className="gap-6">
-            <ResidentDashboardHeader
-              displayName={dashboard.displayName}
-              flatLabel={dashboard.flatLabel}
-              pendingCount={dashboard.pendingCount}
-            />
+          <Stack gap="2xl">
+            <Stack gap="lg">
+              <DashboardHeader
+                actions={[
+                  {
+                    accessibilityLabel:
+                      dashboard.pendingCount > 0
+                        ? `${dashboard.pendingCount} visitors awaiting approval`
+                        : "Visitor approvals",
+                    icon: { ios: "bell", android: "notifications_none", web: "notifications_none" },
+                    onPress: goApprovals,
+                    showBadge: dashboard.pendingCount > 0,
+                  },
+                  {
+                    accessibilityLabel: "Profile",
+                    icon: {
+                      ios: "person.crop.circle",
+                      android: "account_circle",
+                      web: "account_circle",
+                    },
+                    onPress: () => router.push("/resident/profile" as Href),
+                  },
+                ]}
+                greeting={getGreeting(dashboard.displayName)}
+                statusItems={[{ label: "Resident" }, { label: "Live", live: !dashboard.hasError }]}
+                title={dashboard.flatLabel}
+              />
+              <DashboardAnnouncement />
+            </Stack>
 
             {dashboard.hasError ? (
               <ErrorBanner
@@ -267,27 +205,27 @@ export function ResidentCommandCenter() {
               />
             ) : null}
 
-            <PendingBanner count={dashboard.pendingCount} onPress={goApprovals} />
+            {dashboard.pendingCount > 0 ? (
+              <DashboardAlertBar
+                count={dashboard.pendingCount}
+                message={`${dashboard.pendingCount} visitor${dashboard.pendingCount === 1 ? "" : "s"} awaiting approval`}
+                onPress={goApprovals}
+              />
+            ) : null}
 
-            <QuickActionsRow
-              canManageFlatMembers={dashboard.canManageFlatMembers}
-              isHybrid={dashboard.isHybrid}
-              onNavigate={(route) => router.push(route)}
-            />
+            <DashboardSection title="Quick Actions">
+              <DashboardActionGrid actions={actions} />
+            </DashboardSection>
 
-            <OverviewGrid
-              expectedCount={dashboard.expectedCount}
-              membersCount={dashboard.membersCount}
-              pendingCount={dashboard.pendingCount}
-              visitorsCount={dashboard.visitorsCount}
-            />
+            <DashboardSection title="Overview">
+              <DashboardOverviewGrid stats={overviewStats} />
+            </DashboardSection>
 
-            <TodayActivityFeed
+            <DashboardActivityFeed
               hasMore={activityFeed.hasMore}
               isLoading={activityFeed.isLoading}
               isLoadingMore={activityFeed.isLoadingMore}
               items={activityFeed.items}
-              title="Today's Activity"
               onLoadMore={() => {
                 void activityFeed.loadMore();
               }}
@@ -295,37 +233,62 @@ export function ResidentCommandCenter() {
             />
 
             {dashboard.pendingEntries.length > 0 ? (
-              <View className="gap-3">
-                <SectionHeader
-                  actionLabel="View all"
-                  title="Pending Approval"
-                  onAction={goApprovals}
-                />
-                {dashboard.pendingEntries.slice(0, 2).map((entry) => (
-                  <VisitorEntryCard
-                    key={`home-pending-${entry.id}`}
-                    entry={entry}
-                    loading={dashboard.isActionLoading}
-                    loadingEntryId={dashboard.actionEntryId ?? undefined}
-                    primaryActionLabel={dashboard.canManageFlatVisitors ? "Approve" : undefined}
-                    secondaryActionLabel={dashboard.canManageFlatVisitors ? "Reject" : undefined}
-                    onPrimaryAction={
-                      dashboard.canManageFlatVisitors
-                        ? () => dashboard.handleApprove(entry.id)
-                        : undefined
-                    }
-                    onSecondaryAction={
-                      dashboard.canManageFlatVisitors
-                        ? () => dashboard.handleReject(entry.id)
-                        : undefined
-                    }
-                  />
-                ))}
-              </View>
+              <DashboardSection actionLabel="View all" title="Pending Approval" onAction={goApprovals}>
+                <Stack gap="md">
+                  {dashboard.pendingEntries.slice(0, 2).map((entry) => (
+                    <VisitorEntryCard
+                      key={`home-pending-${entry.id}`}
+                      entry={entry}
+                      loading={dashboard.isActionLoading}
+                      loadingEntryId={dashboard.actionEntryId ?? undefined}
+                      primaryActionLabel={dashboard.canManageFlatVisitors ? "Approve" : undefined}
+                      secondaryActionLabel={dashboard.canManageFlatVisitors ? "Reject" : undefined}
+                      onPrimaryAction={
+                        dashboard.canManageFlatVisitors
+                          ? () => dashboard.handleApprove(entry.id)
+                          : undefined
+                      }
+                      onSecondaryAction={
+                        dashboard.canManageFlatVisitors
+                          ? () => dashboard.handleReject(entry.id)
+                          : undefined
+                      }
+                    />
+                  ))}
+                </Stack>
+              </DashboardSection>
             ) : null}
-          </View>
+          </Stack>
         )}
       </ResidentScreenShell>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  errorBanner: {
+    alignItems: "center",
+    backgroundColor: colors.status.errorSoft,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  errorBannerAction: {
+    color: colors.status.error,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  errorBannerMessage: {
+    color: colors.status.error,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
+    paddingRight: spacing.md,
+  },
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+});

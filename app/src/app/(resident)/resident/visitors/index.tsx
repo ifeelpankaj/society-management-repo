@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
-import { Alert, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, LoadingState, PaginatedList } from "@/components/ui";
@@ -17,7 +17,10 @@ import {
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdRejectMutation,
 } from "@/lib/api/generated-api";
-import { theme } from "@/lib/theme";
+import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 export default function ResidentVisitorsScreen() {
   const router = useRouter();
@@ -110,7 +113,7 @@ export default function ResidentVisitorsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.guard.screenBg }}>
+    <SafeAreaView style={styles.screen}>
       <PaginatedList
         data={pagination.items}
         keyExtractor={(item) => `resident-pending-${item.id}`}
@@ -136,15 +139,13 @@ export default function ResidentVisitorsScreen() {
             ? "Visitors waiting for your approval will appear here."
             : "You do not have permission to approve or reject visitor entries."
         }
-        contentContainerClassName="px-5 pb-8 pt-3"
+        contentContainerStyle={styles.listContent}
         header={
-          <View className="gap-4 pb-2">
+          <View style={styles.header}>
             <GuardBackHeader title="Approvals" />
-            <View className="gap-1">
-              <Text className="text-2xl font-bold" style={{ color: theme.text.primary }}>
-                Pending approvals
-              </Text>
-              <Text className="text-sm" style={{ color: theme.text.secondary }}>
+            <View style={styles.intro}>
+              <Text style={styles.pageTitle}>Pending approvals</Text>
+              <Text style={styles.pageSubtitle}>
                 {canManageFlatVisitors
                   ? "Review visitors before they can enter the society."
                   : "You do not have permission to approve or reject visitor entries."}
@@ -158,8 +159,38 @@ export default function ResidentVisitorsScreen() {
             ) : null}
           </View>
         }
-        footer={<View className="h-4" />}
+        footer={<View style={styles.footerSpacer} />}
       />
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: colors.guard.screenBg,
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: layout.screenPaddingBottom,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: layout.screenPaddingTop,
+  },
+  header: {
+    gap: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  intro: {
+    gap: spacing.xs,
+  },
+  pageTitle: {
+    ...typography.title,
+    color: colors.text.primary,
+  },
+  pageSubtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  footerSpacer: {
+    height: spacing.lg,
+  },
+});

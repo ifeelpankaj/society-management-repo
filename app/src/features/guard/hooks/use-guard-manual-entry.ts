@@ -5,7 +5,6 @@ import {
   type ModelsFlatResponse,
   type ModelsVisitorEntry,
   type ModelsVisitorPurpose,
-  usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesGuardMutation,
 } from "@/lib/api/generated-api";
 
@@ -76,7 +75,6 @@ export function useGuardManualEntry(societyId: number) {
   const [createdEntry, setCreatedEntry] = useState<CreatedEntryState>();
 
   const [createEntry, createEntryState] = usePostV1SocietiesBySocietyIdVisitorEntriesGuardMutation();
-  const [checkIn, checkInState] = usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation();
 
   const optionalFieldsCount = useMemo(() => {
     let count = 0;
@@ -188,31 +186,6 @@ export function useGuardManualEntry(societyId: number) {
     vehicleNumber,
   ]);
 
-  const handleCheckIn = useCallback(async () => {
-    if (!createdEntry?.qrToken) {
-      return { success: false as const, message: "QR token unavailable for check-in." };
-    }
-
-    try {
-      const response = await checkIn({
-        societyId,
-        modelsQrTokenRequest: { token: createdEntry.qrToken },
-      }).unwrap();
-
-      setCreatedEntry({ entry: response.data?.entry, qrToken: createdEntry.qrToken });
-
-      return {
-        success: true as const,
-        message: response.message ?? "Visitor checked in successfully",
-      };
-    } catch (error) {
-      return {
-        success: false as const,
-        message: getApiMessage(error, "Please try again."),
-      };
-    }
-  }, [checkIn, createdEntry, societyId]);
-
   const clearCreatedEntry = useCallback(() => {
     setCreatedEntry(undefined);
   }, []);
@@ -222,11 +195,9 @@ export function useGuardManualEntry(societyId: number) {
     companionsCount,
     createdEntry,
     createEntryState,
-    checkInState,
     email,
     errors,
     fullName,
-    handleCheckIn,
     isFormValid,
     notes,
     optionalFieldsCount,

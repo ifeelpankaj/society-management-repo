@@ -1,6 +1,6 @@
 import { Pressable, Platform, StyleSheet, Text, TextInput, View } from "react-native";
-import { SymbolView } from "expo-symbols";
 
+import { AppIcon } from "@/components/icons";
 import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
 import { SegmentTabs } from "@/components/ui";
 import {
@@ -8,14 +8,13 @@ import {
   type DateRangePreset,
   type LogsSegment,
 } from "@/features/guard/guard-routes";
-import { theme } from "@/lib/theme";
+import { theme } from "@/theme";
 
 const G = theme.guard;
 
 const SEGMENT_OPTIONS: { label: string; value: LogsSegment }[] = [
   { label: "Today", value: "today" },
   { label: "Expected", value: "expected" },
-  { label: "Pending", value: "pending" },
   { label: "Inside", value: "inside" },
 ];
 
@@ -49,11 +48,7 @@ export function LogsSearchHeader({
       <GuardBackHeader title="Visitor Logs" />
 
       <View style={styles.searchRow}>
-        <SymbolView
-          name={{ ios: "magnifyingglass", android: "search", web: "search" }}
-          size={16}
-          tintColor={G.textMuted}
-        />
+        <AppIcon color={G.textMuted} name="search" size={16} />
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
@@ -72,11 +67,7 @@ export function LogsSearchHeader({
             style={styles.iconButton}
             onPress={onClearSearch}
           >
-            <SymbolView
-              name={{ ios: "xmark.circle.fill", android: "close", web: "close" }}
-              size={18}
-              tintColor={G.textMuted}
-            />
+            <Text style={styles.clearText}>Clear</Text>
           </Pressable>
         ) : (
           <Pressable
@@ -86,11 +77,7 @@ export function LogsSearchHeader({
             style={styles.iconButton}
             onPress={onFilterPress}
           >
-            <SymbolView
-              name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-              size={17}
-              tintColor={G.text}
-            />
+            <AppIcon color={G.text} name="filter" size={17} />
             {activeFilterCount > 0 ? <View style={styles.filterDot} /> : null}
           </Pressable>
         )}
@@ -107,17 +94,9 @@ export function LogsSearchHeader({
 
           {segment !== "expected" ? (
             <Pressable accessibilityRole="button" style={styles.dateRow} onPress={onDatePress}>
-              <SymbolView
-                name={{ ios: "calendar", android: "calendar_today", web: "calendar_today" }}
-                size={14}
-                tintColor={G.teal}
-              />
+              <AppIcon color={G.teal} name="calendar" size={14} />
               <Text style={styles.dateLabel}>{getDateRangeLabel(datePreset)}</Text>
-              <SymbolView
-                name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }}
-                size={14}
-                tintColor={G.teal}
-              />
+              <Text style={styles.dateChevron}>▼</Text>
             </Pressable>
           ) : (
             <Text style={styles.expectedHint}>Approved visitors expected today</Text>
@@ -129,8 +108,17 @@ export function LogsSearchHeader({
 }
 
 const styles = StyleSheet.create({
+  clearText: {
+    color: G.teal,
+    fontSize: 13,
+    fontWeight: "600",
+  },
   container: {
     gap: 12,
+  },
+  dateChevron: {
+    color: G.teal,
+    fontSize: 10,
   },
   dateLabel: {
     color: G.teal,

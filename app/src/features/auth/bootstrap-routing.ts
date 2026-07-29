@@ -11,6 +11,7 @@ import {
 
 const mobileRoutes = new Set([
   "/guard/dashboard",
+  "/guard/home",
   "/resident/dashboard",
   "/select-society",
 ]);
@@ -52,7 +53,7 @@ export function resolveBootstrapRoute(
   );
 
   if (guardMembership) {
-    return "/guard/dashboard";
+    return "/guard/home" as Href;
   }
 
   const residentMembership = memberships.find(

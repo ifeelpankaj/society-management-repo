@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { View } from "react-native";
+import { StyleSheet } from "react-native";
 
+import { Stack } from "@/components/layout";
 import { Card, SectionHeader } from "@/components/ui";
 
 type ProfileSectionProps = {
@@ -10,9 +11,16 @@ type ProfileSectionProps = {
 
 export function ProfileSection({ children, title }: ProfileSectionProps) {
   return (
-    <View className="gap-2.5">
+    <Stack gap={10}>
       <SectionHeader title={title} />
-      <Card className="!p-0 overflow-hidden">{children}</Card>
-    </View>
+      <Card style={styles.card}>{children}</Card>
+    </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    overflow: "hidden",
+    padding: 0,
+  },
+});

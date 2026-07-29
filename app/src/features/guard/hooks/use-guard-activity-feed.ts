@@ -2,13 +2,12 @@ import { useCallback } from "react";
 
 import { getTodayRange } from "@/features/guard/guard-routes";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
+import { ACTIVITY_PAGE_SIZE } from "@/features/shared/activity-feed-config";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
 import {
   type ModelsVisitorEntry,
   generatedApi,
 } from "@/lib/api/generated-api";
-
-const ACTIVITY_PAGE_SIZE = 5;
 
 export function useGuardActivityFeed() {
   const { selectedSocietyId } = useGuardScreen();
@@ -47,6 +46,8 @@ export function useGuardActivityFeed() {
   });
 }
 
-export const ACTIVITY_VISIBLE_ROWS = ACTIVITY_PAGE_SIZE;
-export const ACTIVITY_ROW_HEIGHT = 64;
-export const ACTIVITY_LIST_HEIGHT = ACTIVITY_ROW_HEIGHT * ACTIVITY_VISIBLE_ROWS;
+export {
+  ACTIVITY_LIST_HEIGHT,
+  ACTIVITY_ROW_HEIGHT,
+  ACTIVITY_VISIBLE_ROWS,
+} from "@/features/shared/activity-feed-config";
