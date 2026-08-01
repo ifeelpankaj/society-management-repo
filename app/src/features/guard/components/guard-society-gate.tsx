@@ -1,8 +1,8 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Stack } from "@/components/layout";
-import { Button, Card, EmptyState, LoadingState, ScreenHeader, StatusPill } from "@/components/ui";
+import { Button, Card, EmptyState, ScreenHeader, StatusPill } from "@/components/ui";
 import { useGuardSociety } from "@/features/guard/guard-context";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
@@ -11,7 +11,13 @@ export function GuardSocietyGate() {
   const { isLoading, memberships, refetch, selectSociety } = useGuardSociety();
 
   if (isLoading) {
-    return <LoadingState message="Opening guard workspace" />;
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.inlineLoading}>
+          <ActivityIndicator color={colors.guard.teal} size="small" />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   if (memberships.length === 0) {
@@ -88,6 +94,11 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.surface.screen,
     flex: 1,
+  },
+  inlineLoading: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
   },
   scrollContent: {
     paddingHorizontal: spacing["2xl"],

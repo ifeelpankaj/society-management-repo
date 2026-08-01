@@ -16,17 +16,18 @@ type LogEntryRowProps = {
   entry: ModelsVisitorEntry;
   isCheckingOut?: boolean;
   onCheckOut?: () => void;
+  onPress?: () => void;
 };
 
-export function LogEntryRow({ entry, isCheckingOut, onCheckOut }: LogEntryRowProps) {
+export function LogEntryRow({ entry, isCheckingOut, onCheckOut, onPress }: LogEntryRowProps) {
   const statusMeta = getVisitorStatusMeta(entry.status);
   const timestamp = formatActivityTimestamp(
     entry.checked_out_at ?? entry.checked_in_at ?? entry.updated_at ?? entry.created_at,
   );
   const purpose = entry.purpose ? titleize(entry.purpose) : "Visitor";
 
-  return (
-    <View style={styles.row}>
+  const content = (
+    <>
       <View style={styles.main}>
         <View style={styles.titleRow}>
           <Text style={styles.name}>{getVisitorName(entry)}</Text>
@@ -60,8 +61,18 @@ export function LogEntryRow({ entry, isCheckingOut, onCheckOut }: LogEntryRowPro
           </Text>
         </Pressable>
       ) : null}
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable accessibilityRole="button" style={styles.row} onPress={onPress}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.row}>{content}</View>;
 }
 
 export function LogEntryDivider() {

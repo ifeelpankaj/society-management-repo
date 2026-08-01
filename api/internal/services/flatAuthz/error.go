@@ -19,6 +19,12 @@ var (
 		http.StatusForbidden,
 		nil,
 	)
+	ErrManageForbidden = models.NewAppError(
+		"FLAT_MEMBER_MANAGE_FORBIDDEN",
+		"only the flat owner or primary resident can manage flat members",
+		http.StatusForbidden,
+		nil,
+	)
 	ErrFlatNotFound = models.NewAppError(
 		"FLAT_NOT_FOUND",
 		"flat not found",

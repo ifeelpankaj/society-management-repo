@@ -59,6 +59,7 @@ export function useGuardCheckIn(
   const [entryError, setEntryError] = useState<GuardCheckInError | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const checkInSubmittedRef = useRef(false);
+  const qrToken = input?.token;
 
   const [validateQr, validateQrState] = usePostV1PublicVisitorEntriesQrValidateMutation();
   const [checkInMutation, checkInState] = usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation();
@@ -69,8 +70,8 @@ export function useGuardCheckIn(
     setEntryError(null);
     setIsCheckedIn(false);
 
-    if (!input || !societyId) {
-      if (!input) {
+    if (!qrToken || !societyId) {
+      if (!qrToken) {
         setEntryError({
           kind: "invalid_params",
           message: "This check-in link is invalid or incomplete.",
@@ -84,7 +85,7 @@ export function useGuardCheckIn(
     void (async () => {
       try {
         const response = await validateQr({
-          modelsQrTokenRequest: { token: input.token },
+          modelsQrTokenRequest: { token: qrToken },
         }).unwrap();
 
         if (cancelled) {
@@ -112,7 +113,7 @@ export function useGuardCheckIn(
     return () => {
       cancelled = true;
     };
-  }, [input, societyId, validateQr]);
+  }, [qrToken, societyId, validateQr]);
 
   const canCheckIn =
     Boolean(entry?.status === "approved") &&
@@ -137,7 +138,7 @@ export function useGuardCheckIn(
   })();
 
   const checkIn = useCallback(async () => {
-    if (!input || !societyId || !canCheckIn || checkInSubmittedRef.current) {
+    if (!qrToken || !societyId || !canCheckIn || checkInSubmittedRef.current) {
       return;
     }
 
@@ -146,7 +147,7 @@ export function useGuardCheckIn(
     try {
       const response = await checkInMutation({
         societyId,
-        modelsQrTokenRequest: { token: input.token },
+        modelsQrTokenRequest: { token: qrToken },
       }).unwrap();
 
       setEntry(response.data?.entry ?? entry);
@@ -156,7 +157,7 @@ export function useGuardCheckIn(
       checkInSubmittedRef.current = false;
       setEntryError(mapCheckInError(error));
     }
-  }, [canCheckIn, checkInMutation, entry, input, societyId]);
+  }, [canCheckIn, checkInMutation, entry, qrToken, societyId]);
 
   return {
     entry,

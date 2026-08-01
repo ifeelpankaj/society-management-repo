@@ -1,18 +1,18 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { Button, Card, LoadingState } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { getApiMessage } from "@/features/auth/api-error";
-import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
 import { titleize, visitorPurposes } from "@/features/guard/guard-utils";
-import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
+import { ResidentSubScreen } from "@/features/resident/components/resident-sub-screen";
+import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
 import { useResident } from "@/features/resident/resident-context";
 import {
   copyVisitorInviteLink,
   formatVisitorInviteShareMessage,
   shareVisitorInvite,
+  shareVisitorInviteOnTelegram,
   shareVisitorInviteOnWhatsApp,
 } from "@/features/visitors/visitor-invite-share";
 import {
@@ -34,39 +34,34 @@ type CreatedInvite = {
 
 export default function ResidentInviteScreen() {
   const router = useRouter();
-  const { flatId, canManageFlatVisitors, isLoading, requiresSelection, societyId } = useResident();
+  const feedback = useResidentFeedback();
+  const { flatId, canManageFlatVisitors, societyId } = useResident();
   const [purpose, setPurpose] = useState<ModelsVisitorPurpose>("guest");
   const [createdInvite, setCreatedInvite] = useState<CreatedInvite | null>(null);
   const [createInvite, createInviteState] =
     usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesMutation();
 
-  if (isLoading) {
-    return <LoadingState message="Opening invite form" />;
-  }
-
-  if (requiresSelection || !societyId || !flatId) {
-    return <ResidentSocietyGate />;
-  }
-
   if (!canManageFlatVisitors) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <ResidentSubScreen title="Visitor Invite">
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.content}>
-            <GuardBackHeader title="Visitor Invite" />
-            <Card style={styles.restrictedCard}>
-              <Text style={styles.restrictedTitle}>Flat owner required</Text>
-              <Text style={styles.restrictedBody}>
-                Only the flat owner can create pre-approved visitor invites.
-              </Text>
-            </Card>
-          </View>
+          <Card style={styles.restrictedCard}>
+            <Text style={styles.restrictedTitle}>Visitor access required</Text>
+            <Text style={styles.restrictedBody}>
+              Active flat residents with visitor management access can create pre-approved visitor
+              invites.
+            </Text>
+          </Card>
         </ScrollView>
-      </SafeAreaView>
+      </ResidentSubScreen>
     );
   }
 
   const handleCreateInvite = async () => {
+    if (!societyId || !flatId) {
+      return;
+    }
+
     try {
       const response = await createInvite({
         societyId,
@@ -76,7 +71,7 @@ export default function ResidentInviteScreen() {
 
       const token = response.data?.token?.token;
       if (!token) {
-        Alert.alert(
+        feedback.showSuccess(
           "Invite created",
           response.message ?? "Visitor invite created successfully.",
         );
@@ -89,8 +84,9 @@ export default function ResidentInviteScreen() {
         token,
         expiresAt: response.data?.token?.expires_at,
       });
+      feedback.showSuccess("Invite ready", "Share the link with your visitor.");
     } catch (error) {
-      Alert.alert("Invite failed", getApiMessage(error, "Please try again."));
+      feedback.showError("Invite failed", error, getApiMessage(error, "Please try again."));
     }
   };
 
@@ -98,27 +94,15 @@ export default function ResidentInviteScreen() {
     ? formatVisitorInviteShareMessage(createdInvite)
     : "";
 
-  const handleShareInvite = async () => {
+  const handleShare = async (shareFn: (message: string) => Promise<void>, errorLabel: string) => {
     if (!createdInvite) {
       return;
     }
 
     try {
-      await shareVisitorInvite(shareMessage);
+      await shareFn(shareMessage);
     } catch {
-      Alert.alert("Share failed", "Unable to open the share sheet.");
-    }
-  };
-
-  const handleShareWhatsApp = async () => {
-    if (!createdInvite) {
-      return;
-    }
-
-    try {
-      await shareVisitorInviteOnWhatsApp(shareMessage);
-    } catch {
-      Alert.alert("Share failed", "Unable to open WhatsApp.");
+      feedback.showError("Share failed", errorLabel, "Please try again.");
     }
   };
 
@@ -129,14 +113,14 @@ export default function ResidentInviteScreen() {
 
     try {
       const copied = await copyVisitorInviteLink(createdInvite.token);
-      Alert.alert(
+      feedback.showSuccess(
         copied ? "Link copied" : "Share link",
         copied
           ? "Visitor form link copied to clipboard."
           : "Use the share sheet to copy the visitor form link.",
       );
     } catch {
-      Alert.alert("Copy failed", "Unable to copy the visitor form link.");
+      feedback.showError("Copy failed", "Unable to copy the visitor form link.", "Please try again.");
     }
   };
 
@@ -144,10 +128,9 @@ export default function ResidentInviteScreen() {
     const formUrl = buildVisitorInviteUrl(createdInvite.token);
 
     return (
-      <SafeAreaView style={styles.screen}>
+      <ResidentSubScreen title="Visitor Invite">
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
-            <GuardBackHeader title="Visitor Invite" />
             <View style={styles.intro}>
               <Text style={styles.pageTitle}>Invite ready</Text>
               <Text style={styles.pageSubtitle}>
@@ -168,13 +151,6 @@ export default function ResidentInviteScreen() {
                 </Text>
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Invite code</Text>
-                <Text selectable style={styles.monoBlock}>
-                  {createdInvite.token}
-                </Text>
-              </View>
-
               {createdInvite.expiresAt ? (
                 <Text style={styles.expiresText}>
                   Expires {new Date(createdInvite.expiresAt).toLocaleString()}
@@ -182,21 +158,21 @@ export default function ResidentInviteScreen() {
               ) : null}
             </Card>
 
-            <Button title="Share on WhatsApp" onPress={handleShareWhatsApp} />
-            <Button title="Copy link" variant="secondary" onPress={handleCopyLink} />
-            <Button title="Share invite" variant="secondary" onPress={handleShareInvite} />
+            <Button title="Share on WhatsApp" onPress={() => void handleShare(shareVisitorInviteOnWhatsApp, "Unable to open WhatsApp.")} />
+            <Button title="Share on Telegram" variant="secondary" onPress={() => void handleShare(shareVisitorInviteOnTelegram, "Unable to open Telegram.")} />
+            <Button title="More options" variant="secondary" onPress={() => void handleShare(shareVisitorInvite, "Unable to open the share sheet.")} />
+            <Button title="Copy link" variant="secondary" onPress={() => void handleCopyLink()} />
             <Button title="Done" variant="secondary" onPress={() => router.back()} />
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </ResidentSubScreen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <ResidentSubScreen title="Visitor Invite">
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <GuardBackHeader title="Visitor Invite" />
           <View style={styles.intro}>
             <Text style={styles.pageTitle}>Create invite</Text>
             <Text style={styles.pageSubtitle}>
@@ -235,22 +211,17 @@ export default function ResidentInviteScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ResidentSubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.guard.screenBg,
-    flex: 1,
+  content: {
+    gap: spacing["2xl"],
   },
   scrollContent: {
     paddingBottom: layout.screenPaddingBottom,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: layout.screenPaddingTop,
-  },
-  content: {
-    gap: spacing["2xl"],
   },
   restrictedCard: {
     gap: spacing.sm,
@@ -299,15 +270,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.screen,
     borderRadius: radius.md,
     color: colors.text.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  monoBlock: {
-    ...typography.caption,
-    backgroundColor: colors.surface.screen,
-    borderRadius: radius.md,
-    color: colors.text.primary,
-    fontFamily: "monospace",
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },

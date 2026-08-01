@@ -73,7 +73,8 @@ export function useGuardDashboard() {
     errorMessage: bootstrapQuery.isError
       ? getApiMessage(bootstrapQuery.error, "Unable to load guard desk data.")
       : null,
-    expectedTodayCount: desk?.expected_today_count ?? 0,
+    expectedTodayCount: desk?.waiting_at_gate_count ?? desk?.expected_today_count ?? 0,
+    waitingAtGateCount: desk?.waiting_at_gate_count ?? desk?.expected_today_count ?? 0,
     hasError: bootstrapQuery.isError,
     isInitialLoading,
     isRefreshing: bootstrapQuery.isFetching && !bootstrapQuery.isLoading,

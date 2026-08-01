@@ -1,42 +1,25 @@
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { LoadingState } from "@/components/ui";
-import { useToast } from "@/components/ui/toast";
-import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
+import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
 import { ManualEntryForm } from "@/features/guard/components/manual-entry/manual-entry-form";
-import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
-import { useGuardSociety } from "@/features/guard/guard-context";
 import { guardCheckInRoute } from "@/features/guard/guard-routes";
-import { colors } from "@/theme/colors";
-import { layout } from "@/theme/layout";
+import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
+import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 
 export default function GuardAddEntryScreen() {
   const router = useRouter();
-  const { showToast } = useToast();
-  const { isLoading, memberships, requiresSelection, selectedMembership, selectedSocietyId } =
-    useGuardSociety();
-
-  if (isLoading) {
-    return <LoadingState message="Opening manual entry" />;
-  }
-
-  if (memberships.length === 0 || requiresSelection || !selectedSocietyId) {
-    return <GuardSocietyGate />;
-  }
+  const feedback = useGuardFeedback();
+  const { selectedMembership, selectedSocietyId } = useGuardScreen();
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
-      <View style={styles.header}>
-        <GuardBackHeader title="Add Entry" />
-      </View>
+    <GuardSubScreen title="Add Entry">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
         <ManualEntryForm
-          societyId={selectedSocietyId}
+          societyId={selectedSocietyId ?? 0}
           societyName={
             selectedMembership ? `Society #${selectedMembership.society_id}` : undefined
           }
@@ -46,27 +29,20 @@ export default function GuardAddEntryScreen() {
             }
           }}
           onError={(message) =>
-            showToast({ title: "Could not create entry", message, variant: "error" })
+            feedback.showActionResult(
+              { success: false, message },
+              { errorTitle: "Could not create entry", successTitle: "Entry created" },
+            )
           }
-          onSuccess={(message) =>
-            showToast({ title: "Entry created", message, variant: "success" })
-          }
+          onSuccess={(message) => feedback.showSuccess("Entry created", message)}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </GuardSubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.guard.screenBg,
-    flex: 1,
-  },
   flex: {
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: layout.screenPaddingTop,
   },
 });

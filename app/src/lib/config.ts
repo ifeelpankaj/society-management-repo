@@ -25,3 +25,7 @@ export const appConfig = {
 export function buildVisitorInviteUrl(token: string) {
   return `${appConfig.webBaseUrl}/visit/invite/${encodeURIComponent(token)}`;
 }
+
+export function buildMemberInviteUrl(token: string) {
+  return `${appConfig.webBaseUrl}/join/flat/${encodeURIComponent(token)}`;
+}

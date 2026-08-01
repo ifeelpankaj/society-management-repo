@@ -2,7 +2,7 @@ import type { Href } from "expo-router";
 
 import type { ModelsVisitorStatus } from "@/lib/api/generated-api";
 
-export type GuardEntriesPreset = "all" | "today" | "expected" | "inside" | "checked_out";
+export type GuardEntriesPreset = "all" | "today" | "expected" | "waiting_at_gate" | "inside" | "checked_out";
 export type LogsPreset = GuardEntriesPreset;
 export type LogsSegment = "today" | "expected" | "inside";
 export type DateRangePreset =
@@ -60,6 +60,11 @@ export const guardPendingRoute = (): Href =>
     pathname: "/guard/pending",
   }) as unknown as Href;
 
+export const guardWaitingAtGateRoute = (): Href =>
+  ({
+    pathname: "/guard/waiting-at-gate",
+  }) as unknown as Href;
+
 export const guardCheckInRoute = (params: GuardCheckInInput): Href =>
   ({
     pathname: "/guard/check-in",
@@ -81,6 +86,7 @@ const VALID_PRESETS = new Set<GuardEntriesPreset>([
   "today",
   "all",
   "expected",
+  "waiting_at_gate",
   "inside",
   "checked_out",
 ]);
@@ -188,6 +194,11 @@ export const PRESET_CONFIG = {
     segment: "expected" as LogsSegment,
     datePreset: "today" as DateRangePreset,
     sheetStatus: undefined,
+  },
+  waiting_at_gate: {
+    segment: "expected" as LogsSegment,
+    datePreset: "today" as DateRangePreset,
+    sheetStatus: "approved" as ModelsVisitorStatus,
   },
   inside: {
     segment: "inside" as LogsSegment,

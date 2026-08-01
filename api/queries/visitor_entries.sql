@@ -65,6 +65,9 @@ INSERT INTO visitor_entries (
     expected_at,
     expected_checkout_at,
     approved_by,
+    approved_at,
+    delivery_partner,
+    service_provider,
     handled_by_guard_id,
     created_by,
     qr_token_hash,
@@ -87,6 +90,9 @@ VALUES (
     sqlc.narg('expected_at'),
     sqlc.narg('expected_checkout_at'),
     sqlc.narg('approved_by'),
+    sqlc.narg('approved_at'),
+    sqlc.narg('delivery_partner'),
+    sqlc.narg('service_provider'),
     sqlc.narg('handled_by_guard_id'),
     sqlc.narg('created_by'),
     sqlc.narg('qr_token_hash'),
@@ -212,21 +218,56 @@ SELECT
 FROM visitor_entries ve
 WHERE ve.society_id = $1;
 
--- name: CountExpectedTodayVisitorEntries :one
+-- name: CountWaitingAtGateVisitorEntries :one
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve
 WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.status = 'approved';
+
+-- name: ListWaitingAtGateVisitorEntries :many
+SELECT
+    ve.*,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.status = 'approved'
   AND (
-    (
-      ve.expected_at IS NOT NULL
-      AND ve.expected_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-      AND ve.expected_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-    )
-    OR (
-      ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-      AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-    )
+      COALESCE(sqlc.narg('search')::text, '') = ''
+      OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(ve.vehicle_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(ve.delivery_partner, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR ve.purpose::text ILIKE '%' || sqlc.narg('search')::text || '%'
+  )
+ORDER BY ve.approved_at ASC NULLS LAST, ve.created_at ASC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountWaitingAtGateVisitorEntriesFiltered :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.status = 'approved'
+  AND (
+      COALESCE(sqlc.narg('search')::text, '') = ''
+      OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(ve.vehicle_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(ve.delivery_partner, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR ve.purpose::text ILIKE '%' || sqlc.narg('search')::text || '%'
   );
 
 -- name: ListSocietyPendingVisitorApprovals :many
@@ -314,12 +355,21 @@ ORDER BY ve.created_at DESC;
 UPDATE visitor_entries
 SET status = 'approved',
     approved_by = $3,
+    approved_at = NOW(),
     qr_token_hash = $4,
     qr_expires_at = $5,
     updated_at = NOW()
 WHERE id = $1
   AND society_id = $2
   AND status = 'waiting_approval'
+RETURNING *;
+
+-- name: MergeVisitorEntryMetadata :one
+UPDATE visitor_entries
+SET metadata = COALESCE(metadata, '{}'::jsonb) || sqlc.arg('metadata_patch')::jsonb,
+    updated_at = NOW()
+WHERE id = sqlc.arg('id')
+  AND society_id = sqlc.arg('society_id')
 RETURNING *;
 
 -- name: RejectVisitorEntry :one

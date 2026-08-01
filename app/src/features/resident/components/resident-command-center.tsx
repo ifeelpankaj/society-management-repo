@@ -1,5 +1,5 @@
-import { useRouter, type Href } from "expo-router";
-import { useCallback, useMemo } from "react";
+import { useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Stack } from "@/components/layout";
@@ -15,17 +15,20 @@ import {
   type DashboardActionTileConfig,
   type DashboardOverviewStatConfig,
 } from "@/components/dashboard";
+import { VisitorDetailSheet } from "@/features/guard/components/visitor-detail-sheet";
 import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
 import { ResidentScreenShell } from "@/features/resident/components/resident-screen-shell";
 import { useResidentActivityFeed } from "@/features/resident/hooks/use-resident-activity-feed";
 import { useResidentDashboard } from "@/features/resident/hooks/use-resident-dashboard";
+import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
 import {
-  residentLogsRoute,
-  residentMembersAddRoute,
+  residentEntriesRoute,
+  residentMembersRoute,
   residentVisitorInviteRoute,
   residentVisitorSettingsRoute,
   residentVisitorsRoute,
 } from "@/features/resident/resident-routes";
+import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -53,70 +56,96 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 
 export function ResidentCommandCenter() {
   const router = useRouter();
+  const feedback = useResidentFeedback();
   const activityFeed = useResidentActivityFeed();
   const dashboard = useResidentDashboard();
   const { refetchAll } = dashboard;
+  const [detailEntry, setDetailEntry] = useState<ModelsVisitorEntry | null>(null);
+  const [detailVisible, setDetailVisible] = useState(false);
 
   const goApprovals = () => router.push(residentVisitorsRoute());
-  const goLogs = () => router.push(residentLogsRoute());
+  const goEntries = (preset?: "expected" | "recent") =>
+    router.push(residentEntriesRoute(preset ?? "today"));
 
   const handleRefresh = useCallback(() => {
     refetchAll();
     void activityFeed.refresh();
   }, [activityFeed, refetchAll]);
 
+  const openEntryDetail = useCallback((entry: ModelsVisitorEntry) => {
+    setDetailEntry(entry);
+    setDetailVisible(true);
+  }, []);
+
+  const handleStatPress = useCallback(
+    (id: string) => {
+      switch (id) {
+        case "pending":
+          router.push(residentVisitorsRoute());
+          break;
+        case "expected":
+          router.push(residentEntriesRoute("expected"));
+          break;
+        case "visitors":
+          router.push(residentEntriesRoute("recent"));
+          break;
+        case "members":
+          router.push(residentMembersRoute());
+          break;
+        default:
+          break;
+      }
+    },
+    [router],
+  );
+
   const actions = useMemo(() => {
-    const all: DashboardActionTileConfig[] = [
-      {
-        id: "approvals",
-        title: "Approvals",
-        subtitle: "Review pending",
-        tone: "orange",
-        icon: { ios: "checkmark.seal.fill", android: "verified", web: "verified" },
-        onPress: goApprovals,
-      },
+    const tiles: DashboardActionTileConfig[] = [
       {
         id: "invite",
         title: "Invite",
         subtitle: "Add visitor",
         tone: "blue",
         icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
-        onPress: () => router.push(residentVisitorInviteRoute()),
+        onPress: () => {
+          if (!dashboard.canManageFlatVisitors) {
+            feedback.showInfo(
+              "Permission required",
+              "Only active flat residents with visitor access can create invites.",
+            );
+            return;
+          }
+          router.push(residentVisitorInviteRoute());
+        },
       },
       {
-        id: "logs",
-        title: "Logs",
-        subtitle: "View history",
-        tone: "neutral",
-        icon: { ios: "list.bullet.rectangle", android: "list_alt", web: "list_alt" },
-        onPress: goLogs,
+        id: "members",
+        title: "Members",
+        subtitle: "View flat",
+        tone: "blue",
+        icon: { ios: "person.2.fill", android: "group", web: "group" },
+        onPress: () => router.push(residentMembersRoute()),
       },
-    ];
-
-    if (dashboard.isHybrid) {
-      all.push({
+      {
         id: "settings",
-        title: "Approval",
-        subtitle: "Flat settings",
+        title: "Settings",
+        subtitle: "Visitor rules",
         tone: "purple",
         icon: { ios: "slider.horizontal.3", android: "tune", web: "tune" },
         onPress: () => router.push(residentVisitorSettingsRoute()),
-      });
-    }
+      },
+      {
+        id: "entries",
+        title: "Entries",
+        subtitle: "View history",
+        tone: "neutral",
+        icon: { ios: "list.bullet.rectangle", android: "list_alt", web: "list_alt" },
+        onPress: () => goEntries(),
+      },
+    ];
 
-    if (dashboard.canManageFlatMembers) {
-      all.push({
-        id: "members",
-        title: "Members",
-        subtitle: "Manage flat",
-        tone: "blue",
-        icon: { ios: "person.2.fill", android: "group", web: "group" },
-        onPress: () => router.push(residentMembersAddRoute()),
-      });
-    }
-
-    return all;
-  }, [dashboard.canManageFlatMembers, dashboard.isHybrid, goApprovals, goLogs, router]);
+    return tiles;
+  }, [dashboard.canManageFlatVisitors, feedback, goEntries, router]);
 
   const overviewStats = useMemo<DashboardOverviewStatConfig[]>(
     () => [
@@ -181,15 +210,6 @@ export function ResidentCommandCenter() {
                     onPress: goApprovals,
                     showBadge: dashboard.pendingCount > 0,
                   },
-                  {
-                    accessibilityLabel: "Profile",
-                    icon: {
-                      ios: "person.crop.circle",
-                      android: "account_circle",
-                      web: "account_circle",
-                    },
-                    onPress: () => router.push("/resident/profile" as Href),
-                  },
                 ]}
                 greeting={getGreeting(dashboard.displayName)}
                 statusItems={[{ label: "Resident" }, { label: "Live", live: !dashboard.hasError }]}
@@ -218,7 +238,7 @@ export function ResidentCommandCenter() {
             </DashboardSection>
 
             <DashboardSection title="Overview">
-              <DashboardOverviewGrid stats={overviewStats} />
+              <DashboardOverviewGrid stats={overviewStats} onStatPress={handleStatPress} />
             </DashboardSection>
 
             <DashboardActivityFeed
@@ -229,7 +249,7 @@ export function ResidentCommandCenter() {
               onLoadMore={() => {
                 void activityFeed.loadMore();
               }}
-              onViewAll={goLogs}
+              onViewAll={() => goEntries()}
             />
 
             {dashboard.pendingEntries.length > 0 ? (
@@ -243,6 +263,7 @@ export function ResidentCommandCenter() {
                       loadingEntryId={dashboard.actionEntryId ?? undefined}
                       primaryActionLabel={dashboard.canManageFlatVisitors ? "Approve" : undefined}
                       secondaryActionLabel={dashboard.canManageFlatVisitors ? "Reject" : undefined}
+                      onPress={() => openEntryDetail(entry)}
                       onPrimaryAction={
                         dashboard.canManageFlatVisitors
                           ? () => dashboard.handleApprove(entry.id)
@@ -261,6 +282,36 @@ export function ResidentCommandCenter() {
           </Stack>
         )}
       </ResidentScreenShell>
+
+      <VisitorDetailSheet
+        entry={detailEntry}
+        loading={dashboard.isActionLoading}
+        primaryActionLabel={
+          detailEntry?.status === "waiting_approval" && dashboard.canManageFlatVisitors
+            ? "Approve"
+            : undefined
+        }
+        secondaryActionLabel={
+          detailEntry?.status === "waiting_approval" && dashboard.canManageFlatVisitors
+            ? "Reject"
+            : undefined
+        }
+        visible={detailVisible}
+        onClose={() => {
+          setDetailVisible(false);
+          setDetailEntry(null);
+        }}
+        onPrimaryAction={
+          detailEntry?.status === "waiting_approval"
+            ? () => void dashboard.handleApprove(detailEntry.id)
+            : undefined
+        }
+        onSecondaryAction={
+          detailEntry?.status === "waiting_approval"
+            ? () => void dashboard.handleReject(detailEntry.id)
+            : undefined
+        }
+      />
     </View>
   );
 }

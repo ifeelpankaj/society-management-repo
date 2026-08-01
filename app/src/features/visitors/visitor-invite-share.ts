@@ -28,6 +28,23 @@ export async function shareVisitorInvite(message: string) {
   });
 }
 
+export async function shareVisitorInviteOnTelegram(message: string) {
+  const inviteUrl = extractInviteUrl(message);
+  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(message)}`;
+
+  try {
+    const canOpen = await Linking.canOpenURL(telegramUrl);
+    if (!canOpen) {
+      await shareVisitorInvite(message);
+      return;
+    }
+
+    await Linking.openURL(telegramUrl);
+  } catch {
+    await shareVisitorInvite(message);
+  }
+}
+
 export async function shareVisitorInviteOnWhatsApp(message: string) {
   const whatsAppUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
 

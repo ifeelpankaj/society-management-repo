@@ -66,9 +66,14 @@ func SetupAdminRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guards
 		staffRead.GET("/visitor-entries/stats", h.VisitorEntry.GetEntryStats)
 		staffRead.GET("/guard-desk/bootstrap", h.VisitorEntry.GetGuardDeskBootstrap)
 		staffRead.GET("/visitor-entries/pending", h.VisitorEntry.ListSocietyPendingApprovals)
+		staffRead.GET("/visitor-entries/waiting-at-gate", h.VisitorEntry.ListWaitingAtGate)
 		staffRead.GET("/visitor-entries", h.VisitorEntry.ListEntries)
 		staffRead.GET("/visitor-entries/:entryId", h.VisitorEntry.GetEntry)
 		staffRead.GET("/visitor-entries/:entryId/events", h.VisitorEntry.ListEvents)
+		staffRead.POST("/visitor-entries/:entryId/notify", h.VisitorEntry.NotifyPendingEntry)
+		staffRead.POST("/visitor-entries/:entryId/guard-approve", h.VisitorEntry.GuardApproveEntry)
+		staffRead.POST("/visitor-entries/:entryId/approve-and-check-in", h.VisitorEntry.GuardApproveAndCheckIn)
+		staffRead.POST("/visitor-entries/:entryId/check-in", h.VisitorEntry.CheckInByEntryID)
 		staffRead.POST("/visitor-entries/:entryId/check-out", h.VisitorEntry.CheckOut)
 	}
 

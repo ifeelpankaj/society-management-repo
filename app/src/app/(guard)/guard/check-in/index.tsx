@@ -1,18 +1,18 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import { useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Card, LoadingState } from "@/components/ui";
-import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
-import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
+import { Card } from "@/components/ui";
+import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
 import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
-import { useGuardSociety } from "@/features/guard/guard-context";
 import {
   guardHomeRoute,
   guardScannerRoute,
   parseCheckInParams,
 } from "@/features/guard/guard-routes";
 import { useGuardCheckIn } from "@/features/guard/hooks/use-guard-check-in";
+import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
+import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
@@ -20,28 +20,47 @@ import { typography } from "@/theme/typography";
 
 export default function GuardCheckInScreen() {
   const router = useRouter();
+  const feedback = useGuardFeedback();
   const params = useLocalSearchParams<{
     source?: string | string[];
     token?: string | string[];
   }>();
-  const { isLoading, memberships, requiresSelection, selectedSocietyId } = useGuardSociety();
+  const { selectedSocietyId } = useGuardScreen();
 
   const checkInInput = parseCheckInParams(params);
   const checkIn = useGuardCheckIn(checkInInput, selectedSocietyId);
+  const checkInToastShownRef = useRef(false);
 
-  if (isLoading) {
-    return <LoadingState message="Opening check-in" />;
-  }
+  useEffect(() => {
+    checkInToastShownRef.current = false;
+  }, [checkInInput?.token]);
 
-  if (memberships.length === 0 || requiresSelection || !selectedSocietyId) {
-    return <GuardSocietyGate />;
-  }
+  useEffect(() => {
+    if (checkIn.isCheckedIn && !checkIn.isCheckingIn && !checkInToastShownRef.current) {
+      checkInToastShownRef.current = true;
+      feedback.showSuccess("Checked in", "The visitor may proceed to entry.");
+    }
+  }, [checkIn.isCheckedIn, checkIn.isCheckingIn, feedback]);
+
+  useEffect(() => {
+    if (
+      checkIn.entryError &&
+      checkIn.entry &&
+      !checkIn.isCheckingIn &&
+      checkIn.entryError.kind !== "invalid_params" &&
+      checkIn.entryError.kind !== "validation_failed"
+    ) {
+      feedback.showActionResult(
+        { success: false, message: checkIn.entryError.message },
+        { errorTitle: "Check-in failed", successTitle: "Checked in" },
+      );
+    }
+  }, [checkIn.entry, checkIn.entryError, checkIn.isCheckingIn, feedback]);
 
   if (!checkInInput) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <GuardSubScreen title="Check In">
         <View style={styles.content}>
-          <GuardBackHeader title="Check In" />
           <Card>
             <Text style={styles.cardTitle}>Invalid check-in link</Text>
             <Text style={styles.cardBody}>
@@ -56,22 +75,21 @@ export default function GuardCheckInScreen() {
             <Text style={styles.primaryButtonText}>Go to scanner</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </GuardSubScreen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <GuardSubScreen title="Check In">
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <GuardBackHeader title="Check In" />
           <Text style={styles.subtitle}>Review visitor details before allowing entry.</Text>
 
           {checkIn.isLoadingEntry ? (
-            <Card>
-              <Text style={styles.cardTitle}>Validating QR...</Text>
-              <Text style={styles.cardBody}>Hold on while we verify this visitor.</Text>
-            </Card>
+            <View style={styles.inlineLoading}>
+              <ActivityIndicator color={colors.guard.teal} />
+              <Text style={styles.cardBody}>Validating QR...</Text>
+            </View>
           ) : null}
 
           {checkIn.entryError && !checkIn.entry ? (
@@ -86,11 +104,7 @@ export default function GuardCheckInScreen() {
               entry={checkIn.entry}
               loading={checkIn.isCheckingIn}
               primaryActionLabel={
-                checkIn.isCheckedIn
-                  ? undefined
-                  : checkIn.canCheckIn
-                    ? "Check In"
-                    : undefined
+                checkIn.isCheckedIn ? undefined : checkIn.canCheckIn ? "Check In" : undefined
               }
               onPrimaryAction={() => {
                 void checkIn.checkIn();
@@ -137,49 +151,31 @@ export default function GuardCheckInScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </GuardSubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.guard.screenBg,
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: layout.screenPaddingBottom,
-  },
-  content: {
-    gap: spacing["2xl"],
-    paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: layout.screenPaddingTop,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  cardTitle: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: "700",
+  actions: {
+    gap: spacing.md,
   },
   cardBody: {
     ...typography.bodySmall,
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
-  warningCard: {
-    backgroundColor: colors.status.warningSoft,
-    borderColor: "#fde68a",
-  },
-  warningTitle: {
+  cardTitle: {
     ...typography.body,
-    color: "#78350f",
+    color: colors.text.primary,
     fontWeight: "700",
   },
-  warningBody: {
+  content: {
+    gap: spacing["2xl"],
+    paddingBottom: layout.screenPaddingBottom,
+  },
+  errorBody: {
     ...typography.bodySmall,
-    color: "#92400e",
+    color: colors.status.error,
     marginTop: spacing.xs,
   },
   errorCard: {
@@ -191,27 +187,10 @@ const styles = StyleSheet.create({
     color: colors.status.error,
     fontWeight: "700",
   },
-  errorBody: {
-    ...typography.bodySmall,
-    color: colors.status.error,
-    marginTop: spacing.xs,
-  },
-  successCard: {
-    backgroundColor: colors.status.successSoft,
-    borderColor: "#bbf7d0",
-  },
-  successTitle: {
-    ...typography.body,
-    color: "#166534",
-    fontWeight: "700",
-  },
-  successBody: {
-    ...typography.bodySmall,
-    color: "#166534",
-    marginTop: spacing.xs,
-  },
-  actions: {
-    gap: spacing.md,
+  inlineLoading: {
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing["2xl"],
   },
   primaryButton: {
     alignItems: "center",
@@ -222,6 +201,9 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     ...typography.button,
     color: colors.text.inverse,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   secondaryButton: {
     alignItems: "center",
@@ -234,5 +216,37 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...typography.button,
     color: colors.guard.text,
+  },
+  subtitle: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+  },
+  successBody: {
+    ...typography.bodySmall,
+    color: "#166534",
+    marginTop: spacing.xs,
+  },
+  successCard: {
+    backgroundColor: colors.status.successSoft,
+    borderColor: "#bbf7d0",
+  },
+  successTitle: {
+    ...typography.body,
+    color: "#166534",
+    fontWeight: "700",
+  },
+  warningBody: {
+    ...typography.bodySmall,
+    color: "#92400e",
+    marginTop: spacing.xs,
+  },
+  warningCard: {
+    backgroundColor: colors.status.warningSoft,
+    borderColor: "#fde68a",
+  },
+  warningTitle: {
+    ...typography.body,
+    color: "#78350f",
+    fontWeight: "700",
   },
 });

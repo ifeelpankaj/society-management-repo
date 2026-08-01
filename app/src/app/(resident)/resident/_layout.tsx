@@ -20,6 +20,8 @@ export default function ResidentStackLayout() {
         <Tabs.Screen name="dashboard" options={{ title: "Home" }} />
         <Tabs.Screen name="profile" options={{ title: "Profile" }} />
         <Tabs.Screen name="logs" options={{ href: null }} />
+        <Tabs.Screen name="entries/index" options={{ href: null }} />
+        <Tabs.Screen name="members/index" options={{ href: null }} />
         <Tabs.Screen name="members/add" options={{ href: null }} />
         <Tabs.Screen name="visitors/index" options={{ href: null }} />
         <Tabs.Screen name="visitors/invite" options={{ href: null }} />

@@ -30,6 +30,9 @@ func (s *VisitorEntrySvc) createEntryFromForm(ctx context.Context, societyID int
 	if err := req.Validate(true); err != nil {
 		return nil, ErrInvalidVisitorRequest.WithCause(err)
 	}
+	if err := req.ValidateForPurpose(); err != nil {
+		return nil, ErrInvalidVisitorRequest.WithCause(err)
+	}
 	approvalRequired, err := s.settingSvc.ResolveApprovalRequirement(ctx, societyID, req.FlatID, req.Purpose, source)
 	if err != nil {
 		return nil, err

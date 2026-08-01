@@ -670,6 +670,172 @@ func (h *VisitorEntryHandler) ListSocietyPendingApprovals(c *gin.Context) {
 	})
 }
 
+// ListWaitingAtGate godoc
+// @Summary List visitors waiting at gate
+// @Description [Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param search query string false "Search by name, phone, flat, vehicle, delivery partner, or purpose"
+// @Param limit query int false "Maximum records to return" default(50)
+// @Param offset query int false "Records to skip" default(0)
+// @Success 200 {object} models.VisitorEntriesAPIResponse "Waiting at gate entries fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid query or path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/waiting-at-gate [get]
+func (h *VisitorEntryHandler) ListWaitingAtGate(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	filter, ok := waitingAtGateFilterFromQuery(c, societyID)
+	if !ok {
+		return
+	}
+	result, err := h.entrySvc.ListWaitingAtGate(c.Request.Context(), filter)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Waiting at gate entries fetched successfully", gin.H{
+		"entries": result.Entries,
+		"total":   result.Total,
+		"limit":   result.Limit,
+		"offset":  result.Offset,
+	})
+}
+
+// NotifyPendingEntry godoc
+// @Summary Notify resident about pending visitor
+// @Description [Owner/Admin/Staff] Re-sends a pending approval notification to flat residents.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param entryId path int true "Visitor entry ID"
+// @Success 200 {object} models.SuccessAPIResponse "Resident notified successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter or visitor entry state"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Visitor entry not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/{entryId}/notify [post]
+func (h *VisitorEntryHandler) NotifyPendingEntry(c *gin.Context) {
+	societyID, entryID, ok := visitorEntryPath(c)
+	if !ok {
+		return
+	}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+	if err := h.entrySvc.NotifyPendingEntry(c.Request.Context(), societyID, entryID, userID); handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Resident notified successfully", nil)
+}
+
+// GuardApproveEntry godoc
+// @Summary Guard approve visitor entry
+// @Description [Owner/Admin/Staff] Approves a pending visitor entry without check-in.
+// @Tags Visitor Entries
+// @Accept json
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param entryId path int true "Visitor entry ID"
+// @Param request body models.GuardApproveEntryRequest false "Guard approval options"
+// @Success 200 {object} models.VisitorEntryMutationAPIResponse "Visitor entry approved successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter or visitor entry state"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Visitor entry not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/{entryId}/guard-approve [post]
+func (h *VisitorEntryHandler) GuardApproveEntry(c *gin.Context) {
+	societyID, entryID, ok := visitorEntryPath(c)
+	if !ok {
+		return
+	}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+	opts := guardApproveOptionsFromBody(c)
+	result, err := h.entrySvc.GuardApproveEntry(c.Request.Context(), societyID, entryID, userID, opts)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor entry approved successfully", result)
+}
+
+// GuardApproveAndCheckIn godoc
+// @Summary Guard approve and check in visitor
+// @Description [Owner/Admin/Staff] Atomically approves and checks in a pending visitor entry.
+// @Tags Visitor Entries
+// @Accept json
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param entryId path int true "Visitor entry ID"
+// @Param request body models.GuardApproveEntryRequest false "Guard approval options"
+// @Success 200 {object} models.VisitorEntryAPIResponse "Visitor approved and checked in successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter or visitor entry state"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Visitor entry not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/{entryId}/approve-and-check-in [post]
+func (h *VisitorEntryHandler) GuardApproveAndCheckIn(c *gin.Context) {
+	societyID, entryID, ok := visitorEntryPath(c)
+	if !ok {
+		return
+	}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+	opts := guardApproveOptionsFromBody(c)
+	entry, err := h.entrySvc.GuardApproveAndCheckIn(c.Request.Context(), societyID, entryID, userID, opts)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor approved and checked in successfully", gin.H{"entry": entry})
+}
+
+// CheckInByEntryID godoc
+// @Summary Check in visitor by entry ID
+// @Description [Owner/Admin/Staff] Checks in an approved visitor entry without scanning QR.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param entryId path int true "Visitor entry ID"
+// @Success 200 {object} models.VisitorEntryAPIResponse "Visitor checked in successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter or visitor entry state"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Visitor entry not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/{entryId}/check-in [post]
+func (h *VisitorEntryHandler) CheckInByEntryID(c *gin.Context) {
+	societyID, entryID, ok := visitorEntryPath(c)
+	if !ok {
+		return
+	}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+	entry, err := h.entrySvc.CheckInByEntryID(c.Request.Context(), societyID, entryID, userID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor checked in successfully", gin.H{"entry": entry})
+}
+
 // ListFlatVisitorEntries godoc
 // @Summary List flat visitor entries
 // @Description [Resident] Lists visitor entries for a resident flat with optional status, purpose, and date filters.
@@ -714,6 +880,42 @@ func (h *VisitorEntryHandler) ListFlatVisitorEntries(c *gin.Context) {
 		"limit":   entries.Limit,
 		"offset":  entries.Offset,
 	})
+}
+
+// GetFlatVisitorEntry godoc
+// @Summary Get flat visitor entry
+// @Description [Resident] Fetches a single visitor entry for a resident flat.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param flatId path int true "Flat ID"
+// @Param entryId path int true "Visitor entry ID"
+// @Success 200 {object} models.VisitorEntryAPIResponse "Visitor entry fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Resident access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Visitor entry or flat not found"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/flats/{flatId}/visitor-entries/{entryId} [get]
+func (h *VisitorEntryHandler) GetFlatVisitorEntry(c *gin.Context) {
+	societyID, flatID, ok := visitorEntryFlatPath(c)
+	if !ok {
+		return
+	}
+	entryID, ok := parsePathInt64(c, "entryId")
+	if !ok {
+		return
+	}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+	entry, err := h.entrySvc.GetFlatEntryForActor(c.Request.Context(), societyID, flatID, entryID, userID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor entry fetched successfully", gin.H{"entry": entry})
 }
 
 // GetFlatVisitorContextForResident godoc
@@ -1010,4 +1212,38 @@ func visitorPendingFilterFromQuery(c *gin.Context, societyID int64) (models.Visi
 		filter.Offset = int32(value)
 	}
 	return filter, true
+}
+
+func waitingAtGateFilterFromQuery(c *gin.Context, societyID int64) (models.WaitingAtGateFilter, bool) {
+	filter := models.WaitingAtGateFilter{SocietyID: societyID, Limit: 50}
+	if raw := c.Query("search"); raw != "" {
+		filter.Search = &raw
+	}
+	if raw := c.Query("limit"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value <= 0 {
+			utils.BadRequestResponse(c, "limit must be a positive integer")
+			return filter, false
+		}
+		filter.Limit = int32(value)
+	}
+	if raw := c.Query("offset"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value < 0 {
+			utils.BadRequestResponse(c, "offset must be zero or positive")
+			return filter, false
+		}
+		filter.Offset = int32(value)
+	}
+	return filter, true
+}
+
+func guardApproveOptionsFromBody(c *gin.Context) visitorentrysvc.GuardApproveOptions {
+	var req models.GuardApproveEntryRequest
+	_ = c.ShouldBindJSON(&req)
+	opts := visitorentrysvc.GuardApproveOptions{Reason: req.Reason}
+	if req.OnBehalf != nil {
+		opts.OnBehalf = *req.OnBehalf
+	}
+	return opts
 }

@@ -39,9 +39,12 @@ type VisitorEntryRepository interface {
 	CountSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) (int64, error)
 	ListRecentByFlat(ctx context.Context, societyID int64, flatID int64, limit int32) ([]*models.VisitorEntry, error)
 	GetStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
-	CountExpectedToday(ctx context.Context, societyID int64) (int64, error)
+	CountWaitingAtGate(ctx context.Context, societyID int64) (int64, error)
+	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) ([]*models.VisitorEntry, error)
+	CountWaitingAtGateFiltered(ctx context.Context, filter models.WaitingAtGateFilter) (int64, error)
 	CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	Approve(ctx context.Context, societyID int64, entryID int64, actorUserID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error)
+	MergeMetadata(ctx context.Context, societyID int64, entryID int64, metadata map[string]any) (*models.VisitorEntry, error)
 	Reject(ctx context.Context, societyID int64, entryID int64, actorUserID int64, reason string) (*models.VisitorEntry, error)
 	GenerateQR(ctx context.Context, societyID int64, entryID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error)
 	CheckIn(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
@@ -152,6 +155,7 @@ func (r *visitorEntryRepository) Create(ctx context.Context, req models.VisitorF
 		InviteID: inviteID, VehicleNumber: req.VehicleNumber, VehicleType: dbVisitorVehicleTypePtr(req.VehicleType),
 		CompanionDetails: companionDetails, ExpectedAt: timePtrToPgTimestamptz(req.ExpectedAt),
 		ExpectedCheckoutAt: timePtrToPgTimestamptz(req.ExpectedCheckoutAt), ApprovedBy: approvedByForCreate(status, actorUserID),
+		ApprovedAt: approvedAtForCreate(status), DeliveryPartner: req.DeliveryPartner, ServiceProvider: req.ServiceProvider,
 		HandledByGuardID: guardUserID, CreatedBy: actorUserID, QrTokenHash: qrHash, QrExpiresAt: timePtrToPgTimestamptz(qrExpiresAt),
 		Notes: req.Notes, Metadata: metadata,
 	})
@@ -252,8 +256,43 @@ func (r *visitorEntryRepository) GetStats(ctx context.Context, societyID int64) 
 	}, nil
 }
 
-func (r *visitorEntryRepository) CountExpectedToday(ctx context.Context, societyID int64) (int64, error) {
-	return GetQueries(ctx, r.db).CountExpectedTodayVisitorEntries(ctx, societyID)
+func (r *visitorEntryRepository) CountWaitingAtGate(ctx context.Context, societyID int64) (int64, error) {
+	return GetQueries(ctx, r.db).CountWaitingAtGateVisitorEntries(ctx, societyID)
+}
+
+func (r *visitorEntryRepository) ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) ([]*models.VisitorEntry, error) {
+	rows, err := GetQueries(ctx, r.db).ListWaitingAtGateVisitorEntries(ctx, db.ListWaitingAtGateVisitorEntriesParams{
+		SocietyID: filter.SocietyID,
+		Search:    filter.Search,
+		Limit:     normalizeVisitorLimit(filter.Limit),
+		Offset:    normalizeOffset(filter.Offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*models.VisitorEntry, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, visitorEntryFromWaitingAtGate(row))
+	}
+	return items, nil
+}
+
+func (r *visitorEntryRepository) CountWaitingAtGateFiltered(ctx context.Context, filter models.WaitingAtGateFilter) (int64, error) {
+	return GetQueries(ctx, r.db).CountWaitingAtGateVisitorEntriesFiltered(ctx, db.CountWaitingAtGateVisitorEntriesFilteredParams{
+		SocietyID: filter.SocietyID,
+		Search:    filter.Search,
+	})
+}
+
+func (r *visitorEntryRepository) MergeMetadata(ctx context.Context, societyID int64, entryID int64, metadata map[string]any) (*models.VisitorEntry, error) {
+	raw, err := jsonMap(metadata)
+	if err != nil {
+		return nil, err
+	}
+	row, err := GetQueries(ctx, r.db).MergeVisitorEntryMetadata(ctx, db.MergeVisitorEntryMetadataParams{
+		ID: entryID, SocietyID: societyID, MetadataPatch: raw,
+	})
+	return visitorEntryFromDBNoRows(row, err)
 }
 
 func (r *visitorEntryRepository) CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error) {
@@ -388,7 +427,7 @@ func visitorEntryFromDBNoRows(row db.VisitorEntry, err error) (*models.VisitorEn
 }
 
 func visitorEntryFromDB(row db.VisitorEntry) *models.VisitorEntry {
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, "", nil, nil, nil, "", nil, nil)
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, "", nil, nil, nil, "", nil, nil)
 }
 
 func visitorEntryFromGetNoRows(row db.GetVisitorEntryRow, err error) (*models.VisitorEntry, error) {
@@ -409,27 +448,31 @@ func visitorEntryFromQRNoRows(row db.GetVisitorEntryByQRHashRow, err error) (*mo
 	if err != nil {
 		return nil, err
 	}
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor), nil
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor), nil
 }
 
 func visitorEntryFromGet(row db.GetVisitorEntryRow) *models.VisitorEntry {
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
 
 func visitorEntryFromList(row db.ListVisitorEntriesRow) *models.VisitorEntry {
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
 
 func visitorEntryFromRecent(row db.ListRecentVisitorEntriesByFlatRow) *models.VisitorEntry {
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
 
 func visitorEntryFromPending(row db.ListPendingVisitorApprovalsRow) *models.VisitorEntry {
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
 
 func visitorEntryFromSocietyPending(row db.ListSocietyPendingVisitorApprovalsRow) *models.VisitorEntry {
-	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+}
+
+func visitorEntryFromWaitingAtGate(row db.ListWaitingAtGateVisitorEntriesRow) *models.VisitorEntry {
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
 
 func visitorEntryListParams(filter models.VisitorEntryFilter) db.ListVisitorEntriesParams {
@@ -462,7 +505,7 @@ func visitorEntryCountParams(filter models.VisitorEntryFilter) db.CountVisitorEn
 	}
 }
 
-func visitorEntryFromParts(id, societyID, flatID, visitorID int64, inviteID *int64, source, purpose, status string, vehicleNumber *string, vehicleType *db.VisitorVehicleType, companionsCount int32, companionDetails []byte, expectedAt, expectedCheckoutAt, checkedInAt, checkedOutAt, autoClosedAt pgtype.Timestamptz, approvedBy, rejectedBy, handledByGuardID, createdBy *int64, qrExpiresAt, qrUsedAt pgtype.Timestamptz, notes, rejectionReason *string, metadata []byte, createdAt, updatedAt pgtype.Timestamptz, visitorFullName string, visitorPhone, visitorEmail, visitorPhoto *string, flatNumber string, block, floor *string) *models.VisitorEntry {
+func visitorEntryFromParts(id, societyID, flatID, visitorID int64, inviteID *int64, source, purpose, status string, vehicleNumber *string, vehicleType *db.VisitorVehicleType, companionsCount int32, companionDetails []byte, expectedAt, expectedCheckoutAt, checkedInAt, checkedOutAt, autoClosedAt pgtype.Timestamptz, approvedBy *int64, approvedAt pgtype.Timestamptz, deliveryPartner, serviceProvider *string, rejectedBy, handledByGuardID, createdBy *int64, qrExpiresAt, qrUsedAt pgtype.Timestamptz, notes, rejectionReason *string, metadata []byte, createdAt, updatedAt pgtype.Timestamptz, visitorFullName string, visitorPhone, visitorEmail, visitorPhoto *string, flatNumber string, block, floor *string) *models.VisitorEntry {
 	return &models.VisitorEntry{
 		ID: id, SocietyID: societyID, FlatID: flatID, VisitorID: visitorID, InviteID: inviteID,
 		Source: models.VisitorEntrySource(source), Purpose: models.VisitorPurpose(purpose), Status: models.VisitorStatus(status),
@@ -470,7 +513,8 @@ func visitorEntryFromParts(id, societyID, flatID, visitorID int64, inviteID *int
 		CompanionDetails: companionDetailsFromJSON(companionDetails), ExpectedAt: pgTimestamptzToTimePtr(expectedAt),
 		ExpectedCheckoutAt: pgTimestamptzToTimePtr(expectedCheckoutAt), CheckedInAt: pgTimestamptzToTimePtr(checkedInAt),
 		CheckedOutAt: pgTimestamptzToTimePtr(checkedOutAt), AutoClosedAt: pgTimestamptzToTimePtr(autoClosedAt),
-		ApprovedBy: approvedBy, RejectedBy: rejectedBy, HandledByGuardID: handledByGuardID, CreatedBy: createdBy,
+		ApprovedBy: approvedBy, ApprovedAt: pgTimestamptzToTimePtr(approvedAt), DeliveryPartner: deliveryPartner, ServiceProvider: serviceProvider,
+		RejectedBy: rejectedBy, HandledByGuardID: handledByGuardID, CreatedBy: createdBy,
 		QRExpiresAt: pgTimestamptzToTimePtr(qrExpiresAt), QRUsedAt: pgTimestamptzToTimePtr(qrUsedAt), Notes: notes,
 		RejectionReason: rejectionReason, Metadata: metadataMap(metadata), CreatedAt: pgTimestamptzToTime(createdAt),
 		UpdatedAt: pgTimestamptzToTime(updatedAt), Visitor: visitorSummary(visitorFullName, visitorPhone, visitorEmail, visitorPhoto),
@@ -571,6 +615,13 @@ func approvedByForCreate(status models.VisitorStatus, actorUserID *int64) *int64
 		return actorUserID
 	}
 	return nil
+}
+
+func approvedAtForCreate(status models.VisitorStatus) pgtype.Timestamptz {
+	if status == models.VisitorStatusApproved {
+		return visitorTimeToPgTimestamptz(time.Now())
+	}
+	return pgtype.Timestamptz{}
 }
 
 func visitorTimeToPgTimestamptz(value time.Time) pgtype.Timestamptz {

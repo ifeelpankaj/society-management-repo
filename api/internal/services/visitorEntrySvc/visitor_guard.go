@@ -28,7 +28,7 @@ func (s *VisitorEntrySvc) GetGuardDeskBootstrap(ctx context.Context, societyID i
 		return nil, err
 	}
 
-	expectedTodayCount, err := s.entryRepo.CountExpectedToday(ctx, societyID)
+	expectedTodayCount, err := s.entryRepo.CountWaitingAtGate(ctx, societyID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (s *VisitorEntrySvc) GetGuardDeskBootstrap(ctx context.Context, societyID i
 	return &models.GuardDeskBootstrapResponse{
 		Society:            society.ToResponse(),
 		Stats:              stats,
-		ExpectedTodayCount: expectedTodayCount,
+		WaitingAtGateCount: expectedTodayCount,
 		PendingPreview:     pending,
 	}, nil
 }

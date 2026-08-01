@@ -1,48 +1,61 @@
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { usePathname, useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScanQrIcon } from "@/components/icons";
 import { GuardTabIcon } from "@/features/guard/components/guard-tab-icons";
-import { guardScannerRoute } from "@/features/guard/guard-routes";
+import { guardHomeRoute, guardProfileRoute, guardScannerRoute } from "@/features/guard/guard-routes";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 
-type GuardTabBarProps = {
-  navigation: {
-    navigate: (name: string) => void;
-  };
-  state: {
-    index: number;
-    routes: Array<{ key: string; name: string }>;
-  };
-};
+type GuardTab = "home" | "profile";
 
-export function GuardTabBar({ navigation, state }: GuardTabBarProps) {
+function resolveActiveTab(pathname: string, state: BottomTabBarProps["state"]): GuardTab {
+  if (pathname.includes("/profile")) {
+    return "profile";
+  }
+
+  const routeName = state.routes[state.index]?.name;
+  if (routeName === "profile") {
+    return "profile";
+  }
+
+  return "home";
+}
+
+export function GuardTabBar({ state }: BottomTabBarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const activeTab = resolveActiveTab(pathname, state);
 
-  const activeRoute = state.routes[state.index]?.name;
-  const profileIndex = state.routes.findIndex((route) => route.name === "profile");
+  const goToTab = (tab: GuardTab) => {
+    if (tab === activeTab) {
+      return;
+    }
+
+    router.replace(tab === "profile" ? guardProfileRoute() : guardHomeRoute());
+  };
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
       <Pressable
         accessibilityRole="tab"
-        accessibilityState={{ selected: activeRoute === "home" }}
+        accessibilityState={{ selected: activeTab === "home" }}
         style={styles.tab}
-        onPress={() => navigation.navigate("home")}
+        onPress={() => goToTab("home")}
       >
         <GuardTabIcon
-          color={activeRoute === "home" ? colors.brand.orange : colors.text.placeholder}
+          color={activeTab === "home" ? colors.brand.orange : colors.text.placeholder}
           name="dashboard"
         />
         <Text
           style={[
             styles.tabLabel,
-            activeRoute === "home" ? styles.tabLabelActive : styles.tabLabelInactive,
+            activeTab === "home" ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
           Home
@@ -63,22 +76,18 @@ export function GuardTabBar({ navigation, state }: GuardTabBarProps) {
 
       <Pressable
         accessibilityRole="tab"
-        accessibilityState={{ selected: activeRoute === "profile" }}
+        accessibilityState={{ selected: activeTab === "profile" }}
         style={styles.tab}
-        onPress={() => {
-          if (profileIndex >= 0) {
-            navigation.navigate(state.routes[profileIndex].name);
-          }
-        }}
+        onPress={() => goToTab("profile")}
       >
         <GuardTabIcon
-          color={activeRoute === "profile" ? colors.brand.orange : colors.text.placeholder}
+          color={activeTab === "profile" ? colors.brand.orange : colors.text.placeholder}
           name="profile"
         />
         <Text
           style={[
             styles.tabLabel,
-            activeRoute === "profile" ? styles.tabLabelActive : styles.tabLabelInactive,
+            activeTab === "profile" ? styles.tabLabelActive : styles.tabLabelInactive,
           ]}
         >
           Profile

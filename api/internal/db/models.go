@@ -184,6 +184,92 @@ func (ns NullFlatClaimStatus) Value() (driver.Value, error) {
 	return string(ns.FlatClaimStatus), nil
 }
 
+type FlatMemberInviteRole string
+
+const (
+	FlatMemberInviteRoleFamily FlatMemberInviteRole = "family"
+	FlatMemberInviteRoleTenant FlatMemberInviteRole = "tenant"
+)
+
+func (e *FlatMemberInviteRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FlatMemberInviteRole(s)
+	case string:
+		*e = FlatMemberInviteRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FlatMemberInviteRole: %T", src)
+	}
+	return nil
+}
+
+type NullFlatMemberInviteRole struct {
+	FlatMemberInviteRole FlatMemberInviteRole `json:"flat_member_invite_role"`
+	Valid                bool                 `json:"valid"` // Valid is true if FlatMemberInviteRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFlatMemberInviteRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.FlatMemberInviteRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FlatMemberInviteRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFlatMemberInviteRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FlatMemberInviteRole), nil
+}
+
+type FlatMemberInviteStatus string
+
+const (
+	FlatMemberInviteStatusPending   FlatMemberInviteStatus = "pending"
+	FlatMemberInviteStatusAccepted  FlatMemberInviteStatus = "accepted"
+	FlatMemberInviteStatusExpired   FlatMemberInviteStatus = "expired"
+	FlatMemberInviteStatusCancelled FlatMemberInviteStatus = "cancelled"
+)
+
+func (e *FlatMemberInviteStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FlatMemberInviteStatus(s)
+	case string:
+		*e = FlatMemberInviteStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FlatMemberInviteStatus: %T", src)
+	}
+	return nil
+}
+
+type NullFlatMemberInviteStatus struct {
+	FlatMemberInviteStatus FlatMemberInviteStatus `json:"flat_member_invite_status"`
+	Valid                  bool                   `json:"valid"` // Valid is true if FlatMemberInviteStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFlatMemberInviteStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.FlatMemberInviteStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FlatMemberInviteStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFlatMemberInviteStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FlatMemberInviteStatus), nil
+}
+
 type FlatResidentRole string
 
 const (
@@ -623,16 +709,17 @@ func (ns NullVisitorApprovalMode) Value() (driver.Value, error) {
 type VisitorEventType string
 
 const (
-	VisitorEventTypeCreated     VisitorEventType = "created"
-	VisitorEventTypeApproved    VisitorEventType = "approved"
-	VisitorEventTypeRejected    VisitorEventType = "rejected"
-	VisitorEventTypeCheckedIn   VisitorEventType = "checked_in"
-	VisitorEventTypeCheckedOut  VisitorEventType = "checked_out"
-	VisitorEventTypeCancelled   VisitorEventType = "cancelled"
-	VisitorEventTypeExpired     VisitorEventType = "expired"
-	VisitorEventTypeAutoClosed  VisitorEventType = "auto_closed"
-	VisitorEventTypeQrGenerated VisitorEventType = "qr_generated"
-	VisitorEventTypeQrUsed      VisitorEventType = "qr_used"
+	VisitorEventTypeCreated               VisitorEventType = "created"
+	VisitorEventTypeApproved              VisitorEventType = "approved"
+	VisitorEventTypeRejected              VisitorEventType = "rejected"
+	VisitorEventTypeCheckedIn             VisitorEventType = "checked_in"
+	VisitorEventTypeCheckedOut            VisitorEventType = "checked_out"
+	VisitorEventTypeCancelled             VisitorEventType = "cancelled"
+	VisitorEventTypeExpired               VisitorEventType = "expired"
+	VisitorEventTypeAutoClosed            VisitorEventType = "auto_closed"
+	VisitorEventTypeQrGenerated           VisitorEventType = "qr_generated"
+	VisitorEventTypeQrUsed                VisitorEventType = "qr_used"
+	VisitorEventTypeGuardApprovedOnBehalf VisitorEventType = "guard_approved_on_behalf"
 )
 
 func (e *VisitorEventType) Scan(src interface{}) error {
@@ -942,6 +1029,22 @@ type FlatClaimRequest struct {
 	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+type FlatMemberInvite struct {
+	ID        int64                  `db:"id" json:"id"`
+	SocietyID int64                  `db:"society_id" json:"society_id"`
+	FlatID    int64                  `db:"flat_id" json:"flat_id"`
+	InvitedBy int64                  `db:"invited_by" json:"invited_by"`
+	Role      FlatMemberInviteRole   `db:"role" json:"role"`
+	Phone     *string                `db:"phone" json:"phone"`
+	Email     *string                `db:"email" json:"email"`
+	FullName  string                 `db:"full_name" json:"full_name"`
+	TokenHash string                 `db:"token_hash" json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz     `db:"expires_at" json:"expires_at"`
+	Status    FlatMemberInviteStatus `db:"status" json:"status"`
+	CreatedAt pgtype.Timestamptz     `db:"created_at" json:"created_at"`
+	UpdatedAt pgtype.Timestamptz     `db:"updated_at" json:"updated_at"`
+}
+
 type FlatResident struct {
 	ID         int64              `db:"id" json:"id"`
 	SocietyID  int64              `db:"society_id" json:"society_id"`
@@ -1168,6 +1271,9 @@ type VisitorEntry struct {
 	Metadata           []byte              `db:"metadata" json:"metadata"`
 	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 }
 
 type VisitorEntryEvent struct {

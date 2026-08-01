@@ -6,6 +6,7 @@ import (
 	"go-server/internal/models"
 	repository "go-server/internal/repositories"
 	societysvc "go-server/internal/services/societySvc"
+	flatauthz "go-server/internal/services/flatAuthz"
 )
 
 type FlatService interface {
@@ -15,6 +16,7 @@ type FlatService interface {
 	FlatClaimQueryService
 	FlatResidentCommandService
 	FlatResidentQueryService
+	FlatMemberInviteService
 }
 
 type FlatCommandService interface {
@@ -57,18 +59,30 @@ type FlatResidentCommandService interface {
 type FlatResidentQueryService interface {
 	GetFlatResident(ctx context.Context, filter *models.FlatResidentFilter) (*models.FlatResidentResponse, error)
 	ListFlatResidents(ctx context.Context, filter *models.FlatResidentFilter) ([]*models.FlatResidentResponse, error)
+	ListFlatResidentsForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64, filter *models.FlatResidentFilter) ([]*models.FlatResidentResponse, error)
 	ListMyResidences(ctx context.Context, userID int64, filter *models.FlatResidentFilter) ([]*models.FlatResidentResponse, error)
+}
+
+type FlatMemberInviteService interface {
+	ListPendingMemberInvites(ctx context.Context, societyID int64, flatID int64, actorUserID int64) ([]*models.FlatMemberInviteResponse, error)
+	CreateMemberInvite(ctx context.Context, societyID int64, flatID int64, actorUserID int64, req *models.CreateFlatMemberInviteRequest) (*models.FlatMemberInviteTokenResponse, *models.FlatMemberInviteResponse, error)
+	CancelMemberInvite(ctx context.Context, societyID int64, flatID int64, inviteID int64, actorUserID int64) error
+	GetPublicMemberInviteByToken(ctx context.Context, rawToken string) (*models.PublicFlatMemberInviteView, error)
+	AcceptMemberInvite(ctx context.Context, rawToken string, userID int64) (*models.AcceptFlatMemberInviteResponse, error)
+	ExpireOldMemberInvites(ctx context.Context) error
 }
 
 type FlatSvc struct {
 	flatRepo          repository.FlatRepository
 	claimRepo         repository.FlatClaimRepository
 	residentRepo      repository.FlatResidentRepository
+	memberInviteRepo  repository.FlatMemberInviteRepository
 	memberRepo        repository.SocietyMemberRepository
 	txManager         repository.TransactionManager
 	societySvc        societysvc.SocietyService
 	subscriptionSvc   flatSubscriptionGuard
 	visitorSettingSvc flatVisitorSettingDefaults
+	flatAuthz         *flatauthz.FlatVisitorAuthz
 }
 
 type flatVisitorSettingDefaults interface {
@@ -85,6 +99,7 @@ func NewFlatService(
 	flatRepo repository.FlatRepository,
 	claimRepo repository.FlatClaimRepository,
 	residentRepo repository.FlatResidentRepository,
+	memberInviteRepo repository.FlatMemberInviteRepository,
 	memberRepo repository.SocietyMemberRepository,
 	txManager repository.TransactionManager,
 	societySvc societysvc.SocietyService,
@@ -93,12 +108,15 @@ func NewFlatService(
 ) FlatService {
 	svc := &FlatSvc{
 		flatRepo: flatRepo, claimRepo: claimRepo, residentRepo: residentRepo,
-		memberRepo: memberRepo, txManager: txManager, societySvc: societySvc, subscriptionSvc: subscriptionSvc,
+		memberInviteRepo: memberInviteRepo, memberRepo: memberRepo, txManager: txManager,
+		societySvc: societySvc, subscriptionSvc: subscriptionSvc,
 	}
 	for _, dep := range deps {
 		switch value := dep.(type) {
 		case flatVisitorSettingDefaults:
 			svc.visitorSettingSvc = value
+		case *flatauthz.FlatVisitorAuthz:
+			svc.flatAuthz = value
 		}
 	}
 	return svc

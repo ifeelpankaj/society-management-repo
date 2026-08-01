@@ -239,6 +239,23 @@ func (s *VisitorEntrySvc) ListFlatEntriesForActor(ctx context.Context, societyID
 	return s.ListEntriesPaginated(ctx, filter)
 }
 
+func (s *VisitorEntrySvc) GetFlatEntryForActor(ctx context.Context, societyID int64, flatID int64, entryID int64, actorUserID int64) (*models.VisitorEntry, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	if err := s.ensureFlatResident(ctx, societyID, flatID, actorUserID); err != nil {
+		return nil, err
+	}
+	entry, err := s.GetEntry(ctx, societyID, entryID)
+	if err != nil {
+		return nil, err
+	}
+	if entry.FlatID != flatID {
+		return nil, ErrVisitorEntryNotFound
+	}
+	return entry, nil
+}
+
 func (s *VisitorEntrySvc) GetFlatVisitorContextForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64) (*models.FlatVisitorContextResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()

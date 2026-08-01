@@ -1,13 +1,12 @@
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 
-import { Button, LoadingState, PaginatedList } from "@/components/ui";
+import { Button, PaginatedList } from "@/components/ui";
 import { getVisitorActionErrorMessage } from "@/features/auth/api-error";
-import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
 import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
-import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
+import { ResidentSubScreen } from "@/features/resident/components/resident-sub-screen";
+import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
 import { useResident } from "@/features/resident/resident-context";
 import { residentVisitorInviteRoute } from "@/features/resident/resident-routes";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
@@ -24,7 +23,8 @@ import { typography } from "@/theme/typography";
 
 export default function ResidentVisitorsScreen() {
   const router = useRouter();
-  const { flatId, canManageFlatVisitors, isLoading, requiresSelection, societyId } = useResident();
+  const feedback = useResidentFeedback();
+  const { flatId, canManageFlatVisitors, societyId } = useResident();
   const [fetchPending] =
     generatedApi.endpoints.getV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesPending.useLazyQuery();
   const [approveEntry, approveState] =
@@ -59,90 +59,61 @@ export default function ResidentVisitorsScreen() {
     fetchPage,
   });
 
-  if (isLoading) {
-    return <LoadingState message="Opening visitors" />;
-  }
-
-  if (requiresSelection || !societyId || !flatId) {
-    return <ResidentSocietyGate />;
-  }
-
   const handleApprove = async (entryId?: number) => {
-    if (!entryId || !canManageFlatVisitors) {
+    if (!entryId || !canManageFlatVisitors || !societyId) {
       return;
     }
 
     try {
       await approveEntry({ societyId, entryId }).unwrap();
+      feedback.showSuccess("Approved", "Visitor can now enter the society.");
       pagination.refresh();
     } catch (error) {
-      Alert.alert(
+      feedback.showError(
         "Approval failed",
+        error,
         getVisitorActionErrorMessage(error, "Please try again."),
       );
     }
   };
 
   const handleReject = async (entryId?: number) => {
-    if (!entryId || !canManageFlatVisitors) {
+    if (!entryId || !canManageFlatVisitors || !societyId) {
       return;
     }
 
-    Alert.alert("Reject visitor", "Decline this visitor entry?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Reject",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await rejectEntry({
-              societyId,
-              entryId,
-              modelsRejectVisitorEntryRequest: { reason: "Declined by resident" },
-            }).unwrap();
-            pagination.refresh();
-          } catch (error) {
-            Alert.alert(
-              "Rejection failed",
-              getVisitorActionErrorMessage(error, "Please try again."),
-            );
-          }
-        },
-      },
-    ]);
+    try {
+      await rejectEntry({
+        societyId,
+        entryId,
+        modelsRejectVisitorEntryRequest: { reason: "Declined by resident" },
+      }).unwrap();
+      feedback.showSuccess("Rejected", "Visitor entry was declined.");
+      pagination.refresh();
+    } catch (error) {
+      feedback.showError(
+        "Rejection failed",
+        error,
+        getVisitorActionErrorMessage(error, "Please try again."),
+      );
+    }
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <ResidentSubScreen title="Approvals">
       <PaginatedList
+        contentContainerStyle={styles.listContent}
         data={pagination.items}
-        keyExtractor={(item) => `resident-pending-${item.id}`}
-        renderItem={({ item }) => (
-          <VisitorEntryCard
-            entry={item}
-            loading={approveState.isLoading || rejectState.isLoading}
-            primaryActionLabel={canManageFlatVisitors ? "Approve" : undefined}
-            secondaryActionLabel={canManageFlatVisitors ? "Reject" : undefined}
-            onPrimaryAction={canManageFlatVisitors ? () => handleApprove(item.id) : undefined}
-            onSecondaryAction={canManageFlatVisitors ? () => handleReject(item.id) : undefined}
-          />
-        )}
-        isLoading={pagination.isLoading}
-        isRefreshing={pagination.isRefreshing}
-        isLoadingMore={pagination.isLoadingMore}
-        hasMore={pagination.hasMore}
-        onRefresh={pagination.refresh}
-        onLoadMore={pagination.loadMore}
-        emptyTitle={canManageFlatVisitors ? "No pending visitors" : "Nothing to review"}
         emptyMessage={
           canManageFlatVisitors
             ? "Visitors waiting for your approval will appear here."
             : "You do not have permission to approve or reject visitor entries."
         }
-        contentContainerStyle={styles.listContent}
+        emptyTitle={canManageFlatVisitors ? "No pending visitors" : "Nothing to review"}
+        footer={<View style={styles.footerSpacer} />}
+        hasMore={pagination.hasMore}
         header={
           <View style={styles.header}>
-            <GuardBackHeader title="Approvals" />
             <View style={styles.intro}>
               <Text style={styles.pageTitle}>Pending approvals</Text>
               <Text style={styles.pageSubtitle}>
@@ -159,38 +130,48 @@ export default function ResidentVisitorsScreen() {
             ) : null}
           </View>
         }
-        footer={<View style={styles.footerSpacer} />}
+        isLoading={pagination.isLoading}
+        isLoadingMore={pagination.isLoadingMore}
+        isRefreshing={pagination.isRefreshing}
+        keyExtractor={(item) => `resident-pending-${item.id}`}
+        renderItem={({ item }) => (
+          <VisitorEntryCard
+            entry={item}
+            loading={approveState.isLoading || rejectState.isLoading}
+            primaryActionLabel={canManageFlatVisitors ? "Approve" : undefined}
+            secondaryActionLabel={canManageFlatVisitors ? "Reject" : undefined}
+            onPrimaryAction={canManageFlatVisitors ? () => void handleApprove(item.id) : undefined}
+            onSecondaryAction={canManageFlatVisitors ? () => void handleReject(item.id) : undefined}
+          />
+        )}
+        onLoadMore={pagination.loadMore}
+        onRefresh={pagination.refresh}
       />
-    </SafeAreaView>
+    </ResidentSubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.guard.screenBg,
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: layout.screenPaddingBottom,
-    paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: layout.screenPaddingTop,
+  footerSpacer: {
+    height: spacing.lg,
   },
   header: {
     gap: spacing.lg,
     paddingBottom: spacing.sm,
+    paddingHorizontal: layout.screenPaddingHorizontal,
   },
   intro: {
     gap: spacing.xs,
   },
-  pageTitle: {
-    ...typography.title,
-    color: colors.text.primary,
+  listContent: {
+    paddingBottom: layout.screenPaddingBottom,
   },
   pageSubtitle: {
     ...typography.bodySmall,
     color: colors.text.secondary,
   },
-  footerSpacer: {
-    height: spacing.lg,
+  pageTitle: {
+    ...typography.title,
+    color: colors.text.primary,
   },
 });

@@ -47,9 +47,9 @@ func (r *guardDeskSocietyRepo) CountPendingByCreator(context.Context, int64) (in
 }
 
 type guardDeskEntryRepo struct {
-	stats              *models.VisitorEntryStatsResponse
-	expectedTodayCount int64
-	pending            []*models.VisitorPendingEntry
+	stats                *models.VisitorEntryStatsResponse
+	waitingAtGateCount   int64
+	pending              []*models.VisitorPendingEntry
 }
 
 func (r *guardDeskEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
@@ -82,8 +82,17 @@ func (r *guardDeskEntryRepo) ListRecentByFlat(context.Context, int64, int64, int
 func (r *guardDeskEntryRepo) GetStats(context.Context, int64) (*models.VisitorEntryStatsResponse, error) {
 	return r.stats, nil
 }
-func (r *guardDeskEntryRepo) CountExpectedToday(context.Context, int64) (int64, error) {
-	return r.expectedTodayCount, nil
+func (r *guardDeskEntryRepo) CountWaitingAtGate(context.Context, int64) (int64, error) {
+	return r.waitingAtGateCount, nil
+}
+func (r *guardDeskEntryRepo) ListWaitingAtGate(context.Context, models.WaitingAtGateFilter) ([]*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *guardDeskEntryRepo) CountWaitingAtGateFiltered(context.Context, models.WaitingAtGateFilter) (int64, error) {
+	return r.waitingAtGateCount, nil
+}
+func (r *guardDeskEntryRepo) MergeMetadata(context.Context, int64, int64, map[string]any) (*models.VisitorEntry, error) {
+	return nil, nil
 }
 func (r *guardDeskEntryRepo) CountMemberApprovals(context.Context, int64, int64) (*models.MemberVisitorApprovalStatsResponse, error) {
 	return nil, nil
@@ -126,7 +135,7 @@ func TestGetGuardDeskBootstrap(t *testing.T) {
 	_, entrySvc := visitorentrysvc.NewVisitorService(
 		nil,
 		nil,
-		&guardDeskEntryRepo{stats: stats, expectedTodayCount: 4, pending: pending},
+		&guardDeskEntryRepo{stats: stats, waitingAtGateCount: 4, pending: pending},
 		nil,
 		nil,
 		nil,
@@ -148,8 +157,8 @@ func TestGetGuardDeskBootstrap(t *testing.T) {
 	if got.Stats == nil || got.Stats.PendingApprovals != 1 {
 		t.Fatalf("expected pending approvals 1, got %+v", got.Stats)
 	}
-	if got.ExpectedTodayCount != 4 {
-		t.Fatalf("expected today count = 4, got %d", got.ExpectedTodayCount)
+	if got.WaitingAtGateCount != 4 {
+		t.Fatalf("waiting at gate count = 4, got %d", got.WaitingAtGateCount)
 	}
 	if len(got.PendingPreview) != 1 {
 		t.Fatalf("expected 1 pending preview entry, got %d", len(got.PendingPreview))

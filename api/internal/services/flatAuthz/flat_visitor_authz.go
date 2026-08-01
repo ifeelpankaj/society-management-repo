@@ -91,6 +91,29 @@ func (a *FlatVisitorAuthz) CanManageFlatVisitors(ctx context.Context, societyID 
 	return ErrForbidden
 }
 
+func (a *FlatVisitorAuthz) CanManageFlatMembers(ctx context.Context, societyID int64, flatID int64, userID int64) error {
+	if userID <= 0 {
+		return ErrManageForbidden
+	}
+
+	if err := a.ensureFlatInSociety(ctx, societyID, flatID); err != nil {
+		return err
+	}
+
+	resident, err := a.getActiveFlatResident(ctx, societyID, flatID, userID)
+	if err != nil {
+		return err
+	}
+	if resident == nil {
+		return ErrManageForbidden
+	}
+	if resident.IsPrimary || resident.Role == models.FlatResidentRoleOwner {
+		return nil
+	}
+
+	return ErrManageForbidden
+}
+
 func (a *FlatVisitorAuthz) CanViewFlatVisitors(ctx context.Context, societyID int64, flatID int64, userID int64) error {
 	if userID <= 0 {
 		return ErrViewForbidden

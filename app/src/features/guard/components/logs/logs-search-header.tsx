@@ -1,4 +1,5 @@
 import { Pressable, Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import type { Href } from "expo-router";
 
 import { AppIcon } from "@/components/icons";
 import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
@@ -12,28 +13,32 @@ import { theme } from "@/theme";
 
 const G = theme.guard;
 
-const SEGMENT_OPTIONS: { label: string; value: LogsSegment }[] = [
+const DEFAULT_SEGMENT_OPTIONS: { label: string; value: LogsSegment }[] = [
   { label: "Today", value: "today" },
   { label: "Expected", value: "expected" },
   { label: "Inside", value: "inside" },
 ];
 
-type LogsSearchHeaderProps = {
+type LogsSearchHeaderProps<T extends string = LogsSegment> = {
   activeFilterCount: number;
   datePreset: DateRangePreset;
+  fallbackHomeRoute?: Href;
   isSearchActive: boolean;
   onClearSearch: () => void;
   onDatePress: () => void;
   onFilterPress: () => void;
   onSearchChange: (value: string) => void;
-  onSegmentChange: (segment: LogsSegment) => void;
+  onSegmentChange: (segment: T) => void;
   searchValue: string;
-  segment: LogsSegment;
+  segment: T;
+  segmentOptions?: { label: string; value: T }[];
+  title?: string;
 };
 
-export function LogsSearchHeader({
+export function LogsSearchHeader<T extends string = LogsSegment>({
   activeFilterCount,
   datePreset,
+  fallbackHomeRoute,
   isSearchActive,
   onClearSearch,
   onDatePress,
@@ -42,10 +47,15 @@ export function LogsSearchHeader({
   onSegmentChange,
   searchValue,
   segment,
-}: LogsSearchHeaderProps) {
+  segmentOptions,
+  title = "Visitor Logs",
+}: LogsSearchHeaderProps<T>) {
+  const options = segmentOptions ?? (DEFAULT_SEGMENT_OPTIONS as { label: string; value: T }[]);
+  const hideDatePicker = segment === "expected";
+
   return (
     <View style={styles.container}>
-      <GuardBackHeader title="Visitor Logs" />
+      <GuardBackHeader fallbackHomeRoute={fallbackHomeRoute} title={title} />
 
       <View style={styles.searchRow}>
         <AppIcon color={G.textMuted} name="search" size={16} />
@@ -90,9 +100,9 @@ export function LogsSearchHeader({
         </Text>
       ) : (
         <>
-          <SegmentTabs compact options={SEGMENT_OPTIONS} value={segment} onChange={onSegmentChange} />
+          <SegmentTabs compact options={options} value={segment} onChange={onSegmentChange} />
 
-          {segment !== "expected" ? (
+          {!hideDatePicker ? (
             <Pressable accessibilityRole="button" style={styles.dateRow} onPress={onDatePress}>
               <AppIcon color={G.teal} name="calendar" size={14} />
               <Text style={styles.dateLabel}>{getDateRangeLabel(datePreset)}</Text>

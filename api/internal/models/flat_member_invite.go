@@ -1,0 +1,145 @@
+package models
+
+import (
+	"errors"
+	"strings"
+	"time"
+)
+
+type FlatMemberInviteRole string
+
+const (
+	FlatMemberInviteRoleFamily FlatMemberInviteRole = "family"
+	FlatMemberInviteRoleTenant FlatMemberInviteRole = "tenant"
+)
+
+func (r FlatMemberInviteRole) IsValid() bool {
+	switch r {
+	case FlatMemberInviteRoleFamily, FlatMemberInviteRoleTenant:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r FlatMemberInviteRole) ToResidentRole() FlatResidentRole {
+	return FlatResidentRole(r)
+}
+
+type FlatMemberInviteStatus string
+
+const (
+	FlatMemberInviteStatusPending   FlatMemberInviteStatus = "pending"
+	FlatMemberInviteStatusAccepted  FlatMemberInviteStatus = "accepted"
+	FlatMemberInviteStatusExpired   FlatMemberInviteStatus = "expired"
+	FlatMemberInviteStatusCancelled FlatMemberInviteStatus = "cancelled"
+)
+
+type FlatMemberInvite struct {
+	ID        int64                  `json:"id"`
+	SocietyID int64                  `json:"society_id"`
+	FlatID    int64                  `json:"flat_id"`
+	InvitedBy int64                  `json:"invited_by"`
+	Role      FlatMemberInviteRole   `json:"role"`
+	Phone     *string                `json:"phone,omitempty"`
+	Email     *string                `json:"email,omitempty"`
+	FullName  string                 `json:"full_name"`
+	Status    FlatMemberInviteStatus `json:"status"`
+	ExpiresAt time.Time              `json:"expires_at"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
+}
+
+func (i *FlatMemberInvite) ToResponse() *FlatMemberInviteResponse {
+	if i == nil {
+		return nil
+	}
+	return &FlatMemberInviteResponse{
+		ID:        i.ID,
+		SocietyID: i.SocietyID,
+		FlatID:    i.FlatID,
+		InvitedBy: i.InvitedBy,
+		Role:      i.Role,
+		Phone:     i.Phone,
+		Email:     i.Email,
+		FullName:  i.FullName,
+		Status:    i.Status,
+		ExpiresAt: i.ExpiresAt,
+		CreatedAt: i.CreatedAt,
+		UpdatedAt: i.UpdatedAt,
+	}
+}
+
+type FlatMemberInviteResponse struct {
+	ID        int64                  `json:"id"`
+	SocietyID int64                  `json:"society_id"`
+	FlatID    int64                  `json:"flat_id"`
+	InvitedBy int64                  `json:"invited_by"`
+	Role      FlatMemberInviteRole   `json:"role"`
+	Phone     *string                `json:"phone,omitempty"`
+	Email     *string                `json:"email,omitempty"`
+	FullName  string                 `json:"full_name"`
+	Status    FlatMemberInviteStatus `json:"status"`
+	ExpiresAt time.Time              `json:"expires_at"`
+	CreatedAt time.Time              `json:"created_at"`
+	UpdatedAt time.Time              `json:"updated_at"`
+}
+
+type PublicFlatMemberInviteView struct {
+	ID          int64                  `json:"id"`
+	Role        FlatMemberInviteRole   `json:"role"`
+	FullName    string                 `json:"full_name"`
+	Status      FlatMemberInviteStatus `json:"status"`
+	ExpiresAt   time.Time              `json:"expires_at"`
+	SocietyName string                 `json:"society_name"`
+	FlatNumber  string                 `json:"flat_number"`
+	Block       *string                `json:"block,omitempty"`
+	Floor       *string                `json:"floor,omitempty"`
+}
+
+type FlatMemberInviteTokenResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+type CreateFlatMemberInviteRequest struct {
+	Role     FlatMemberInviteRole `json:"role" validate:"required"`
+	Phone    *string              `json:"phone,omitempty" validate:"omitempty,max=20"`
+	Email    *string              `json:"email,omitempty" validate:"omitempty,email,max=255"`
+	FullName string               `json:"full_name" validate:"required,max=200"`
+}
+
+func (r *CreateFlatMemberInviteRequest) Sanitize() {
+	r.Phone = trimPtr(r.Phone)
+	r.Email = trimPtr(r.Email)
+	r.FullName = strings.TrimSpace(r.FullName)
+}
+
+func (r *CreateFlatMemberInviteRequest) Validate() error {
+	if r == nil {
+		return errors.New("member invite request is required")
+	}
+	if !r.Role.IsValid() {
+		return errors.New("invalid member invite role")
+	}
+	if strings.TrimSpace(r.FullName) == "" {
+		return errors.New("full_name is required")
+	}
+	phone := ""
+	if r.Phone != nil {
+		phone = strings.TrimSpace(*r.Phone)
+	}
+	email := ""
+	if r.Email != nil {
+		email = strings.TrimSpace(*r.Email)
+	}
+	if phone == "" && email == "" {
+		return errors.New("phone or email is required")
+	}
+	return nil
+}
+
+type AcceptFlatMemberInviteResponse struct {
+	Invite   *FlatMemberInviteResponse `json:"invite"`
+	Resident *FlatResidentResponse     `json:"resident"`
+}

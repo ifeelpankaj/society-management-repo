@@ -15,13 +15,14 @@ const approveVisitorEntry = `-- name: ApproveVisitorEntry :one
 UPDATE visitor_entries
 SET status = 'approved',
     approved_by = $3,
+    approved_at = NOW(),
     qr_token_hash = $4,
     qr_expires_at = $5,
     updated_at = NOW()
 WHERE id = $1
   AND society_id = $2
   AND status = 'waiting_approval'
-RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
 `
 
 type ApproveVisitorEntryParams struct {
@@ -71,6 +72,9 @@ func (q *Queries) ApproveVisitorEntry(ctx context.Context, arg ApproveVisitorEnt
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 	)
 	return i, err
 }
@@ -135,7 +139,7 @@ SET status = 'checked_in',
 WHERE id = $1
   AND society_id = $2
   AND status = 'approved'
-RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
 `
 
 type CheckInVisitorEntryParams struct {
@@ -177,6 +181,9 @@ func (q *Queries) CheckInVisitorEntry(ctx context.Context, arg CheckInVisitorEnt
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 	)
 	return i, err
 }
@@ -190,7 +197,7 @@ SET status = 'checked_out',
 WHERE id = $1
   AND society_id = $2
   AND status = 'checked_in'
-RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
 `
 
 type CheckOutVisitorEntryParams struct {
@@ -232,33 +239,11 @@ func (q *Queries) CheckOutVisitorEntry(ctx context.Context, arg CheckOutVisitorE
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 	)
 	return i, err
-}
-
-const countExpectedTodayVisitorEntries = `-- name: CountExpectedTodayVisitorEntries :one
-SELECT COUNT(*)::bigint
-FROM visitor_entries ve
-WHERE ve.society_id = $1
-  AND ve.status = 'approved'
-  AND (
-    (
-      ve.expected_at IS NOT NULL
-      AND ve.expected_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-      AND ve.expected_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-    )
-    OR (
-      ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-      AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
-    )
-  )
-`
-
-func (q *Queries) CountExpectedTodayVisitorEntries(ctx context.Context, societyID int64) (int64, error) {
-	row := q.db.QueryRow(ctx, countExpectedTodayVisitorEntries, societyID)
-	var column_1 int64
-	err := row.Scan(&column_1)
-	return column_1, err
 }
 
 const countMemberVisitorApprovals = `-- name: CountMemberVisitorApprovals :one
@@ -374,6 +359,51 @@ func (q *Queries) CountVisitorEntries(ctx context.Context, arg CountVisitorEntri
 	return count, err
 }
 
+const countWaitingAtGateVisitorEntries = `-- name: CountWaitingAtGateVisitorEntries :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+WHERE ve.society_id = $1
+  AND ve.status = 'approved'
+`
+
+func (q *Queries) CountWaitingAtGateVisitorEntries(ctx context.Context, societyID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countWaitingAtGateVisitorEntries, societyID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const countWaitingAtGateVisitorEntriesFiltered = `-- name: CountWaitingAtGateVisitorEntriesFiltered :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = $1
+  AND ve.status = 'approved'
+  AND (
+      COALESCE($2::text, '') = ''
+      OR v.full_name ILIKE '%' || $2::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(ve.vehicle_number, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(ve.delivery_partner, '') ILIKE '%' || $2::text || '%'
+      OR ve.purpose::text ILIKE '%' || $2::text || '%'
+  )
+`
+
+type CountWaitingAtGateVisitorEntriesFilteredParams struct {
+	SocietyID int64   `db:"society_id" json:"society_id"`
+	Search    *string `db:"search" json:"search"`
+}
+
+func (q *Queries) CountWaitingAtGateVisitorEntriesFiltered(ctx context.Context, arg CountWaitingAtGateVisitorEntriesFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countWaitingAtGateVisitorEntriesFiltered, arg.SocietyID, arg.Search)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createVisitor = `-- name: CreateVisitor :one
 INSERT INTO visitors (full_name, phone_number, email, photo_url, metadata)
 VALUES ($1, $2, $3, $4, COALESCE($5, '{}'::jsonb))
@@ -426,6 +456,9 @@ INSERT INTO visitor_entries (
     expected_at,
     expected_checkout_at,
     approved_by,
+    approved_at,
+    delivery_partner,
+    service_provider,
     handled_by_guard_id,
     created_by,
     qr_token_hash,
@@ -453,9 +486,12 @@ VALUES (
     $17,
     $18,
     $19,
-    COALESCE($20, '{}'::jsonb)
+    $20,
+    $21,
+    $22,
+    COALESCE($23, '{}'::jsonb)
 )
-RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
 `
 
 type CreateVisitorEntryParams struct {
@@ -473,6 +509,9 @@ type CreateVisitorEntryParams struct {
 	ExpectedAt         pgtype.Timestamptz  `db:"expected_at" json:"expected_at"`
 	ExpectedCheckoutAt pgtype.Timestamptz  `db:"expected_checkout_at" json:"expected_checkout_at"`
 	ApprovedBy         *int64              `db:"approved_by" json:"approved_by"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 	HandledByGuardID   *int64              `db:"handled_by_guard_id" json:"handled_by_guard_id"`
 	CreatedBy          *int64              `db:"created_by" json:"created_by"`
 	QrTokenHash        *string             `db:"qr_token_hash" json:"qr_token_hash"`
@@ -497,6 +536,9 @@ func (q *Queries) CreateVisitorEntry(ctx context.Context, arg CreateVisitorEntry
 		arg.ExpectedAt,
 		arg.ExpectedCheckoutAt,
 		arg.ApprovedBy,
+		arg.ApprovedAt,
+		arg.DeliveryPartner,
+		arg.ServiceProvider,
 		arg.HandledByGuardID,
 		arg.CreatedBy,
 		arg.QrTokenHash,
@@ -535,6 +577,9 @@ func (q *Queries) CreateVisitorEntry(ctx context.Context, arg CreateVisitorEntry
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 	)
 	return i, err
 }
@@ -642,7 +687,7 @@ SET qr_token_hash = $3,
 WHERE id = $1
   AND society_id = $2
   AND status = 'approved'
-RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
 `
 
 type GenerateVisitorEntryQRParams struct {
@@ -690,6 +735,9 @@ func (q *Queries) GenerateVisitorEntryQR(ctx context.Context, arg GenerateVisito
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 	)
 	return i, err
 }
@@ -718,7 +766,7 @@ func (q *Queries) GetVisitor(ctx context.Context, id int64) (Visitor, error) {
 
 const getVisitorEntry = `-- name: GetVisitorEntry :one
 SELECT
-    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at,
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
     v.full_name AS visitor_full_name,
     v.phone_number AS visitor_phone_number,
     v.email AS visitor_email,
@@ -768,6 +816,9 @@ type GetVisitorEntryRow struct {
 	Metadata           []byte              `db:"metadata" json:"metadata"`
 	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
@@ -810,6 +861,9 @@ func (q *Queries) GetVisitorEntry(ctx context.Context, arg GetVisitorEntryParams
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 		&i.VisitorFullName,
 		&i.VisitorPhoneNumber,
 		&i.VisitorEmail,
@@ -823,7 +877,7 @@ func (q *Queries) GetVisitorEntry(ctx context.Context, arg GetVisitorEntryParams
 
 const getVisitorEntryByQRHash = `-- name: GetVisitorEntryByQRHash :one
 SELECT
-    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at,
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
     v.full_name AS visitor_full_name,
     v.phone_number AS visitor_phone_number,
     v.email AS visitor_email,
@@ -867,6 +921,9 @@ type GetVisitorEntryByQRHashRow struct {
 	Metadata           []byte              `db:"metadata" json:"metadata"`
 	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
@@ -909,6 +966,9 @@ func (q *Queries) GetVisitorEntryByQRHash(ctx context.Context, qrTokenHash *stri
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 		&i.VisitorFullName,
 		&i.VisitorPhoneNumber,
 		&i.VisitorEmail,
@@ -1024,7 +1084,7 @@ func (q *Queries) GetVisitorInviteByTokenHash(ctx context.Context, tokenHash str
 
 const listPendingVisitorApprovals = `-- name: ListPendingVisitorApprovals :many
 SELECT
-    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at,
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
     v.full_name AS visitor_full_name,
     v.phone_number AS visitor_phone_number,
     v.email AS visitor_email,
@@ -1076,6 +1136,9 @@ type ListPendingVisitorApprovalsRow struct {
 	Metadata           []byte              `db:"metadata" json:"metadata"`
 	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
@@ -1124,6 +1187,9 @@ func (q *Queries) ListPendingVisitorApprovals(ctx context.Context, arg ListPendi
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ApprovedAt,
+			&i.DeliveryPartner,
+			&i.ServiceProvider,
 			&i.VisitorFullName,
 			&i.VisitorPhoneNumber,
 			&i.VisitorEmail,
@@ -1144,7 +1210,7 @@ func (q *Queries) ListPendingVisitorApprovals(ctx context.Context, arg ListPendi
 
 const listRecentVisitorEntriesByFlat = `-- name: ListRecentVisitorEntriesByFlat :many
 SELECT
-    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at,
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
     v.full_name AS visitor_full_name,
     v.phone_number AS visitor_phone_number,
     v.email AS visitor_email,
@@ -1197,6 +1263,9 @@ type ListRecentVisitorEntriesByFlatRow struct {
 	Metadata           []byte              `db:"metadata" json:"metadata"`
 	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
@@ -1245,6 +1314,9 @@ func (q *Queries) ListRecentVisitorEntriesByFlat(ctx context.Context, arg ListRe
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ApprovedAt,
+			&i.DeliveryPartner,
+			&i.ServiceProvider,
 			&i.VisitorFullName,
 			&i.VisitorPhoneNumber,
 			&i.VisitorEmail,
@@ -1265,7 +1337,7 @@ func (q *Queries) ListRecentVisitorEntriesByFlat(ctx context.Context, arg ListRe
 
 const listSocietyPendingVisitorApprovals = `-- name: ListSocietyPendingVisitorApprovals :many
 SELECT
-    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at,
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
     v.full_name AS visitor_full_name,
     v.phone_number AS visitor_phone_number,
     v.email AS visitor_email,
@@ -1330,6 +1402,9 @@ type ListSocietyPendingVisitorApprovalsRow struct {
 	Metadata            []byte              `db:"metadata" json:"metadata"`
 	CreatedAt           pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt          pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner     *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider     *string             `db:"service_provider" json:"service_provider"`
 	VisitorFullName     string              `db:"visitor_full_name" json:"visitor_full_name"`
 	VisitorPhoneNumber  *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail        *string             `db:"visitor_email" json:"visitor_email"`
@@ -1386,6 +1461,9 @@ func (q *Queries) ListSocietyPendingVisitorApprovals(ctx context.Context, arg Li
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ApprovedAt,
+			&i.DeliveryPartner,
+			&i.ServiceProvider,
 			&i.VisitorFullName,
 			&i.VisitorPhoneNumber,
 			&i.VisitorEmail,
@@ -1408,7 +1486,7 @@ func (q *Queries) ListSocietyPendingVisitorApprovals(ctx context.Context, arg Li
 
 const listVisitorEntries = `-- name: ListVisitorEntries :many
 SELECT
-    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at,
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
     v.full_name AS visitor_full_name,
     v.phone_number AS visitor_phone_number,
     v.email AS visitor_email,
@@ -1482,6 +1560,9 @@ type ListVisitorEntriesRow struct {
 	Metadata           []byte              `db:"metadata" json:"metadata"`
 	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
 	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
@@ -1542,6 +1623,9 @@ func (q *Queries) ListVisitorEntries(ctx context.Context, arg ListVisitorEntries
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ApprovedAt,
+			&i.DeliveryPartner,
+			&i.ServiceProvider,
 			&i.VisitorFullName,
 			&i.VisitorPhoneNumber,
 			&i.VisitorEmail,
@@ -1602,6 +1686,149 @@ func (q *Queries) ListVisitorEntryEvents(ctx context.Context, arg ListVisitorEnt
 	return items, nil
 }
 
+const listWaitingAtGateVisitorEntries = `-- name: ListWaitingAtGateVisitorEntries :many
+SELECT
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = $1
+  AND ve.status = 'approved'
+  AND (
+      COALESCE($2::text, '') = ''
+      OR v.full_name ILIKE '%' || $2::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(ve.vehicle_number, '') ILIKE '%' || $2::text || '%'
+      OR COALESCE(ve.delivery_partner, '') ILIKE '%' || $2::text || '%'
+      OR ve.purpose::text ILIKE '%' || $2::text || '%'
+  )
+ORDER BY ve.approved_at ASC NULLS LAST, ve.created_at ASC
+LIMIT $4 OFFSET $3
+`
+
+type ListWaitingAtGateVisitorEntriesParams struct {
+	SocietyID int64   `db:"society_id" json:"society_id"`
+	Search    *string `db:"search" json:"search"`
+	Offset    int32   `db:"offset" json:"offset"`
+	Limit     int32   `db:"limit" json:"limit"`
+}
+
+type ListWaitingAtGateVisitorEntriesRow struct {
+	ID                 int64               `db:"id" json:"id"`
+	SocietyID          int64               `db:"society_id" json:"society_id"`
+	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
+	InviteID           *int64              `db:"invite_id" json:"invite_id"`
+	Source             VisitorSource       `db:"source" json:"source"`
+	Purpose            VisitorPurpose      `db:"purpose" json:"purpose"`
+	Status             VisitorStatus       `db:"status" json:"status"`
+	VehicleNumber      *string             `db:"vehicle_number" json:"vehicle_number"`
+	VehicleType        *VisitorVehicleType `db:"vehicle_type" json:"vehicle_type"`
+	CompanionsCount    int32               `db:"companions_count" json:"companions_count"`
+	CompanionDetails   []byte              `db:"companion_details" json:"companion_details"`
+	ExpectedAt         pgtype.Timestamptz  `db:"expected_at" json:"expected_at"`
+	ExpectedCheckoutAt pgtype.Timestamptz  `db:"expected_checkout_at" json:"expected_checkout_at"`
+	CheckedInAt        pgtype.Timestamptz  `db:"checked_in_at" json:"checked_in_at"`
+	CheckedOutAt       pgtype.Timestamptz  `db:"checked_out_at" json:"checked_out_at"`
+	AutoClosedAt       pgtype.Timestamptz  `db:"auto_closed_at" json:"auto_closed_at"`
+	ApprovedBy         *int64              `db:"approved_by" json:"approved_by"`
+	RejectedBy         *int64              `db:"rejected_by" json:"rejected_by"`
+	HandledByGuardID   *int64              `db:"handled_by_guard_id" json:"handled_by_guard_id"`
+	CreatedBy          *int64              `db:"created_by" json:"created_by"`
+	QrTokenHash        *string             `db:"qr_token_hash" json:"qr_token_hash"`
+	QrExpiresAt        pgtype.Timestamptz  `db:"qr_expires_at" json:"qr_expires_at"`
+	QrUsedAt           pgtype.Timestamptz  `db:"qr_used_at" json:"qr_used_at"`
+	Notes              *string             `db:"notes" json:"notes"`
+	RejectionReason    *string             `db:"rejection_reason" json:"rejection_reason"`
+	Metadata           []byte              `db:"metadata" json:"metadata"`
+	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
+	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
+	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
+	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
+	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
+	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	Block              *string             `db:"block" json:"block"`
+	Floor              *string             `db:"floor" json:"floor"`
+}
+
+func (q *Queries) ListWaitingAtGateVisitorEntries(ctx context.Context, arg ListWaitingAtGateVisitorEntriesParams) ([]ListWaitingAtGateVisitorEntriesRow, error) {
+	rows, err := q.db.Query(ctx, listWaitingAtGateVisitorEntries,
+		arg.SocietyID,
+		arg.Search,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListWaitingAtGateVisitorEntriesRow{}
+	for rows.Next() {
+		var i ListWaitingAtGateVisitorEntriesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SocietyID,
+			&i.FlatID,
+			&i.VisitorID,
+			&i.InviteID,
+			&i.Source,
+			&i.Purpose,
+			&i.Status,
+			&i.VehicleNumber,
+			&i.VehicleType,
+			&i.CompanionsCount,
+			&i.CompanionDetails,
+			&i.ExpectedAt,
+			&i.ExpectedCheckoutAt,
+			&i.CheckedInAt,
+			&i.CheckedOutAt,
+			&i.AutoClosedAt,
+			&i.ApprovedBy,
+			&i.RejectedBy,
+			&i.HandledByGuardID,
+			&i.CreatedBy,
+			&i.QrTokenHash,
+			&i.QrExpiresAt,
+			&i.QrUsedAt,
+			&i.Notes,
+			&i.RejectionReason,
+			&i.Metadata,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ApprovedAt,
+			&i.DeliveryPartner,
+			&i.ServiceProvider,
+			&i.VisitorFullName,
+			&i.VisitorPhoneNumber,
+			&i.VisitorEmail,
+			&i.VisitorPhotoUrl,
+			&i.FlatNumber,
+			&i.Block,
+			&i.Floor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markVisitorInviteUsed = `-- name: MarkVisitorInviteUsed :one
 UPDATE visitor_invites
 SET status = 'used',
@@ -1632,6 +1859,61 @@ func (q *Queries) MarkVisitorInviteUsed(ctx context.Context, id int64) (VisitorI
 	return i, err
 }
 
+const mergeVisitorEntryMetadata = `-- name: MergeVisitorEntryMetadata :one
+UPDATE visitor_entries
+SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+    updated_at = NOW()
+WHERE id = $2
+  AND society_id = $3
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
+`
+
+type MergeVisitorEntryMetadataParams struct {
+	MetadataPatch []byte `db:"metadata_patch" json:"metadata_patch"`
+	ID            int64  `db:"id" json:"id"`
+	SocietyID     int64  `db:"society_id" json:"society_id"`
+}
+
+func (q *Queries) MergeVisitorEntryMetadata(ctx context.Context, arg MergeVisitorEntryMetadataParams) (VisitorEntry, error) {
+	row := q.db.QueryRow(ctx, mergeVisitorEntryMetadata, arg.MetadataPatch, arg.ID, arg.SocietyID)
+	var i VisitorEntry
+	err := row.Scan(
+		&i.ID,
+		&i.SocietyID,
+		&i.FlatID,
+		&i.VisitorID,
+		&i.InviteID,
+		&i.Source,
+		&i.Purpose,
+		&i.Status,
+		&i.VehicleNumber,
+		&i.VehicleType,
+		&i.CompanionsCount,
+		&i.CompanionDetails,
+		&i.ExpectedAt,
+		&i.ExpectedCheckoutAt,
+		&i.CheckedInAt,
+		&i.CheckedOutAt,
+		&i.AutoClosedAt,
+		&i.ApprovedBy,
+		&i.RejectedBy,
+		&i.HandledByGuardID,
+		&i.CreatedBy,
+		&i.QrTokenHash,
+		&i.QrExpiresAt,
+		&i.QrUsedAt,
+		&i.Notes,
+		&i.RejectionReason,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
+	)
+	return i, err
+}
+
 const rejectVisitorEntry = `-- name: RejectVisitorEntry :one
 UPDATE visitor_entries
 SET status = 'rejected',
@@ -1641,7 +1923,7 @@ SET status = 'rejected',
 WHERE id = $1
   AND society_id = $2
   AND status = 'waiting_approval'
-RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
 `
 
 type RejectVisitorEntryParams struct {
@@ -1689,6 +1971,9 @@ func (q *Queries) RejectVisitorEntry(ctx context.Context, arg RejectVisitorEntry
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
 	)
 	return i, err
 }

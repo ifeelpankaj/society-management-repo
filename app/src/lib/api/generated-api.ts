@@ -3105,7 +3105,15 @@ export type ModelsVisitorSummary = {
   phone_number?: string;
   photo_url?: string;
 };
+export type ModelsGuardApproveEntryRequest = {
+  on_behalf?: boolean;
+  reason?: string;
+};
+
 export type ModelsVisitorEntry = {
+  approved_at?: string;
+  delivery_partner?: string;
+  service_provider?: string;
   approved_by?: number;
   auto_closed_at?: string;
   checked_in_at?: string;
@@ -3159,6 +3167,7 @@ export type ModelsVisitorFormRequest = {
     [key: string]: any;
   }[];
   companions_count?: number;
+  delivery_partner?: string;
   email?: string;
   expected_at?: string;
   expected_checkout_at?: string;
@@ -3171,6 +3180,7 @@ export type ModelsVisitorFormRequest = {
   phone_number?: string;
   photo_url?: string;
   purpose?: ModelsVisitorPurpose;
+  service_provider?: string;
   vehicle_number?: string;
   vehicle_type?: ModelsVisitorVehicleType;
 };
@@ -3604,7 +3614,10 @@ export type ModelsUpdateFlatVisitorSettingRequest = {
   is_enabled?: boolean;
 };
 export type ModelsVisitorPendingEntry = {
+  approved_at?: string;
   approved_by?: number;
+  delivery_partner?: string;
+  service_provider?: string;
   auto_closed_at?: string;
   checked_in_at?: string;
   checked_out_at?: string;
@@ -3652,6 +3665,7 @@ export type ModelsVisitorEntryStatsResponse = {
 };
 export type ModelsGuardDeskBootstrapResponse = {
   expected_today_count?: number;
+  waiting_at_gate_count?: number;
   pending_preview?: ModelsVisitorPendingEntry[];
   society?: ModelsSocietyResponse;
   stats?: ModelsVisitorEntryStatsResponse;

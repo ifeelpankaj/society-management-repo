@@ -1,5 +1,7 @@
-import { ResidentLogsScreen } from "@/features/resident/components/resident-logs-screen";
+import { Redirect } from "expo-router";
 
-export default function ResidentLogsRoute() {
-  return <ResidentLogsScreen />;
+import { residentEntriesRoute } from "@/features/resident/resident-routes";
+
+export default function ResidentLogsRedirect() {
+  return <Redirect href={residentEntriesRoute()} />;
 }

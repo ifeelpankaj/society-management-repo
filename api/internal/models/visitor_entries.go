@@ -63,6 +63,7 @@ const (
 	VisitorEventTypeAutoClosed  VisitorEventType = "auto_closed"
 	VisitorEventTypeQRGenerated VisitorEventType = "qr_generated"
 	VisitorEventTypeQRUsed      VisitorEventType = "qr_used"
+	VisitorEventTypeGuardApprovedOnBehalf VisitorEventType = "guard_approved_on_behalf"
 )
 
 type VisitorInviteStatus string
@@ -130,6 +131,9 @@ type VisitorEntry struct {
 	CheckedOutAt       *time.Time          `json:"checked_out_at,omitempty"`
 	AutoClosedAt       *time.Time          `json:"auto_closed_at,omitempty"`
 	ApprovedBy         *int64              `json:"approved_by,omitempty"`
+	ApprovedAt         *time.Time          `json:"approved_at,omitempty"`
+	DeliveryPartner    *string             `json:"delivery_partner,omitempty"`
+	ServiceProvider    *string             `json:"service_provider,omitempty"`
 	RejectedBy         *int64              `json:"rejected_by,omitempty"`
 	HandledByGuardID   *int64              `json:"handled_by_guard_id,omitempty"`
 	CreatedBy          *int64              `json:"created_by,omitempty"`
@@ -212,6 +216,8 @@ type VisitorFormRequest struct {
 	ExpectedCheckoutAt *time.Time          `json:"expected_checkout_at,omitempty"`
 	Notes              *string             `json:"notes,omitempty"`
 	Metadata           map[string]any      `json:"metadata,omitempty"`
+	DeliveryPartner    *string             `json:"delivery_partner,omitempty"`
+	ServiceProvider    *string             `json:"service_provider,omitempty"`
 }
 
 func (r *VisitorFormRequest) Validate(requireFlatAndPurpose bool) error {
@@ -247,6 +253,66 @@ func (r *VisitorFormRequest) Validate(requireFlatAndPurpose bool) error {
 		return errors.New("expected_checkout_at must be after expected_at")
 	}
 	return nil
+}
+
+func (r *VisitorFormRequest) ValidateForPurpose() error {
+	if r == nil {
+		return errors.New("visitor form request is required")
+	}
+	r.DeliveryPartner = cleanPtr(r.DeliveryPartner)
+	r.ServiceProvider = cleanPtr(r.ServiceProvider)
+
+	switch r.Purpose {
+	case VisitorPurposeGuest:
+		if r.PhoneNumber == nil {
+			return errors.New("phone_number is required for guest entries")
+		}
+	case VisitorPurposeDelivery:
+		if r.PhoneNumber == nil {
+			return errors.New("phone_number is required for delivery entries")
+		}
+		if r.DeliveryPartner == nil {
+			return errors.New("delivery_partner is required for delivery entries")
+		}
+		r.CompanionsCount = 0
+	case VisitorPurposeCab:
+		if r.VehicleNumber == nil {
+			return errors.New("vehicle_number is required for cab entries")
+		}
+		if r.VehicleType == nil {
+			return errors.New("vehicle_type is required for cab entries")
+		}
+		r.CompanionsCount = 0
+	case VisitorPurposeService:
+		if r.PhoneNumber == nil {
+			return errors.New("phone_number is required for service entries")
+		}
+		if r.ServiceProvider == nil {
+			return errors.New("service_provider is required for service entries")
+		}
+		r.CompanionsCount = 0
+	case VisitorPurposeMaintenance:
+		if r.PhoneNumber == nil {
+			return errors.New("phone_number is required for maintenance entries")
+		}
+		if r.ServiceProvider == nil {
+			return errors.New("service_provider is required for maintenance entries")
+		}
+		r.CompanionsCount = 0
+	}
+	return nil
+}
+
+type GuardApproveEntryRequest struct {
+	OnBehalf *bool   `json:"on_behalf,omitempty"`
+	Reason   *string `json:"reason,omitempty"`
+}
+
+type WaitingAtGateFilter struct {
+	SocietyID int64
+	Search    *string
+	Limit     int32
+	Offset    int32
 }
 
 type RejectVisitorEntryRequest struct {
@@ -355,10 +421,10 @@ type FlatRecentVisitorSummary struct {
 }
 
 type GuardDeskBootstrapResponse struct {
-	Society            *SocietyResponse           `json:"society"`
-	Stats              *VisitorEntryStatsResponse `json:"stats"`
-	ExpectedTodayCount int64                      `json:"expected_today_count"`
-	PendingPreview     []*VisitorPendingEntry     `json:"pending_preview"`
+	Society              *SocietyResponse           `json:"society"`
+	Stats                *VisitorEntryStatsResponse `json:"stats"`
+	WaitingAtGateCount   int64                      `json:"waiting_at_gate_count"`
+	PendingPreview       []*VisitorPendingEntry     `json:"pending_preview"`
 }
 
 type SocietyFlatVisitorSettingRow struct {

@@ -40,11 +40,17 @@ type VisitorEntryService interface {
 	GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
 	GetGuardDeskBootstrap(ctx context.Context, societyID int64) (*models.GuardDeskBootstrapResponse, error)
 	ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error)
+	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) (*models.VisitorEntryListResult, error)
+	NotifyPendingEntry(ctx context.Context, societyID int64, entryID int64, guardUserID int64) error
+	GuardApproveEntry(ctx context.Context, societyID int64, entryID int64, guardUserID int64, opts GuardApproveOptions) (*models.VisitorEntryMutationResponse, error)
+	GuardApproveAndCheckIn(ctx context.Context, societyID int64, entryID int64, guardUserID int64, opts GuardApproveOptions) (*models.VisitorEntry, error)
+	CheckInByEntryID(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
 	GetFlatVisitorContext(ctx context.Context, societyID int64, flatID int64) (*models.FlatVisitorContextResponse, error)
 	GetFlatVisitorContextForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64) (*models.FlatVisitorContextResponse, error)
 	GetMemberVisitorApprovalStats(ctx context.Context, societyID int64, memberID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	ListPendingApprovals(ctx context.Context, societyID int64, flatID int64, actorUserID int64) ([]*models.VisitorEntry, error)
 	ListFlatEntriesForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)
+	GetFlatEntryForActor(ctx context.Context, societyID int64, flatID int64, entryID int64, actorUserID int64) (*models.VisitorEntry, error)
 	ListEvents(ctx context.Context, societyID int64, entryID int64) ([]*models.VisitorEntryEvent, error)
 }
 

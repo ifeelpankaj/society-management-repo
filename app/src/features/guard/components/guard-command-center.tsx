@@ -23,6 +23,7 @@ import {
   guardEntriesRoute,
   guardPendingRoute,
   guardScannerRoute,
+  guardWaitingAtGateRoute,
 } from "@/features/guard/guard-routes";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
@@ -53,7 +54,7 @@ export function GuardCommandCenter() {
   const activityFeed = useGuardActivityFeed();
   const {
     errorMessage,
-    expectedTodayCount,
+    waitingAtGateCount,
     hasError,
     isInitialLoading,
     isRefreshing,
@@ -84,8 +85,8 @@ export function GuardCommandCenter() {
         case "pending":
           router.push(guardPendingRoute());
           break;
-        case "expected":
-          router.push(guardEntriesRoute("expected"));
+        case "waiting-at-gate":
+          router.push(guardWaitingAtGateRoute());
           break;
         case "checked-out":
           router.push(guardEntriesRoute("checked_out"));
@@ -116,12 +117,12 @@ export function GuardCommandCenter() {
         onPress: () => router.push(guardAddEntryRoute()),
       },
       {
-        id: "expected",
-        title: "Expected",
-        subtitle: "Today's List",
+        id: "waiting-at-gate",
+        title: "At Gate",
+        subtitle: "Check In",
         tone: "purple",
-        icon: { ios: "calendar.badge.checkmark", android: "event_available", web: "event_available" },
-        onPress: () => router.push(guardEntriesRoute("expected")),
+        icon: { ios: "door.left.hand.open", android: "meeting_room", web: "meeting_room" },
+        onPress: () => router.push(guardWaitingAtGateRoute()),
       },
       {
         id: "logs",
@@ -152,11 +153,11 @@ export function GuardCommandCenter() {
         icon: { ios: "hourglass", android: "hourglass_top", web: "hourglass_top" },
       },
       {
-        id: "expected",
-        label: "Expected Today",
-        value: expectedTodayCount,
+        id: "waiting-at-gate",
+        label: "Waiting at Gate",
+        value: waitingAtGateCount,
         tone: "blue",
-        icon: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
+        icon: { ios: "door.left.hand.open", android: "meeting_room", web: "meeting_room" },
       },
       {
         id: "checked-out",
@@ -166,7 +167,7 @@ export function GuardCommandCenter() {
         icon: { ios: "arrow.right.square", android: "logout", web: "logout" },
       },
     ],
-    [checkedOutCount, expectedTodayCount, insideCount, pendingCount],
+    [checkedOutCount, insideCount, pendingCount, waitingAtGateCount],
   );
 
   return (

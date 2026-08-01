@@ -17,7 +17,7 @@ import { SymbolView } from "expo-symbols";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Row, Stack } from "@/components/layout";
-import { getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
+import { DELIVERY_PARTNERS, getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import {
   flatFromResponse,
   formatSelectedFlatLabel,
@@ -644,22 +644,101 @@ export function ManualEntryForm({
           <>
             <Stack gap="lg">
               <StepLabel step={3} title="Visitor details" />
-              <Field
-                autoCapitalize="words"
-                error={form.errors.fullName}
-                label="Visitor name"
-                placeholder="Full name"
-                value={form.fullName}
-                onChangeText={form.setFullName}
-              />
+              {form.purpose !== "delivery" ? (
+                <Field
+                  autoCapitalize="words"
+                  error={form.errors.fullName}
+                  label={form.purpose === "cab" ? "Driver name" : "Visitor name"}
+                  placeholder="Full name"
+                  value={form.fullName}
+                  onChangeText={form.setFullName}
+                />
+              ) : null}
               <Field
                 error={form.errors.phoneNumber}
                 keyboardType="phone-pad"
                 label="Phone number"
-                placeholder="10-digit mobile"
+                placeholder={form.purpose === "cab" ? "Optional" : "10-digit mobile"}
                 value={form.phoneNumber}
                 onChangeText={form.setPhoneNumber}
               />
+              {form.purpose === "guest" ? (
+                <Field
+                  error={form.errors.companionsCount}
+                  keyboardType="number-pad"
+                  label="Companion count"
+                  placeholder="0"
+                  value={String(form.companionsCount)}
+                  onChangeText={(value) => form.setCompanionsCount(Number(value.replace(/\D/g, "") || 0))}
+                />
+              ) : null}
+              {form.purpose === "delivery" ? (
+                <>
+                  <Text style={styles.fieldLabel}>Delivery partner</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <Row align="center" gap={8}>
+                      {DELIVERY_PARTNERS.map((partner) => {
+                        const active = form.deliveryPartner === partner;
+                        return (
+                          <Pressable
+                            key={partner}
+                            style={[styles.partnerChip, active && styles.partnerChipActive]}
+                            onPress={() => form.setDeliveryPartner(partner)}
+                          >
+                            <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
+                              {partner}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </Row>
+                  </ScrollView>
+                  {form.errors.deliveryPartner ? (
+                    <Text style={styles.flatPickerError}>{form.errors.deliveryPartner}</Text>
+                  ) : null}
+                </>
+              ) : null}
+              {form.purpose === "cab" ? (
+                <>
+                  <Field
+                    autoCapitalize="characters"
+                    error={form.errors.vehicleNumber}
+                    label="Vehicle number"
+                    placeholder="Required"
+                    value={form.vehicleNumber}
+                    onChangeText={form.setVehicleNumber}
+                  />
+                  <Text style={styles.fieldLabel}>Vehicle type</Text>
+                  <Row align="center" gap={8} style={styles.vehicleTypeRow}>
+                    {(["cab", "auto", "car", "bike"] as const).map((type) => {
+                      const active = form.vehicleType === type;
+                      return (
+                        <Pressable
+                          key={type}
+                          style={[styles.partnerChip, active && styles.partnerChipActive]}
+                          onPress={() => form.setVehicleType(type)}
+                        >
+                          <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
+                            {titleize(type)}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </Row>
+                  {form.errors.vehicleType ? (
+                    <Text style={styles.flatPickerError}>{form.errors.vehicleType}</Text>
+                  ) : null}
+                </>
+              ) : null}
+              {form.purpose === "service" || form.purpose === "maintenance" ? (
+                <Field
+                  error={form.errors.serviceProvider}
+                  label={form.purpose === "maintenance" ? "Vendor / company" : "Service provider"}
+                  placeholder="Required"
+                  value={form.serviceProvider}
+                  onChangeText={form.setServiceProvider}
+                />
+              ) : null}
             </Stack>
 
             <Pressable style={styles.extraToggle} onPress={() => setShowExtra((v) => !v)}>
@@ -896,6 +975,29 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     minHeight: 96,
     paddingVertical: spacing.md,
+  },
+  partnerChip: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  partnerChipActive: {
+    backgroundColor: colors.guard.teal,
+    borderColor: colors.guard.teal,
+  },
+  partnerChipText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  partnerChipTextActive: {
+    color: colors.text.inverse,
+  },
+  vehicleTypeRow: {
+    flexWrap: "wrap",
   },
   fieldLabel: {
     color: colors.guard.textMuted,

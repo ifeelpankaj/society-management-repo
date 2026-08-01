@@ -53,8 +53,11 @@ export function PaginatedList<T>({
 }: PaginatedListProps<T>) {
   if (isLoading && data.length === 0) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.guard.teal} />
+      <View style={styles.flex}>
+        {header ? <View style={styles.headerOnly}>{header}</View> : null}
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.guard.teal} />
+        </View>
       </View>
     );
   }
@@ -117,8 +120,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing["2xl"],
   },
+  flex: {
+    flex: 1,
+  },
   header: {
     paddingBottom: spacing.lg,
+  },
+  headerOnly: {
+    paddingBottom: spacing.sm,
+    paddingHorizontal: layout.screenPaddingHorizontal,
+    paddingTop: spacing["2xl"],
   },
   headerSpacer: {
     height: spacing["2xl"],

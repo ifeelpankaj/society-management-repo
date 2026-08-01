@@ -46,6 +46,7 @@ type V1Handlers struct {
 	Bootstrap      *handlers.BootstrapHandler
 	Society        *handlers.SocietyHandler
 	Flat           *handlers.FlatHandler
+	MemberInvite   *handlers.MemberInviteHandler
 	Plan           *handlers.PlanHandler
 	Subscription   *handlers.SubscriptionHandler
 	VisitorEntry   *handlers.VisitorEntryHandler
@@ -78,6 +79,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 	flatRepo := repository.NewFlatRepository(db)
 	flatClaimRepo := repository.NewFlatClaimRepository(db)
 	flatResidentRepo := repository.NewFlatResidentRepository(db)
+	flatMemberInviteRepo := repository.NewFlatMemberInviteRepository(db)
 	planRepo := repository.NewPlanRepository(db)
 	subscriptionRepo := repository.NewSubscriptionRepository(db)
 	visitorSettingRepo := repository.NewVisitorSettingRepository(db)
@@ -172,11 +174,13 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		flatRepo,
 		flatClaimRepo,
 		flatResidentRepo,
+		flatMemberInviteRepo,
 		societyMemberRepo,
 		txManager,
 		societySvc,
 		subscriptionSvc,
 		visitorSettingSvc,
+		flatVisitorAuthz,
 	)
 
 	bootstrapSvc := bootstrapsvc.NewBootstrapService(
@@ -200,6 +204,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		Bootstrap:      handlers.NewBootstrapHandler(bootstrapSvc),
 		Society:        handlers.NewSocietyHandler(societySvc),
 		Flat:           handlers.NewFlatHandler(flatSvc),
+		MemberInvite:   handlers.NewMemberInviteHandler(flatSvc),
 		Plan:           handlers.NewPlanHandler(planSvc),
 		Subscription:   handlers.NewSubscriptionHandler(subscriptionSvc),
 		VisitorEntry:   handlers.NewVisitorEntryHandler(visitorInviteSvc, visitorEntrySvc),

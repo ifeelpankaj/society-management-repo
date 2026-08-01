@@ -298,6 +298,23 @@ type FlatResidentsData struct {
 	Residents []*FlatResidentResponse `json:"residents"`
 }
 
+type FlatMemberInvitesData struct {
+	Invites []*FlatMemberInviteResponse `json:"invites"`
+}
+
+type PublicFlatMemberInviteData struct {
+	Invite *PublicFlatMemberInviteView `json:"invite"`
+}
+
+type FlatMemberInviteTokenData struct {
+	Invite *FlatMemberInviteResponse    `json:"invite"`
+	Token  *FlatMemberInviteTokenResponse `json:"token"`
+}
+
+type AcceptFlatMemberInviteData struct {
+	Acceptance *AcceptFlatMemberInviteResponse `json:"acceptance"`
+}
+
 type MyResidencesData struct {
 	Residences []*FlatResidentResponse `json:"residences"`
 }
@@ -472,6 +489,30 @@ type FlatResidentsAPIResponse struct {
 	Success bool              `json:"success" example:"true"`
 	Message string            `json:"message" example:"Residents fetched successfully"`
 	Data    FlatResidentsData `json:"data"`
+}
+
+type FlatMemberInvitesAPIResponse struct {
+	Success bool                  `json:"success" example:"true"`
+	Message string                `json:"message" example:"Member invites fetched successfully"`
+	Data    FlatMemberInvitesData `json:"data"`
+}
+
+type FlatMemberInviteTokenAPIResponse struct {
+	Success bool                      `json:"success" example:"true"`
+	Message string                    `json:"message" example:"Member invite created successfully"`
+	Data    FlatMemberInviteTokenData `json:"data"`
+}
+
+type PublicFlatMemberInviteAPIResponse struct {
+	Success bool                       `json:"success" example:"true"`
+	Message string                     `json:"message" example:"Member invite fetched successfully"`
+	Data    PublicFlatMemberInviteData `json:"data"`
+}
+
+type AcceptFlatMemberInviteAPIResponse struct {
+	Success bool                       `json:"success" example:"true"`
+	Message string                     `json:"message" example:"Member invite accepted successfully"`
+	Data    AcceptFlatMemberInviteData `json:"data"`
 }
 
 type MyResidencesAPIResponse struct {

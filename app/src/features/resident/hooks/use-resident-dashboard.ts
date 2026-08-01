@@ -1,16 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
-import { Alert } from "react-native";
 
 import { getApiMessage } from "@/features/auth/api-error";
-import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { titleize } from "@/features/guard/guard-utils";
+import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
 import { useResident } from "@/features/resident/resident-context";
+import { useLazyGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesAndEntryIdQuery } from "@/lib/api/resident-api-extensions";
 import {
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesPendingQuery,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdRejectMutation,
+  type ModelsFlatRecentVisitorSummary,
+  type ModelsVisitorEntry,
 } from "@/lib/api/generated-api";
 
 function isToday(value?: string | null) {
@@ -38,8 +40,10 @@ export function useResidentDashboard() {
     societyId,
     user,
   } = useResident();
-  const { showError, showSuccess } = useGuardFeedback();
+  const { showError, showSuccess } = useResidentFeedback();
   const [actionEntryId, setActionEntryId] = useState<number | null>(null);
+  const [fetchEntryDetail, fetchEntryState] =
+    useLazyGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesAndEntryIdQuery();
 
   const shouldSkip = !societyId || !flatId;
   const queryOpts = { skip: shouldSkip };
@@ -127,7 +131,25 @@ export function useResidentDashboard() {
 
   const displayName = user?.full_name ?? user?.first_name ?? "Resident";
   const membersCount = context?.total_residents ?? 0;
-  const visitorsCount = context?.recent_visitors?.length ?? 0;
+  const recentVisitors: ModelsFlatRecentVisitorSummary[] = context?.recent_visitors ?? [];
+  const visitorsCount = recentVisitors.length;
+
+  const fetchEntryDetailById = useCallback(
+    async (entryId: number): Promise<ModelsVisitorEntry | null> => {
+      if (!societyId || !flatId) {
+        return null;
+      }
+
+      try {
+        const response = await fetchEntryDetail({ societyId, flatId, entryId }).unwrap();
+        return response.data?.entry ?? null;
+      } catch (error) {
+        showError("Unable to load entry", error, "Please try again.");
+        return null;
+      }
+    },
+    [fetchEntryDetail, flatId, showError, societyId],
+  );
 
   const handleApprove = useCallback(
     async (entryId?: number) => {
@@ -151,35 +173,26 @@ export function useResidentDashboard() {
   );
 
   const handleReject = useCallback(
-    (entryId?: number) => {
+    async (entryId?: number) => {
       if (!entryId || !societyId || !canManageFlatVisitors) {
         return;
       }
 
-      Alert.alert("Reject visitor", "Decline this visitor entry?", [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reject",
-          style: "destructive",
-          onPress: async () => {
-            setActionEntryId(entryId);
+      setActionEntryId(entryId);
 
-            try {
-              await rejectEntry({
-                societyId,
-                entryId,
-                modelsRejectVisitorEntryRequest: { reason: "Declined by resident" },
-              }).unwrap();
-              showSuccess("Rejected", "Visitor entry was declined.");
-              refetchAll();
-            } catch (error) {
-              showError("Rejection failed", error, "Please try again.");
-            } finally {
-              setActionEntryId(null);
-            }
-          },
-        },
-      ]);
+      try {
+        await rejectEntry({
+          societyId,
+          entryId,
+          modelsRejectVisitorEntryRequest: { reason: "Declined by resident" },
+        }).unwrap();
+        showSuccess("Rejected", "Visitor entry was declined.");
+        refetchAll();
+      } catch (error) {
+        showError("Rejection failed", error, "Please try again.");
+      } finally {
+        setActionEntryId(null);
+      }
     },
     [canManageFlatVisitors, refetchAll, rejectEntry, showError, showSuccess, societyId],
   );
@@ -198,11 +211,13 @@ export function useResidentDashboard() {
       ? getApiMessage(failedQuery.error, "Unable to load resident home data.")
       : null,
     expectedCount,
+    fetchEntryDetail: fetchEntryDetailById,
     flatLabel,
     handleApprove,
     handleReject,
     hasError: !!failedQuery,
     isActionLoading: approveState.isLoading || rejectState.isLoading,
+    isDetailLoading: fetchEntryState.isFetching,
     isHybrid,
     isInitialLoading,
     isReady: !shouldSkip,
@@ -213,6 +228,7 @@ export function useResidentDashboard() {
     pendingCount,
     pendingEntries,
     primaryResidentName: context?.primary_resident?.full_name,
+    recentVisitors,
     refetchAll,
     selectedResidence,
     visitorsCount,

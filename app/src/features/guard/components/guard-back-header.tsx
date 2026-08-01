@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppIcon } from "@/components/icons";
@@ -9,10 +9,11 @@ import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
 
 type GuardBackHeaderProps = {
+  fallbackHomeRoute?: Href;
   title: string;
 };
 
-export function GuardBackHeader({ title }: GuardBackHeaderProps) {
+export function GuardBackHeader({ fallbackHomeRoute, title }: GuardBackHeaderProps) {
   const router = useRouter();
 
   const handleBack = () => {
@@ -21,7 +22,7 @@ export function GuardBackHeader({ title }: GuardBackHeaderProps) {
       return;
     }
 
-    router.replace(guardHomeRoute());
+    router.replace(fallbackHomeRoute ?? guardHomeRoute());
   };
 
   return (

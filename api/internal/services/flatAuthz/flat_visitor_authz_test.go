@@ -265,3 +265,72 @@ func TestCanViewFlatVisitors(t *testing.T) {
 		})
 	}
 }
+
+func TestCanManageFlatMembers(t *testing.T) {
+	ctx := context.Background()
+	const societyID int64 = 1
+	const flatID int64 = 10
+
+	tests := []struct {
+		name     string
+		resident *models.FlatResident
+		wantErr  error
+	}{
+		{
+			name: "primary resident",
+			resident: &models.FlatResident{
+				SocietyID: societyID,
+				FlatID:    flatID,
+				UserID:    100,
+				Status:    models.FlatResidentStatusActive,
+				Role:      models.FlatResidentRoleFamily,
+				IsPrimary: true,
+			},
+		},
+		{
+			name: "owner role resident",
+			resident: &models.FlatResident{
+				SocietyID: societyID,
+				FlatID:    flatID,
+				UserID:    100,
+				Status:    models.FlatResidentStatusActive,
+				Role:      models.FlatResidentRoleOwner,
+			},
+		},
+		{
+			name: "family non-primary",
+			resident: &models.FlatResident{
+				SocietyID: societyID,
+				FlatID:    flatID,
+				UserID:    100,
+				Status:    models.FlatResidentStatusActive,
+				Role:      models.FlatResidentRoleFamily,
+			},
+			wantErr: ErrManageForbidden,
+		},
+		{
+			name:    "unrelated user",
+			wantErr: ErrManageForbidden,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			authz := testAuthz(nil, tt.resident)
+			err := authz.CanManageFlatMembers(ctx, societyID, flatID, 100)
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				appErr, ok := err.(*models.AppError)
+				if !ok || appErr.Code != tt.wantErr.(*models.AppError).Code {
+					t.Fatalf("expected %v, got %v", tt.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}

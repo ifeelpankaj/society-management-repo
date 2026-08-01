@@ -2,6 +2,8 @@ import { Stack } from "expo-router";
 import { Provider } from "react-redux";
 
 import "@/lib/api/enhanced-api";
+import "@/lib/api/resident-api-extensions";
+import "@/lib/api/guard-api-extensions";
 import { ToastProvider } from "@/components/ui";
 import { AuthProvider } from "@/features/auth/auth-provider";
 import { NotificationRegistrationProvider } from "@/features/notifications/notification-registration-provider";

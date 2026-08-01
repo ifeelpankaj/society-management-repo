@@ -31,8 +31,8 @@ export function GuardScreenShell({
       contentPaddingBottom={contentPaddingBottom}
       footer={footer}
       gate={<GuardSocietyGate />}
-      isLoading={isLoading}
-      isReady={isReady}
+      isLoading={false}
+      isReady={isReady || isLoading}
       loadingMessage={loadingMessage}
       onRefresh={onRefresh}
       refreshing={refreshing}

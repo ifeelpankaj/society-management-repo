@@ -425,3 +425,36 @@ export function isExpectedTodayEntry(entry?: ModelsVisitorEntry) {
 
   return isToday(entry.expected_at) || isToday(entry.created_at);
 }
+
+export type WaitingDurationTone = "success" | "warning" | "error";
+
+export function getWaitingDuration(approvedAt?: string | null): {
+  label: string;
+  minutes: number;
+  tone: WaitingDurationTone;
+} {
+  if (!approvedAt) {
+    return { label: "Waiting", minutes: 0, tone: "success" };
+  }
+
+  const approved = new Date(approvedAt);
+  const minutes = Math.max(0, Math.floor((Date.now() - approved.getTime()) / 60000));
+  const label = minutes <= 1 ? "Waiting 1 min" : `Waiting ${minutes} min`;
+
+  if (minutes < 5) {
+    return { label, minutes, tone: "success" };
+  }
+  if (minutes < 15) {
+    return { label, minutes, tone: "warning" };
+  }
+  return { label, minutes, tone: "error" };
+}
+
+export const DELIVERY_PARTNERS = [
+  "Zomato",
+  "Swiggy",
+  "Blinkit",
+  "Amazon",
+  "Dunzo",
+  "Other",
+] as const;
