@@ -77,6 +77,12 @@ export const guardEntriesRoute = (preset: GuardEntriesPreset = "today"): Href =>
     params: { preset },
   }) as unknown as Href;
 
+export const guardEntryDetailRoute = (entryId: number): Href =>
+  ({
+    pathname: "/guard/entries/[entryId]",
+    params: { entryId: String(entryId) },
+  }) as unknown as Href;
+
 /** @deprecated Use guardEntriesRoute instead */
 export function guardLogsRoute(preset: GuardEntriesPreset = "today"): Href {
   return guardEntriesRoute(preset);

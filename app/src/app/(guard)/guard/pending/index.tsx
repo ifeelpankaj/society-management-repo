@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 
 import { PaginatedList } from "@/components/ui";
 import { GuardConfirmDialog } from "@/features/guard/components/guard-confirm-dialog";
@@ -11,12 +11,14 @@ import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardPending } from "@/features/guard/hooks/use-guard-pending";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import type { ModelsVisitorPendingEntry } from "@/lib/api/generated-api";
+import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
 export default function GuardPendingScreen() {
   const { selectedSocietyId } = useGuardScreen();
   const feedback = useGuardFeedback();
-  const pending = useGuardPending(selectedSocietyId);
+  const [search, setSearch] = useState("");
+  const pending = useGuardPending(selectedSocietyId, search);
   const actions = useGuardActions(selectedSocietyId ?? 0);
   const [selectedEntry, setSelectedEntry] = useState<ModelsVisitorPendingEntry | null>(null);
   const [forceEntry, setForceEntry] = useState<ModelsVisitorPendingEntry | null>(null);
@@ -57,15 +59,30 @@ export default function GuardPendingScreen() {
   );
 
   return (
-    <GuardSubScreen title="Pending Approvals">
+    <GuardSubScreen
+      headerExtra={
+        <TextInput
+          placeholder="Search name, phone, flat, vehicle..."
+          placeholderTextColor={colors.guard.textMuted}
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+        />
+      }
+      title="Pending Approvals"
+    >
       <PaginatedList
         data={pending.items}
-        emptyMessage="Visitors waiting for resident approval will appear here."
-        emptyTitle="No pending approvals"
+        emptyMessage={
+          search
+            ? "Try a different name, phone, flat, or vehicle."
+            : "Visitors waiting for resident approval will appear here."
+        }
+        emptyTitle={search ? "No matching approvals" : "No pending approvals"}
         footer={<View style={styles.footerSpacer} />}
-        hasMore={false}
+        hasMore={pending.hasMore}
         isLoading={pending.isLoading}
-        isLoadingMore={false}
+        isLoadingMore={pending.isLoadingMore}
         isRefreshing={pending.isRefreshing}
         keyExtractor={(item) => `pending-${item.id}`}
         renderItem={({ item }) => {
@@ -88,7 +105,7 @@ export default function GuardPendingScreen() {
             />
           );
         }}
-        onLoadMore={() => undefined}
+        onLoadMore={pending.loadMore}
         onRefresh={() => {
           void pending.refresh();
         }}
@@ -135,5 +152,16 @@ export default function GuardPendingScreen() {
 const styles = StyleSheet.create({
   footerSpacer: {
     height: spacing.lg,
+  },
+  searchInput: {
+    backgroundColor: colors.surface.input,
+    borderColor: colors.border.input,
+    borderRadius: 14,
+    borderWidth: 1,
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: "600",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
   },
 });

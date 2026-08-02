@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "787259959295",
+    "project_id": "smartsociety-c6553",
+    "storage_bucket": "smartsociety-c6553.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787259959295:android:b7d168c31ec17f6d5369ca",
+        "android_client_info": {
+          "package_name": "com.apnagate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "787259959295-2ruqpbr76jrddgo3p2h2plgfcd69mv9j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.apnagate",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "787259959295-a60fg0e72p0i4tebn5oalvmbuighm7m7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKw4TV53CjO8tsT2xCidK1byokeRVhlSo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "787259959295-a60fg0e72p0i4tebn5oalvmbuighm7m7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "787259959295-68jo1g18q6tgd823ab6ju7gd9k38mm8o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.apnagate"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

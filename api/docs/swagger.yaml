@@ -1,5 +1,38 @@
 basePath: /api
 definitions:
+  models.APIResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/models.ErrorData'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  models.AcceptFlatMemberInviteAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.AcceptFlatMemberInviteData'
+      message:
+        example: Member invite accepted successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.AcceptFlatMemberInviteData:
+    properties:
+      acceptance:
+        $ref: '#/definitions/models.AcceptFlatMemberInviteResponse'
+    type: object
+  models.AcceptFlatMemberInviteResponse:
+    properties:
+      invite:
+        $ref: '#/definitions/models.FlatMemberInviteResponse'
+      resident:
+        $ref: '#/definitions/models.FlatResidentResponse'
+    type: object
   models.ActivateSubscriptionRequest:
     properties:
       ends_at:
@@ -207,6 +240,23 @@ definitions:
     - role
     - society_id
     - user_id
+    type: object
+  models.CreateFlatMemberInviteRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      full_name:
+        maxLength: 200
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+      role:
+        $ref: '#/definitions/models.FlatMemberInviteRole'
+    required:
+    - full_name
+    - role
     type: object
   models.CreateFlatRequest:
     properties:
@@ -658,6 +708,96 @@ definitions:
       flat:
         $ref: '#/definitions/models.FlatResponse'
     type: object
+  models.FlatMemberInviteResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: string
+      flat_id:
+        type: integer
+      full_name:
+        type: string
+      id:
+        type: integer
+      invited_by:
+        type: integer
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/models.FlatMemberInviteRole'
+      society_id:
+        type: integer
+      status:
+        $ref: '#/definitions/models.FlatMemberInviteStatus'
+      updated_at:
+        type: string
+    type: object
+  models.FlatMemberInviteRole:
+    enum:
+    - family
+    - tenant
+    type: string
+    x-enum-varnames:
+    - FlatMemberInviteRoleFamily
+    - FlatMemberInviteRoleTenant
+  models.FlatMemberInviteStatus:
+    enum:
+    - pending
+    - accepted
+    - expired
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - FlatMemberInviteStatusPending
+    - FlatMemberInviteStatusAccepted
+    - FlatMemberInviteStatusExpired
+    - FlatMemberInviteStatusCancelled
+  models.FlatMemberInviteTokenAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.FlatMemberInviteTokenData'
+      message:
+        example: Member invite created successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.FlatMemberInviteTokenData:
+    properties:
+      invite:
+        $ref: '#/definitions/models.FlatMemberInviteResponse'
+      token:
+        $ref: '#/definitions/models.FlatMemberInviteTokenResponse'
+    type: object
+  models.FlatMemberInviteTokenResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+    type: object
+  models.FlatMemberInvitesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.FlatMemberInvitesData'
+      message:
+        example: Member invites fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.FlatMemberInvitesData:
+    properties:
+      invites:
+        items:
+          $ref: '#/definitions/models.FlatMemberInviteResponse'
+        type: array
+    type: object
   models.FlatRecentVisitorSummary:
     properties:
       entry_id:
@@ -1010,6 +1150,13 @@ definitions:
         example: true
         type: boolean
     type: object
+  models.GuardApproveEntryRequest:
+    properties:
+      on_behalf:
+        type: boolean
+      reason:
+        type: string
+    type: object
   models.GuardData:
     properties:
       guard:
@@ -1033,8 +1180,6 @@ definitions:
     type: object
   models.GuardDeskBootstrapResponse:
     properties:
-      expected_today_count:
-        type: integer
       pending_preview:
         items:
           $ref: '#/definitions/models.VisitorPendingEntry'
@@ -1043,6 +1188,8 @@ definitions:
         $ref: '#/definitions/models.SocietyResponse'
       stats:
         $ref: '#/definitions/models.VisitorEntryStatsResponse'
+      waiting_at_gate_count:
+        type: integer
     type: object
   models.HealthCheckResponseDoc:
     properties:
@@ -1407,6 +1554,43 @@ definitions:
       total_flats:
         type: integer
     type: object
+  models.PublicFlatMemberInviteAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.PublicFlatMemberInviteData'
+      message:
+        example: Member invite fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.PublicFlatMemberInviteData:
+    properties:
+      invite:
+        $ref: '#/definitions/models.PublicFlatMemberInviteView'
+    type: object
+  models.PublicFlatMemberInviteView:
+    properties:
+      block:
+        type: string
+      expires_at:
+        type: string
+      flat_number:
+        type: string
+      floor:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      role:
+        $ref: '#/definitions/models.FlatMemberInviteRole'
+      society_name:
+        type: string
+      status:
+        $ref: '#/definitions/models.FlatMemberInviteStatus'
+    type: object
   models.PublicVisitorInviteView:
     properties:
       block:
@@ -1460,6 +1644,11 @@ definitions:
       success:
         example: true
         type: boolean
+    type: object
+  models.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
     type: object
   models.RegisterAPIResponse:
     properties:
@@ -2519,6 +2708,8 @@ definitions:
     type: object
   models.VisitorEntry:
     properties:
+      approved_at:
+        type: string
       approved_by:
         type: integer
       auto_closed_at:
@@ -2538,6 +2729,8 @@ definitions:
         type: string
       created_by:
         type: integer
+      delivery_partner:
+        type: string
       expected_at:
         type: string
       expected_checkout_at:
@@ -2566,6 +2759,8 @@ definitions:
       rejected_by:
         type: integer
       rejection_reason:
+        type: string
+      service_provider:
         type: string
       society_id:
         type: integer
@@ -2762,6 +2957,7 @@ definitions:
     - auto_closed
     - qr_generated
     - qr_used
+    - guard_approved_on_behalf
     type: string
     x-enum-varnames:
     - VisitorEventTypeCreated
@@ -2774,6 +2970,7 @@ definitions:
     - VisitorEventTypeAutoClosed
     - VisitorEventTypeQRGenerated
     - VisitorEventTypeQRUsed
+    - VisitorEventTypeGuardApprovedOnBehalf
   models.VisitorFlatSummary:
     properties:
       block:
@@ -2794,6 +2991,8 @@ definitions:
         type: array
       companions_count:
         type: integer
+      delivery_partner:
+        type: string
       email:
         type: string
       expected_at:
@@ -2815,6 +3014,8 @@ definitions:
         type: string
       purpose:
         $ref: '#/definitions/models.VisitorPurpose'
+      service_provider:
+        type: string
       vehicle_number:
         type: string
       vehicle_type:
@@ -2918,6 +3119,8 @@ definitions:
     type: object
   models.VisitorPendingEntry:
     properties:
+      approved_at:
+        type: string
       approved_by:
         type: integer
       auto_closed_at:
@@ -2937,6 +3140,8 @@ definitions:
         type: string
       created_by:
         type: integer
+      delivery_partner:
+        type: string
       expected_at:
         type: string
       expected_checkout_at:
@@ -2969,6 +3174,8 @@ definitions:
       rejected_by:
         type: integer
       rejection_reason:
+        type: string
+      service_provider:
         type: string
       society_id:
         type: integer
@@ -3054,7 +3261,7 @@ definitions:
     - VisitorVehicleTypeCab
     - VisitorVehicleTypeTruck
     - VisitorVehicleTypeOther
-host: localhost:8000
+host: localhost:8080
 info:
   contact:
     email: support@example.com
@@ -3261,25 +3468,34 @@ paths:
       - Auth
   /v1/auth/refresh:
     post:
-      description: Validates the refresh_token cookie and reissues only the access_token
-        cookie.
+      consumes:
+      - application/json
+      description: Validates the refresh token from either the refresh_token cookie
+        or the request body.
+      parameters:
+      - description: Refresh token payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Access token refreshed successfully
+          description: OK
           schema:
             $ref: '#/definitions/models.RefreshTokenAPIResponse'
         "401":
-          description: Missing, invalid, or expired refresh token
+          description: Unauthorized
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "403":
-          description: Account disabled
+          description: Forbidden
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorResponseDoc'
       security:
@@ -4215,6 +4431,84 @@ paths:
       summary: Get plan
       tags:
       - Plans
+  /v1/public/flat-member-invites/{token}:
+    get:
+      description: '[Public] Fetches an active flat member invite from its public
+        token before acceptance.'
+      parameters:
+      - description: Member invite token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member invite fetched successfully
+          schema:
+            $ref: '#/definitions/models.PublicFlatMemberInviteAPIResponse'
+        "400":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Member invite not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "409":
+          description: Member invite is expired, accepted, or cancelled
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      summary: Get flat member invite by token
+      tags:
+      - Flat Members
+  /v1/public/flat-member-invites/{token}/accept:
+    post:
+      description: '[User] Accepts a flat member invite using the public token. The
+        authenticated user becomes an active flat resident.'
+      parameters:
+      - description: Member invite token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member invite accepted successfully
+          schema:
+            $ref: '#/definitions/models.AcceptFlatMemberInviteAPIResponse'
+        "400":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Member invite not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "409":
+          description: Member invite unavailable or resident conflict
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Accept flat member invite
+      tags:
+      - Flat Members
   /v1/public/societies/{societyCode}/claim-options:
     get:
       description: Public QR flow endpoint that resolves an active society code and
@@ -5448,6 +5742,231 @@ paths:
       summary: Block flat
       tags:
       - Flats
+  /v1/societies/{societyId}/flats/{flatId}/member-invites:
+    get:
+      description: '[Resident] Lists pending member invites for a flat. Requires flat
+        owner or primary resident access.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member invites fetched successfully
+          schema:
+            $ref: '#/definitions/models.FlatMemberInvitesAPIResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Flat member management access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Flat not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List pending flat member invites
+      tags:
+      - Flat Members
+    post:
+      consumes:
+      - application/json
+      description: '[Resident] Creates a member invite for a flat and returns the
+        invite plus shareable token details.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      - description: Member invite request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateFlatMemberInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Member invite created successfully
+          schema:
+            $ref: '#/definitions/models.FlatMemberInviteTokenAPIResponse'
+        "400":
+          description: Invalid request or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Flat member management access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Flat not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Create flat member invite
+      tags:
+      - Flat Members
+  /v1/societies/{societyId}/flats/{flatId}/member-invites/{inviteId}/cancel:
+    post:
+      description: '[Resident] Cancels a pending member invite for a flat.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      - description: Member invite ID
+        in: path
+        name: inviteId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member invite cancelled successfully
+          schema:
+            $ref: '#/definitions/models.MessageAPIResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Flat member management access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Member invite not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "409":
+          description: Member invite cannot be cancelled
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Cancel flat member invite
+      tags:
+      - Flat Members
+  /v1/societies/{societyId}/flats/{flatId}/members:
+    get:
+      description: '[Resident] Lists active members for a flat. Requires permission
+        to view flat visitor data.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      - description: 'Resident role: owner, tenant, family'
+        in: query
+        name: role
+        type: string
+      - description: Primary resident flag
+        in: query
+        name: is_primary
+        type: boolean
+      - description: Search user, contact, flat, block, role, or status
+        in: query
+        name: search
+        type: string
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Residents fetched successfully
+          schema:
+            $ref: '#/definitions/models.FlatResidentsAPIResponse'
+        "400":
+          description: Invalid path or query parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Resident access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Flat not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List flat residents (resident)
+      tags:
+      - Flat Members
   /v1/societies/{societyId}/flats/{flatId}/residents:
     get:
       description: '[Owner/Admin/Staff] Lists residents for the flat identified in
@@ -6017,6 +6536,57 @@ paths:
       security:
       - AccessToken: []
       summary: List flat visitor entries
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/flats/{flatId}/visitor-entries/{entryId}:
+    get:
+      description: '[Resident] Fetches a single visitor entry for a resident flat.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Flat ID
+        in: path
+        name: flatId
+        required: true
+        type: integer
+      - description: Visitor entry ID
+        in: path
+        name: entryId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor entry fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryAPIResponse'
+        "400":
+          description: Invalid path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Resident access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Visitor entry or flat not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Get flat visitor entry
       tags:
       - Visitor Entries
   /v1/societies/{societyId}/flats/{flatId}/visitor-entries/pending:
@@ -7483,6 +8053,107 @@ paths:
       summary: Approve visitor entry
       tags:
       - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/{entryId}/approve-and-check-in:
+    post:
+      consumes:
+      - application/json
+      description: '[Owner/Admin/Staff] Atomically approves and checks in a pending
+        visitor entry.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Visitor entry ID
+        in: path
+        name: entryId
+        required: true
+        type: integer
+      - description: Guard approval options
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.GuardApproveEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor approved and checked in successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryAPIResponse'
+        "400":
+          description: Invalid path parameter or visitor entry state
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Visitor entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Guard approve and check in visitor
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/{entryId}/check-in:
+    post:
+      description: '[Owner/Admin/Staff] Checks in an approved visitor entry without
+        scanning QR.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Visitor entry ID
+        in: path
+        name: entryId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor checked in successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryAPIResponse'
+        "400":
+          description: Invalid path parameter or visitor entry state
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Visitor entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Check in visitor by entry ID
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/visitor-entries/{entryId}/check-out:
     post:
       description: '[Owner/Admin/Staff] Checks out a checked-in visitor entry.'
@@ -7578,6 +8249,106 @@ paths:
       security:
       - AccessToken: []
       summary: List visitor entry events
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/{entryId}/guard-approve:
+    post:
+      consumes:
+      - application/json
+      description: '[Owner/Admin/Staff] Approves a pending visitor entry without check-in.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Visitor entry ID
+        in: path
+        name: entryId
+        required: true
+        type: integer
+      - description: Guard approval options
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.GuardApproveEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor entry approved successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryMutationAPIResponse'
+        "400":
+          description: Invalid path parameter or visitor entry state
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Visitor entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Guard approve visitor entry
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/{entryId}/notify:
+    post:
+      description: '[Owner/Admin/Staff] Re-sends a pending approval notification to
+        flat residents.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Visitor entry ID
+        in: path
+        name: entryId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Resident notified successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid path parameter or visitor entry state
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Visitor entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Notify resident about pending visitor
       tags:
       - Visitor Entries
   /v1/societies/{societyId}/visitor-entries/{entryId}/reject:
@@ -7837,6 +8608,58 @@ paths:
       security:
       - AccessToken: []
       summary: Get visitor entry stats
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/waiting-at-gate:
+    get:
+      description: '[Owner/Admin/Staff] Lists approved visitor entries ready for gate
+        check-in, ordered by approval time.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Search by name, phone, flat, vehicle, delivery partner, or purpose
+        in: query
+        name: search
+        type: string
+      - default: 50
+        description: Maximum records to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Waiting at gate entries fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntriesAPIResponse'
+        "400":
+          description: Invalid query or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List visitors waiting at gate
       tags:
       - Visitor Entries
   /v1/societies/{societyId}/visitor-invites/{inviteId}/cancel:

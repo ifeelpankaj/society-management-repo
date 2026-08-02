@@ -47,27 +47,35 @@ export function DashboardActionTile({
   icon,
   onPress,
   subtitle,
-  title,
+  // title,
   tone,
 }: DashboardActionTileProps) {
   const toneStyle = toneStyles[tone];
 
   return (
     <Pressable
-      accessibilityLabel={title}
+      // accessibilityLabel={title}
       accessibilityRole="button"
       style={({ pressed }) => [
         styles.tile,
-        { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        {
+          opacity: pressed ? 0.85 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+        },
       ]}
       onPress={onPress}
     >
-      <View style={[styles.iconWrap, { backgroundColor: toneStyle.backgroundColor }]}>
+      <View
+        style={[
+          styles.iconWrap,
+          { backgroundColor: toneStyle.backgroundColor },
+        ]}
+      >
         <SymbolView name={icon} size={24} tintColor={toneStyle.iconColor} />
       </View>
-      <Text numberOfLines={2} style={styles.title}>
+      {/* <Text numberOfLines={2} style={styles.title}>
         {title}
-      </Text>
+      </Text> */}
       <Text numberOfLines={2} style={styles.subtitle}>
         {subtitle}
       </Text>
@@ -91,16 +99,11 @@ const styles = StyleSheet.create({
   },
   tile: {
     alignItems: "center",
-    backgroundColor: colors.surface.card,
-    borderRadius: radius.xl,
+
     flex: 1,
     gap: spacing.sm,
     justifyContent: "center",
-    minHeight: layout.actionTileMinHeight,
-    minWidth: 0,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.lg,
-    ...shadows.sm,
+    // ...shadows.sm,
   },
   title: {
     color: colors.guard.text,

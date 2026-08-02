@@ -2,7 +2,6 @@ import type { Href } from "expo-router";
 
 import type {
   ModelsBootstrapData,
-  ModelsFlatResidentResponse,
   ModelsSocietyMemberResponse,
   ModelsUserResponse,
 } from "@/lib/api/generated-api";
@@ -11,7 +10,11 @@ import type { AppDispatch } from "@/redux/store";
 
 import { resolveBootstrapRoute } from "./bootstrap-routing";
 import { getMobileMemberships, getMobileResidences } from "./mobile-access";
-import { loadWorkspace, saveWorkspace, type StoredWorkspace } from "./auth-storage";
+import {
+  loadWorkspace,
+  saveWorkspace,
+  type StoredWorkspace,
+} from "./auth-storage";
 
 export type RestoreSessionResult =
   | {
@@ -39,7 +42,9 @@ export function hydrateWorkspaceFromBootstrap(
   const memberships = getMobileMemberships(bootstrap);
 
   if (workspace.flatId != null) {
-    const residence = residences.find((item) => item.flat_id === workspace.flatId);
+    const residence = residences.find(
+      (item) => item.flat_id === workspace.flatId,
+    );
     if (residence?.flat_id != null) {
       dispatch(setSelectedFlat(residence.flat_id));
       return;
@@ -47,7 +52,9 @@ export function hydrateWorkspaceFromBootstrap(
   }
 
   if (workspace.societyId != null) {
-    const membership = memberships.find((item) => item.society_id === workspace.societyId);
+    const membership = memberships.find(
+      (item) => item.society_id === workspace.societyId,
+    );
     if (membership?.society_id != null) {
       dispatch(setSelectedSociety(membership.society_id));
       return;

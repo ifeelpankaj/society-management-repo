@@ -13,7 +13,7 @@ import * as SplashScreen from "expo-splash-screen";
 
 import type { ModelsUserResponse } from "@/lib/api/generated-api";
 import { clearWorkspaceSelection } from "@/redux/appSlice";
-import { clearAuth } from "@/redux/authSlice";
+
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { baseApi } from "@/redux/queries/baseApi";
 
@@ -25,6 +25,7 @@ import {
   saveTokens,
   type AuthSessionPayload,
 } from "./auth-storage";
+import { clearAuth } from "@/redux/authSlice";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -32,7 +33,9 @@ type AuthContextValue = {
   status: AuthStatus;
   user: ModelsUserResponse | null;
   homeRoute: Href | null;
-  completeLogin: (payload?: AuthSessionPayload & { user?: ModelsUserResponse | null }) => Promise<Href>;
+  completeLogin: (
+    payload?: AuthSessionPayload & { user?: ModelsUserResponse | null },
+  ) => Promise<Href>;
   signOutLocal: () => Promise<void>;
 };
 
@@ -57,13 +60,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [dispatch]);
 
   const completeLogin = useCallback(
-    async (payload?: AuthSessionPayload & { user?: ModelsUserResponse | null }) => {
+    async (
+      payload?: AuthSessionPayload & { user?: ModelsUserResponse | null },
+    ) => {
       const session = extractAuthSession(payload ?? null);
       if (session) {
         await saveTokens(session);
       }
 
-      const result = await completeAuthenticatedSession(dispatch, payload?.user ?? null);
+      const result = await completeAuthenticatedSession(
+        dispatch,
+        payload?.user ?? null,
+      );
       setHomeRoute(result.route);
       setStatus("authenticated");
       return result.route;

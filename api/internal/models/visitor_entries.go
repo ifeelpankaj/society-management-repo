@@ -53,16 +53,16 @@ func (t VisitorVehicleType) IsValid() bool {
 type VisitorEventType string
 
 const (
-	VisitorEventTypeCreated     VisitorEventType = "created"
-	VisitorEventTypeApproved    VisitorEventType = "approved"
-	VisitorEventTypeRejected    VisitorEventType = "rejected"
-	VisitorEventTypeCheckedIn   VisitorEventType = "checked_in"
-	VisitorEventTypeCheckedOut  VisitorEventType = "checked_out"
-	VisitorEventTypeCancelled   VisitorEventType = "cancelled"
-	VisitorEventTypeExpired     VisitorEventType = "expired"
-	VisitorEventTypeAutoClosed  VisitorEventType = "auto_closed"
-	VisitorEventTypeQRGenerated VisitorEventType = "qr_generated"
-	VisitorEventTypeQRUsed      VisitorEventType = "qr_used"
+	VisitorEventTypeCreated               VisitorEventType = "created"
+	VisitorEventTypeApproved              VisitorEventType = "approved"
+	VisitorEventTypeRejected              VisitorEventType = "rejected"
+	VisitorEventTypeCheckedIn             VisitorEventType = "checked_in"
+	VisitorEventTypeCheckedOut            VisitorEventType = "checked_out"
+	VisitorEventTypeCancelled             VisitorEventType = "cancelled"
+	VisitorEventTypeExpired               VisitorEventType = "expired"
+	VisitorEventTypeAutoClosed            VisitorEventType = "auto_closed"
+	VisitorEventTypeQRGenerated           VisitorEventType = "qr_generated"
+	VisitorEventTypeQRUsed                VisitorEventType = "qr_used"
 	VisitorEventTypeGuardApprovedOnBehalf VisitorEventType = "guard_approved_on_behalf"
 )
 
@@ -397,13 +397,13 @@ type MemberVisitorApprovalStatsResponse struct {
 }
 
 type FlatVisitorContextResponse struct {
-	OccupancyStatus       FlatStatus                    `json:"occupancy_status"`
-	PrimaryResident       *FlatVisitorContextResident   `json:"primary_resident,omitempty"`
-	TotalResidents        int64                         `json:"total_residents"`
-	InheritsSocietyMode   bool                          `json:"inherits_society_mode"`
-	SocietyApprovalMode   VisitorApprovalMode           `json:"society_approval_mode"`
-	VisitorSettings       []FlatVisitorSettingsResponse `json:"visitor_settings"`
-	RecentVisitors        []*FlatRecentVisitorSummary   `json:"recent_visitors"`
+	OccupancyStatus     FlatStatus                    `json:"occupancy_status"`
+	PrimaryResident     *FlatVisitorContextResident   `json:"primary_resident,omitempty"`
+	TotalResidents      int64                         `json:"total_residents"`
+	InheritsSocietyMode bool                          `json:"inherits_society_mode"`
+	SocietyApprovalMode VisitorApprovalMode           `json:"society_approval_mode"`
+	VisitorSettings     []FlatVisitorSettingsResponse `json:"visitor_settings"`
+	RecentVisitors      []*FlatRecentVisitorSummary   `json:"recent_visitors"`
 }
 
 type FlatVisitorContextResident struct {
@@ -413,18 +413,18 @@ type FlatVisitorContextResident struct {
 }
 
 type FlatRecentVisitorSummary struct {
-	EntryID    int64          `json:"entry_id"`
-	FullName   string         `json:"full_name"`
-	Purpose    VisitorPurpose `json:"purpose"`
-	Status     VisitorStatus  `json:"status"`
-	VisitedOn  time.Time      `json:"visited_on"`
+	EntryID   int64          `json:"entry_id"`
+	FullName  string         `json:"full_name"`
+	Purpose   VisitorPurpose `json:"purpose"`
+	Status    VisitorStatus  `json:"status"`
+	VisitedOn time.Time      `json:"visited_on"`
 }
 
 type GuardDeskBootstrapResponse struct {
-	Society              *SocietyResponse           `json:"society"`
-	Stats                *VisitorEntryStatsResponse `json:"stats"`
-	WaitingAtGateCount   int64                      `json:"waiting_at_gate_count"`
-	PendingPreview       []*VisitorPendingEntry     `json:"pending_preview"`
+	Society            *SocietyResponse           `json:"society"`
+	Stats              *VisitorEntryStatsResponse `json:"stats"`
+	WaitingAtGateCount int64                      `json:"waiting_at_gate_count"`
+	PendingPreview     []*VisitorPendingEntry     `json:"pending_preview"`
 }
 
 type SocietyFlatVisitorSettingRow struct {

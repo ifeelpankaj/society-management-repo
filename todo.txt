@@ -1,0 +1,2 @@
+remove fetching same data from bootstap api 
+check in developer bootstrap route weather the array are fetching limited data or unlimited data 

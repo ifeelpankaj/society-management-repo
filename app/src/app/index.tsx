@@ -1,5 +1,4 @@
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { Redirect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
@@ -12,14 +11,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-import { useAuth } from "@/features/auth/use-auth";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { radius } from "@/theme/radius";
 import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { typography } from "@/theme/typography";
+import { useToast } from "@/components/ui";
+import { useAuth } from "@/features/auth/auth-provider";
 
 const images = [
   require("../../assets/images/public/soc_img_one.png"),
@@ -36,7 +35,7 @@ const features = [
   ],
 ] as const;
 
-const HERO_BG = "#17110f";
+const HERO_BG = "#ffff";
 const DIVIDER = "#eee7e2";
 const FEATURE_DESC = "#81766f";
 const FOOTER_MUTED = "#c9c1bb";
@@ -44,10 +43,10 @@ const FOOTER_MUTED = "#c9c1bb";
 export default function Index() {
   const { width } = useWindowDimensions();
   const router = useRouter();
+  const { showToast } = useToast();
   const { homeRoute, status } = useAuth();
   const carouselRef = useRef<ScrollView>(null);
   const [activeSlide, setActiveSlide] = useState(0);
-
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveSlide((current) => {
@@ -56,7 +55,6 @@ export default function Index() {
         return next;
       });
     }, 3500);
-
     return () => clearInterval(timer);
   }, [width]);
 
@@ -66,7 +64,7 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ScrollView bounces={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.hero}>
           <ScrollView
@@ -92,19 +90,11 @@ export default function Index() {
             ))}
           </ScrollView>
 
-          <LinearGradient
-            colors={[
-              "rgba(23,17,15,0.04)",
-              "rgba(23,17,15,0.46)",
-              "rgba(23,17,15,0.88)",
-            ]}
-            locations={[0, 0.48, 1]}
-            style={[StyleSheet.absoluteFill, styles.noPointerEvents]}
-          />
-
           <View style={styles.heroCopy}>
             <Text style={styles.heroTitle}>APNA GATE</Text>
-            <Text style={styles.heroSubtitle}>Modern Security for Modern Societies.</Text>
+            <Text style={styles.heroSubtitle}>
+              Modern Security for Modern Societies.
+            </Text>
           </View>
 
           <View style={styles.paginationWrap}>
@@ -114,7 +104,9 @@ export default function Index() {
                   key={index}
                   style={[
                     styles.dot,
-                    activeSlide === index ? styles.dotActive : styles.dotInactive,
+                    activeSlide === index
+                      ? styles.dotActive
+                      : styles.dotInactive,
                   ]}
                 />
               ))}
@@ -155,7 +147,10 @@ export default function Index() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push("/login")}
-              style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}
+              style={({ pressed }) => [
+                styles.ctaButton,
+                pressed && styles.ctaButtonPressed,
+              ]}
             >
               <Text style={styles.ctaText}>Continue to your community.</Text>
             </Pressable>

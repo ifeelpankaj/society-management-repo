@@ -17,6 +17,7 @@ export default function GuardStackLayout() {
         <Stack.Screen name="scanner" />
         <Stack.Screen name="check-in" />
         <Stack.Screen name="entries" />
+        <Stack.Screen name="entries/[entryId]" />
         <Stack.Screen name="add-entry" />
         <Stack.Screen name="pending" />
         <Stack.Screen name="waiting-at-gate" />

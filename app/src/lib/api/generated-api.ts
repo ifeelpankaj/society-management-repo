@@ -9,6 +9,7 @@ export const addTagTypes = [
   "Flats",
   "Notifications",
   "Plans",
+  "Flat Members",
   "Public",
   "Visitor Entries",
   "Societies",
@@ -90,7 +91,11 @@ const injectedRtkApi = api
         PostV1AuthRefreshApiResponse,
         PostV1AuthRefreshApiArg
       >({
-        query: () => ({ url: `/v1/auth/refresh`, method: "POST" }),
+        query: (queryArg) => ({
+          url: `/v1/auth/refresh`,
+          method: "POST",
+          body: queryArg.modelsRefreshTokenRequest,
+        }),
         invalidatesTags: ["Auth"],
       }),
       postV1AuthRegister: build.mutation<
@@ -372,6 +377,25 @@ const injectedRtkApi = api
           method: "POST",
         }),
         invalidatesTags: ["Plans"],
+      }),
+      getV1PublicFlatMemberInvitesByToken: build.query<
+        GetV1PublicFlatMemberInvitesByTokenApiResponse,
+        GetV1PublicFlatMemberInvitesByTokenApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/public/flat-member-invites/${queryArg.token}`,
+        }),
+        providesTags: ["Flat Members"],
+      }),
+      postV1PublicFlatMemberInvitesByTokenAccept: build.mutation<
+        PostV1PublicFlatMemberInvitesByTokenAcceptApiResponse,
+        PostV1PublicFlatMemberInvitesByTokenAcceptApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/public/flat-member-invites/${queryArg.token}/accept`,
+          method: "POST",
+        }),
+        invalidatesTags: ["Flat Members"],
       }),
       getV1PublicSocietiesBySocietyCodeClaimOptions: build.query<
         GetV1PublicSocietiesBySocietyCodeClaimOptionsApiResponse,
@@ -698,6 +722,53 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Flats"],
       }),
+      getV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvites: build.query<
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiResponse,
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/member-invites`,
+        }),
+        providesTags: ["Flat Members"],
+      }),
+      postV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvites: build.mutation<
+        PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiResponse,
+        PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/member-invites`,
+          method: "POST",
+          body: queryArg.modelsCreateFlatMemberInviteRequest,
+        }),
+        invalidatesTags: ["Flat Members"],
+      }),
+      postV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesInviteIdCancel:
+        build.mutation<
+          PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesInviteIdCancelApiResponse,
+          PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesInviteIdCancelApiArg
+        >({
+          query: (queryArg) => ({
+            url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/member-invites/${queryArg.inviteId}/cancel`,
+            method: "POST",
+          }),
+          invalidatesTags: ["Flat Members"],
+        }),
+      getV1SocietiesBySocietyIdFlatsAndFlatIdMembers: build.query<
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdMembersApiResponse,
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdMembersApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/members`,
+          params: {
+            role: queryArg.role,
+            is_primary: queryArg.isPrimary,
+            search: queryArg.search,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+          },
+        }),
+        providesTags: ["Flat Members"],
+      }),
       getV1SocietiesBySocietyIdFlatsAndFlatIdResidents: build.query<
         GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiResponse,
         GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiArg
@@ -823,6 +894,15 @@ const injectedRtkApi = api
       >({
         query: (queryArg) => ({
           url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/visitor-entries/pending`,
+        }),
+        providesTags: ["Visitor Entries"],
+      }),
+      getV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesEntryId: build.query<
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesEntryIdApiResponse,
+        GetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesEntryIdApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/flats/${queryArg.flatId}/visitor-entries/${queryArg.entryId}`,
         }),
         providesTags: ["Visitor Entries"],
       }),
@@ -1102,9 +1182,6 @@ const injectedRtkApi = api
             status: queryArg.status,
             source: queryArg.source,
             purpose: queryArg.purpose,
-            created_from: queryArg.createdFrom,
-            created_to: queryArg.createdTo,
-            search: queryArg.search,
             limit: queryArg.limit,
             offset: queryArg.offset,
           },
@@ -1157,6 +1234,20 @@ const injectedRtkApi = api
         }),
         providesTags: ["Visitor Entries"],
       }),
+      getV1SocietiesBySocietyIdVisitorEntriesWaitingAtGate: build.query<
+        GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiResponse,
+        GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/waiting-at-gate`,
+          params: {
+            search: queryArg.search,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+          },
+        }),
+        providesTags: ["Visitor Entries"],
+      }),
       getV1SocietiesBySocietyIdVisitorEntriesAndEntryId: build.query<
         GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiResponse,
         GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiArg
@@ -1172,6 +1263,28 @@ const injectedRtkApi = api
       >({
         query: (queryArg) => ({
           url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}/approve`,
+          method: "POST",
+        }),
+        invalidatesTags: ["Visitor Entries"],
+      }),
+      postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckIn:
+        build.mutation<
+          PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInApiResponse,
+          PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInApiArg
+        >({
+          query: (queryArg) => ({
+            url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}/approve-and-check-in`,
+            method: "POST",
+            body: queryArg.modelsGuardApproveEntryRequest,
+          }),
+          invalidatesTags: ["Visitor Entries"],
+        }),
+      postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckIn: build.mutation<
+        PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInApiResponse,
+        PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}/check-in`,
           method: "POST",
         }),
         invalidatesTags: ["Visitor Entries"],
@@ -1195,6 +1308,28 @@ const injectedRtkApi = api
           url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}/events`,
         }),
         providesTags: ["Visitor Entries"],
+      }),
+      postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApprove:
+        build.mutation<
+          PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApproveApiResponse,
+          PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApproveApiArg
+        >({
+          query: (queryArg) => ({
+            url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}/guard-approve`,
+            method: "POST",
+            body: queryArg.modelsGuardApproveEntryRequest,
+          }),
+          invalidatesTags: ["Visitor Entries"],
+        }),
+      postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotify: build.mutation<
+        PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotifyApiResponse,
+        PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotifyApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}/notify`,
+          method: "POST",
+        }),
+        invalidatesTags: ["Visitor Entries"],
       }),
       postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdReject: build.mutation<
         PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdRejectApiResponse,
@@ -1379,8 +1514,11 @@ export type GetV1AuthProfileApiResponse =
   /** status 200 Profile fetched successfully */ ModelsGetProfileApiResponse;
 export type GetV1AuthProfileApiArg = void;
 export type PostV1AuthRefreshApiResponse =
-  /** status 200 Access token refreshed successfully */ ModelsRefreshTokenApiResponse;
-export type PostV1AuthRefreshApiArg = void;
+  /** status 200 OK */ ModelsRefreshTokenApiResponse;
+export type PostV1AuthRefreshApiArg = {
+  /** Refresh token payload */
+  modelsRefreshTokenRequest: ModelsRefreshTokenRequest;
+};
 export type PostV1AuthRegisterApiResponse =
   /** status 201 Account created successfully */ ModelsRegisterApiResponse;
 export type PostV1AuthRegisterApiArg = {
@@ -1602,6 +1740,18 @@ export type PostV1PlansByPlanIdDeactivateApiResponse =
 export type PostV1PlansByPlanIdDeactivateApiArg = {
   /** Plan ID */
   planId: number;
+};
+export type GetV1PublicFlatMemberInvitesByTokenApiResponse =
+  /** status 200 Member invite fetched successfully */ ModelsPublicFlatMemberInviteApiResponse;
+export type GetV1PublicFlatMemberInvitesByTokenApiArg = {
+  /** Member invite token */
+  token: string;
+};
+export type PostV1PublicFlatMemberInvitesByTokenAcceptApiResponse =
+  /** status 200 Member invite accepted successfully */ ModelsAcceptFlatMemberInviteApiResponse;
+export type PostV1PublicFlatMemberInvitesByTokenAcceptApiArg = {
+  /** Member invite token */
+  token: string;
 };
 export type GetV1PublicSocietiesBySocietyCodeClaimOptionsApiResponse =
   /** status 200 Claim options fetched successfully */ ModelsPublicClaimOptionsApiResponse;
@@ -1884,6 +2034,53 @@ export type PostV1SocietiesBySocietyIdFlatsAndFlatIdBlockApiArg = {
   /** Flat ID */
   flatId: number;
 };
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiResponse =
+  /** status 200 Member invites fetched successfully */ ModelsFlatMemberInvitesApiResponse;
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Flat ID */
+  flatId: number;
+};
+export type PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiResponse =
+  /** status 201 Member invite created successfully */ ModelsFlatMemberInviteTokenApiResponse;
+export type PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Flat ID */
+  flatId: number;
+  /** Member invite request */
+  modelsCreateFlatMemberInviteRequest: ModelsCreateFlatMemberInviteRequest;
+};
+export type PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesInviteIdCancelApiResponse =
+  /** status 200 Member invite cancelled successfully */ ModelsMessageApiResponse;
+export type PostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesInviteIdCancelApiArg =
+  {
+    /** Society ID */
+    societyId: number;
+    /** Flat ID */
+    flatId: number;
+    /** Member invite ID */
+    inviteId: number;
+  };
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdMembersApiResponse =
+  /** status 200 Residents fetched successfully */ ModelsFlatResidentsApiResponse;
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdMembersApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Flat ID */
+  flatId: number;
+  /** Resident role: owner, tenant, family */
+  role?: string;
+  /** Primary resident flag */
+  isPrimary?: boolean;
+  /** Search user, contact, flat, block, role, or status */
+  search?: string;
+  /** Limit */
+  limit?: number;
+  /** Offset */
+  offset?: number;
+};
 export type GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiResponse =
   /** status 200 Residents fetched successfully */ ModelsFlatResidentsApiResponse;
 export type GetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsApiArg = {
@@ -2032,6 +2229,17 @@ export type GetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesPendingApiArg =
     societyId: number;
     /** Flat ID */
     flatId: number;
+  };
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesEntryIdApiResponse =
+  /** status 200 Visitor entry fetched successfully */ ModelsVisitorEntryApiResponse;
+export type GetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesEntryIdApiArg =
+  {
+    /** Society ID */
+    societyId: number;
+    /** Flat ID */
+    flatId: number;
+    /** Visitor entry ID */
+    entryId: number;
   };
 export type PostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesApiResponse =
   /** status 201 Visitor invite created successfully */ ModelsVisitorInviteTokenApiResponse;
@@ -2297,12 +2505,6 @@ export type GetV1SocietiesBySocietyIdVisitorEntriesApiArg = {
   limit?: number;
   /** Records to skip */
   offset?: number;
-  /** Created from (RFC3339) */
-  createdFrom?: string;
-  /** Created to (RFC3339) */
-  createdTo?: string;
-  /** Search visitor name, phone, flat, or vehicle */
-  search?: string;
 };
 export type PostV1SocietiesBySocietyIdVisitorEntriesCheckInApiResponse =
   /** status 200 Visitor checked in successfully */ ModelsVisitorEntryApiResponse;
@@ -2340,6 +2542,18 @@ export type GetV1SocietiesBySocietyIdVisitorEntriesStatsApiArg = {
   /** Society ID */
   societyId: number;
 };
+export type GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiResponse =
+  /** status 200 Waiting at gate entries fetched successfully */ ModelsVisitorEntriesApiResponse;
+export type GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Search by name, phone, flat, vehicle, delivery partner, or purpose */
+  search?: string;
+  /** Maximum records to return */
+  limit?: number;
+  /** Records to skip */
+  offset?: number;
+};
 export type GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiResponse =
   /** status 200 Visitor entry fetched successfully */ ModelsVisitorEntryApiResponse;
 export type GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiArg = {
@@ -2356,6 +2570,25 @@ export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveApiArg = {
   /** Visitor entry ID */
   entryId: number;
 };
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInApiResponse =
+  /** status 200 Visitor approved and checked in successfully */ ModelsVisitorEntryApiResponse;
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInApiArg =
+  {
+    /** Society ID */
+    societyId: number;
+    /** Visitor entry ID */
+    entryId: number;
+    /** Guard approval options */
+    modelsGuardApproveEntryRequest: ModelsGuardApproveEntryRequest;
+  };
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInApiResponse =
+  /** status 200 Visitor checked in successfully */ ModelsVisitorEntryApiResponse;
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Visitor entry ID */
+  entryId: number;
+};
 export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutApiResponse =
   /** status 200 Visitor checked out successfully */ ModelsVisitorEntryApiResponse;
 export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutApiArg = {
@@ -2367,6 +2600,25 @@ export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutApiArg = {
 export type GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdEventsApiResponse =
   /** status 200 Visitor entry events fetched successfully */ ModelsVisitorEntryEventsApiResponse;
 export type GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdEventsApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Visitor entry ID */
+  entryId: number;
+};
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApproveApiResponse =
+  /** status 200 Visitor entry approved successfully */ ModelsVisitorEntryMutationApiResponse;
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApproveApiArg =
+  {
+    /** Society ID */
+    societyId: number;
+    /** Visitor entry ID */
+    entryId: number;
+    /** Guard approval options */
+    modelsGuardApproveEntryRequest: ModelsGuardApproveEntryRequest;
+  };
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotifyApiResponse =
+  /** status 200 Resident notified successfully */ ModelsApiResponse;
+export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotifyApiArg = {
   /** Society ID */
   societyId: number;
   /** Visitor entry ID */
@@ -2609,6 +2861,9 @@ export type ModelsRefreshTokenApiResponse = {
   message?: string;
   success?: boolean;
 };
+export type ModelsRefreshTokenRequest = {
+  refresh_token?: string;
+};
 export type ModelsUserMessageData = {
   dev_otp?: string;
   message?: string;
@@ -2662,10 +2917,7 @@ export type ModelsVerifyOtpRequest = {
   otp: string;
 };
 export type ModelsDashboardKind =
-  | "developer"
-  | "society_admin"
-  | "select_society"
-  | "onboarding";
+  "developer" | "society_admin" | "select_society" | "onboarding";
 export type ModelsDefaultDashboardResponse = {
   kind?: ModelsDashboardKind;
   path?: string;
@@ -2673,10 +2925,7 @@ export type ModelsDefaultDashboardResponse = {
 };
 export type ModelsSocietyMemberRole = "owner" | "admin" | "staff" | "resident";
 export type ModelsSocietyMemberStatus =
-  | "pending"
-  | "active"
-  | "suspended"
-  | "removed";
+  "pending" | "active" | "suspended" | "removed";
 export type ModelsSocietyMemberResponse = {
   created_at?: string;
   id?: number;
@@ -2735,10 +2984,7 @@ export type ModelsDeveloperDashboardPlanStatsResponse = {
   total?: number;
 };
 export type ModelsSocietyStatus =
-  | "pending"
-  | "active"
-  | "suspended"
-  | "rejected";
+  "pending" | "active" | "suspended" | "rejected";
 export type ModelsSocietyResponse = {
   address_line1?: string;
   address_line2?: string;
@@ -2769,11 +3015,7 @@ export type ModelsSocietyResponse = {
 };
 export type ModelsBillingCycle = "monthly" | "yearly";
 export type ModelsSubscriptionStatus =
-  | "pending"
-  | "trial"
-  | "active"
-  | "expired"
-  | "cancelled";
+  "pending" | "trial" | "active" | "expired" | "cancelled";
 export type ModelsSocietySubscriptionResponse = {
   activated_at?: string;
   activated_by?: number;
@@ -2845,10 +3087,7 @@ export type ModelsDeveloperDashboardBootstrapApiResponse = {
 };
 export type ModelsFlatStatus = "vacant" | "occupied" | "blocked";
 export type ModelsFlatClaimStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "cancelled";
+  "pending" | "approved" | "rejected" | "cancelled";
 export type ModelsFlatClaimResponse = {
   block?: string;
   cancelled_at?: string;
@@ -3038,6 +3277,54 @@ export type ModelsUpdatePlanRequest = {
   name?: string;
   price_amount_paise?: number;
 };
+export type ModelsFlatMemberInviteRole = "family" | "tenant";
+export type ModelsFlatMemberInviteStatus =
+  "pending" | "accepted" | "expired" | "cancelled";
+export type ModelsPublicFlatMemberInviteView = {
+  block?: string;
+  expires_at?: string;
+  flat_number?: string;
+  floor?: string;
+  full_name?: string;
+  id?: number;
+  role?: ModelsFlatMemberInviteRole;
+  society_name?: string;
+  status?: ModelsFlatMemberInviteStatus;
+};
+export type ModelsPublicFlatMemberInviteData = {
+  invite?: ModelsPublicFlatMemberInviteView;
+};
+export type ModelsPublicFlatMemberInviteApiResponse = {
+  data?: ModelsPublicFlatMemberInviteData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsFlatMemberInviteResponse = {
+  created_at?: string;
+  email?: string;
+  expires_at?: string;
+  flat_id?: number;
+  full_name?: string;
+  id?: number;
+  invited_by?: number;
+  phone?: string;
+  role?: ModelsFlatMemberInviteRole;
+  society_id?: number;
+  status?: ModelsFlatMemberInviteStatus;
+  updated_at?: string;
+};
+export type ModelsAcceptFlatMemberInviteResponse = {
+  invite?: ModelsFlatMemberInviteResponse;
+  resident?: ModelsFlatResidentResponse;
+};
+export type ModelsAcceptFlatMemberInviteData = {
+  acceptance?: ModelsAcceptFlatMemberInviteResponse;
+};
+export type ModelsAcceptFlatMemberInviteApiResponse = {
+  data?: ModelsAcceptFlatMemberInviteData;
+  message?: string;
+  success?: boolean;
+};
 export type ModelsPublicClaimFlatResponse = {
   block?: string;
   flat_number?: string;
@@ -3071,18 +3358,9 @@ export type ModelsVisitorFlatSummary = {
   id?: number;
 };
 export type ModelsVisitorPurpose =
-  | "guest"
-  | "delivery"
-  | "cab"
-  | "service"
-  | "maintenance"
-  | "staff"
-  | "other";
+  "guest" | "delivery" | "cab" | "service" | "maintenance" | "staff" | "other";
 export type ModelsVisitorEntrySource =
-  | "resident_link"
-  | "public_qr"
-  | "guard_entry"
-  | "quick_link";
+  "resident_link" | "public_qr" | "guard_entry" | "quick_link";
 export type ModelsVisitorStatus =
   | "waiting_approval"
   | "approved"
@@ -3093,27 +3371,15 @@ export type ModelsVisitorStatus =
   | "expired"
   | "auto_closed";
 export type ModelsVisitorVehicleType =
-  | "bike"
-  | "car"
-  | "auto"
-  | "cab"
-  | "truck"
-  | "other";
+  "bike" | "car" | "auto" | "cab" | "truck" | "other";
 export type ModelsVisitorSummary = {
   email?: string;
   full_name?: string;
   phone_number?: string;
   photo_url?: string;
 };
-export type ModelsGuardApproveEntryRequest = {
-  on_behalf?: boolean;
-  reason?: string;
-};
-
 export type ModelsVisitorEntry = {
   approved_at?: string;
-  delivery_partner?: string;
-  service_provider?: string;
   approved_by?: number;
   auto_closed_at?: string;
   checked_in_at?: string;
@@ -3124,6 +3390,7 @@ export type ModelsVisitorEntry = {
   companions_count?: number;
   created_at?: string;
   created_by?: number;
+  delivery_partner?: string;
   expected_at?: string;
   expected_checkout_at?: string;
   flat?: ModelsVisitorFlatSummary;
@@ -3140,6 +3407,7 @@ export type ModelsVisitorEntry = {
   qr_used_at?: string;
   rejected_by?: number;
   rejection_reason?: string;
+  service_provider?: string;
   society_id?: number;
   source?: ModelsVisitorEntrySource;
   status?: ModelsVisitorStatus;
@@ -3219,10 +3487,7 @@ export type ModelsQrTokenRequest = {
   token?: string;
 };
 export type ModelsVisitorInviteStatus =
-  | "active"
-  | "used"
-  | "expired"
-  | "cancelled";
+  "active" | "used" | "expired" | "cancelled";
 export type ModelsPublicVisitorInviteView = {
   block?: string;
   expires_at?: string;
@@ -3493,6 +3758,33 @@ export type ModelsUpdateFlatRequest = {
   };
   status?: ModelsFlatStatus;
 };
+export type ModelsFlatMemberInvitesData = {
+  invites?: ModelsFlatMemberInviteResponse[];
+};
+export type ModelsFlatMemberInvitesApiResponse = {
+  data?: ModelsFlatMemberInvitesData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsFlatMemberInviteTokenResponse = {
+  expires_at?: string;
+  token?: string;
+};
+export type ModelsFlatMemberInviteTokenData = {
+  invite?: ModelsFlatMemberInviteResponse;
+  token?: ModelsFlatMemberInviteTokenResponse;
+};
+export type ModelsFlatMemberInviteTokenApiResponse = {
+  data?: ModelsFlatMemberInviteTokenData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsCreateFlatMemberInviteRequest = {
+  email?: string;
+  full_name: string;
+  phone?: string;
+  role: ModelsFlatMemberInviteRole;
+};
 export type ModelsFlatResidentData = {
   resident?: ModelsFlatResidentResponse;
 };
@@ -3616,8 +3908,6 @@ export type ModelsUpdateFlatVisitorSettingRequest = {
 export type ModelsVisitorPendingEntry = {
   approved_at?: string;
   approved_by?: number;
-  delivery_partner?: string;
-  service_provider?: string;
   auto_closed_at?: string;
   checked_in_at?: string;
   checked_out_at?: string;
@@ -3627,6 +3917,7 @@ export type ModelsVisitorPendingEntry = {
   companions_count?: number;
   created_at?: string;
   created_by?: number;
+  delivery_partner?: string;
   expected_at?: string;
   expected_checkout_at?: string;
   flat?: ModelsVisitorFlatSummary;
@@ -3645,6 +3936,7 @@ export type ModelsVisitorPendingEntry = {
   qr_used_at?: string;
   rejected_by?: number;
   rejection_reason?: string;
+  service_provider?: string;
   society_id?: number;
   source?: ModelsVisitorEntrySource;
   status?: ModelsVisitorStatus;
@@ -3664,11 +3956,10 @@ export type ModelsVisitorEntryStatsResponse = {
   visitors_inside?: number;
 };
 export type ModelsGuardDeskBootstrapResponse = {
-  expected_today_count?: number;
-  waiting_at_gate_count?: number;
   pending_preview?: ModelsVisitorPendingEntry[];
   society?: ModelsSocietyResponse;
   stats?: ModelsVisitorEntryStatsResponse;
+  waiting_at_gate_count?: number;
 };
 export type ModelsGuardDeskBootstrapData = {
   desk?: ModelsGuardDeskBootstrapResponse;
@@ -3808,6 +4099,10 @@ export type ModelsVisitorEntryStatsApiResponse = {
   message?: string;
   success?: boolean;
 };
+export type ModelsGuardApproveEntryRequest = {
+  on_behalf?: boolean;
+  reason?: string;
+};
 export type ModelsVisitorEventType =
   | "created"
   | "approved"
@@ -3818,7 +4113,8 @@ export type ModelsVisitorEventType =
   | "expired"
   | "auto_closed"
   | "qr_generated"
-  | "qr_used";
+  | "qr_used"
+  | "guard_approved_on_behalf";
 export type ModelsVisitorEntryEvent = {
   actor_user_id?: number;
   created_at?: string;
@@ -3836,6 +4132,12 @@ export type ModelsVisitorEntryEventsData = {
 };
 export type ModelsVisitorEntryEventsApiResponse = {
   data?: ModelsVisitorEntryEventsData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsApiResponse = {
+  data?: any;
+  error?: ModelsErrorData;
   message?: string;
   success?: boolean;
 };
@@ -3964,6 +4266,8 @@ export const {
   usePatchV1PlansByPlanIdMutation,
   usePostV1PlansByPlanIdActivateMutation,
   usePostV1PlansByPlanIdDeactivateMutation,
+  useGetV1PublicFlatMemberInvitesByTokenQuery,
+  usePostV1PublicFlatMemberInvitesByTokenAcceptMutation,
   useGetV1PublicSocietiesBySocietyCodeClaimOptionsQuery,
   usePostV1PublicSocietiesBySocietyCodeVisitorEntriesPublicQrMutation,
   usePostV1PublicSocietiesBySocietyCodeVisitorEntriesQuickLinkMutation,
@@ -3992,6 +4296,10 @@ export const {
   useDeleteV1SocietiesBySocietyIdFlatsAndFlatIdMutation,
   usePatchV1SocietiesBySocietyIdFlatsAndFlatIdMutation,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdBlockMutation,
+  useGetV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesQuery,
+  usePostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesMutation,
+  usePostV1SocietiesBySocietyIdFlatsAndFlatIdMemberInvitesInviteIdCancelMutation,
+  useGetV1SocietiesBySocietyIdFlatsAndFlatIdMembersQuery,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsQuery,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdResidentsUsersUserIdMutation,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdResidentsResidentIdQuery,
@@ -4003,6 +4311,7 @@ export const {
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesQuery,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesPendingQuery,
+  useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesEntryIdQuery,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesMutation,
   usePostV1SocietiesBySocietyIdFlatsAndFlatIdVisitorInvitesStaffMutation,
   useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorSettingsQuery,
@@ -4032,10 +4341,15 @@ export const {
   usePostV1SocietiesBySocietyIdVisitorEntriesGuardMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesPendingQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,
+  useGetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveMutation,
+  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInMutation,
+  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdEventsQuery,
+  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApproveMutation,
+  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotifyMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdRejectMutation,
   usePostV1SocietiesBySocietyIdVisitorInvitesAndInviteIdCancelMutation,
   useGetV1SocietiesBySocietyIdVisitorSettingsQuery,

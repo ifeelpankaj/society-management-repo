@@ -31,14 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
-.env
-.env.*
-!.env.example
-
-# Firebase / Google service files for local builds.
-# For EAS cloud builds, upload these as file environment variables instead.
-google-services.json
-GoogleService-Info.plist
+.env*.local
 
 # typescript
 *.tsbuildinfo

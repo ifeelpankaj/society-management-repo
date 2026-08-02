@@ -714,7 +714,7 @@ func (h *VisitorEntryHandler) ListWaitingAtGate(c *gin.Context) {
 // @Produce json
 // @Param societyId path int true "Society ID"
 // @Param entryId path int true "Visitor entry ID"
-// @Success 200 {object} models.SuccessAPIResponse "Resident notified successfully"
+// @Success 200 {object} models.APIResponse "Resident notified successfully"
 // @Failure 400 {object} models.ErrorResponseDoc "Invalid path parameter or visitor entry state"
 // @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
 // @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"

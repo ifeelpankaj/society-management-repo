@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"go-server/internal/config"
-	"go-server/internal/middlewares"
+	middleware "go-server/internal/middlewares"
 	"go-server/internal/models"
 	authsvc "go-server/internal/services/authSvc"
 	"go-server/pkg/utils"
@@ -243,13 +243,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 // Refresh godoc
 // @Summary Refresh access token
-// @Description Validates the refresh_token cookie and reissues only the access_token cookie.
+// @Description Validates the refresh token from either the refresh_token cookie or the request body.
 // @Tags Auth
+// @Accept json
 // @Produce json
-// @Success 200 {object} models.RefreshTokenAPIResponse "Access token refreshed successfully"
-// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired refresh token"
-// @Failure 403 {object} models.ErrorResponseDoc "Account disabled"
-// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Param request body models.RefreshTokenRequest true "Refresh token payload"
+// @Success 200 {object} models.RefreshTokenAPIResponse
+// @Failure 401 {object} models.ErrorResponseDoc
+// @Failure 403 {object} models.ErrorResponseDoc
+// @Failure 500 {object} models.ErrorResponseDoc
 // @Security RefreshToken
 // @Router /v1/auth/refresh [post]
 func (h *AuthHandler) Refresh(c *gin.Context) {

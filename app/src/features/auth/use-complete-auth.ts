@@ -9,8 +9,11 @@ export function useCompleteAuth() {
   const router = useRouter();
   const { completeLogin } = useAuth();
 
-  return async (payload?: AuthSessionPayload & { user?: ModelsUserResponse | null }) => {
+  return async (
+    payload?: AuthSessionPayload & { user?: ModelsUserResponse | null },
+  ) => {
     const route = await completeLogin(payload);
+    console.log("Redirecting to route:", route);
     router.replace(route);
   };
 }

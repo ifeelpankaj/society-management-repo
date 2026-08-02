@@ -40,9 +40,19 @@ function getGreeting() {
   return "Good Evening, Guard";
 }
 
-function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorBanner({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
-    <Pressable accessibilityRole="button" style={styles.errorBanner} onPress={onRetry}>
+    <Pressable
+      accessibilityRole="button"
+      style={styles.errorBanner}
+      onPress={onRetry}
+    >
       <Text style={styles.errorBannerMessage}>{message}</Text>
       <Text style={styles.errorBannerAction}>Retry</Text>
     </Pressable>
@@ -105,7 +115,11 @@ export function GuardCommandCenter() {
         title: "Scan QR",
         subtitle: "Scan Visitor",
         tone: "orange",
-        icon: { ios: "qrcode.viewfinder", android: "qr_code_scanner", web: "qr_code_scanner" },
+        icon: {
+          ios: "qrcode.viewfinder",
+          android: "qr_code_scanner",
+          web: "qr_code_scanner",
+        },
         onPress: () => router.push(guardScannerRoute()),
       },
       {
@@ -113,7 +127,11 @@ export function GuardCommandCenter() {
         title: "New Entry",
         subtitle: "Add Visitor",
         tone: "blue",
-        icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
+        icon: {
+          ios: "person.badge.plus",
+          android: "person_add",
+          web: "person_add",
+        },
         onPress: () => router.push(guardAddEntryRoute()),
       },
       {
@@ -121,7 +139,11 @@ export function GuardCommandCenter() {
         title: "At Gate",
         subtitle: "Check In",
         tone: "purple",
-        icon: { ios: "door.left.hand.open", android: "meeting_room", web: "meeting_room" },
+        icon: {
+          ios: "door.left.hand.open",
+          android: "meeting_room",
+          web: "meeting_room",
+        },
         onPress: () => router.push(guardWaitingAtGateRoute()),
       },
       {
@@ -129,7 +151,11 @@ export function GuardCommandCenter() {
         title: "Logs",
         subtitle: "View History",
         tone: "neutral",
-        icon: { ios: "list.bullet.rectangle", android: "list_alt", web: "list_alt" },
+        icon: {
+          ios: "list.bullet.rectangle",
+          android: "list_alt",
+          web: "list_alt",
+        },
         onPress: () => router.push(guardEntriesRoute("today")),
       },
     ],
@@ -150,14 +176,22 @@ export function GuardCommandCenter() {
         label: "Pending Approval",
         value: pendingCount,
         tone: "orange",
-        icon: { ios: "hourglass", android: "hourglass_top", web: "hourglass_top" },
+        icon: {
+          ios: "hourglass",
+          android: "hourglass_top",
+          web: "hourglass_top",
+        },
       },
       {
         id: "waiting-at-gate",
         label: "Waiting at Gate",
         value: waitingAtGateCount,
         tone: "blue",
-        icon: { ios: "door.left.hand.open", android: "meeting_room", web: "meeting_room" },
+        icon: {
+          ios: "door.left.hand.open",
+          android: "meeting_room",
+          web: "meeting_room",
+        },
       },
       {
         id: "checked-out",
@@ -190,20 +224,30 @@ export function GuardCommandCenter() {
                       pendingCount > 0
                         ? `${pendingCount} pending notifications`
                         : "Notifications",
-                    icon: { ios: "bell", android: "notifications_none", web: "notifications_none" },
+                    icon: {
+                      ios: "bell",
+                      android: "notifications_none",
+                      web: "notifications_none",
+                    },
                     onPress: goPending,
                     showBadge: pendingCount > 0,
                   },
                 ]}
                 greeting={getGreeting()}
-                statusItems={[{ label: "Guard Desk" }, { label: "Live", live: !hasError }]}
+                statusItems={[
+                  { label: "Guard Desk" },
+                  { label: "Live", live: !hasError },
+                ]}
                 title={societyName}
               />
               <DashboardAnnouncement />
             </Stack>
 
             {hasError ? (
-              <ErrorBanner message={errorMessage ?? "Unable to load data."} onRetry={handleRefresh} />
+              <ErrorBanner
+                message={errorMessage ?? "Unable to load data."}
+                onRetry={handleRefresh}
+              />
             ) : null}
 
             {pendingCount > 0 ? (
@@ -215,7 +259,10 @@ export function GuardCommandCenter() {
             </DashboardSection>
 
             <DashboardSection title="Visitor Overview">
-              <DashboardOverviewGrid stats={overviewStats} onStatPress={handleStatPress} />
+              <DashboardOverviewGrid
+                stats={overviewStats}
+                onStatPress={handleStatPress}
+              />
             </DashboardSection>
 
             <DashboardActivityFeed

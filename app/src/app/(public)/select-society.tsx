@@ -1,5 +1,4 @@
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -186,10 +185,7 @@ export default function SelectSocietyScreen() {
             contentPosition="center"
             style={StyleSheet.absoluteFill}
           />
-          <LinearGradient
-            colors={["rgba(23,17,15,0.05)", "rgba(23,17,15,0.78)"]}
-            style={[StyleSheet.absoluteFill, styles.noPointerEvents]}
-          />
+
           <View style={styles.heroCopy}>
             <Text style={styles.heroTitle}>APNA GATE</Text>
             <Text style={styles.heroSubtitle}>

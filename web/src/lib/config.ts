@@ -3,7 +3,7 @@ const pricePerFlat = Number(process.env.NEXT_PUBLIC_PRICE_PER_FLAT ?? 30);
 
 export const appConfig = {
   logoText: "Gatezy",
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
   swaggerDocsUrl:
     process.env.NEXT_PUBLIC_SWAGGER_DOCS_URL ||
     "http://localhost:8000/swagger/doc.json",

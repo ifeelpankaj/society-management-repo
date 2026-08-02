@@ -22,7 +22,7 @@ import (
 // @contact.name API Support
 // @contact.email support@example.com
 // @license.name Proprietary
-// @host localhost:8000
+// @host localhost:8080
 // @BasePath /api
 // @schemes http
 // @securityDefinitions.apikey AccessToken

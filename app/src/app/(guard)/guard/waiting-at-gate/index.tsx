@@ -56,12 +56,16 @@ export default function GuardWaitingAtGateScreen() {
     >
       <PaginatedList
         data={queue.items}
-        emptyMessage="Approved visitors will appear here when ready for check-in."
-        emptyTitle="No visitors waiting"
+        emptyMessage={
+          search
+            ? "Try a different name, phone, flat, or vehicle."
+            : "Approved visitors will appear here when ready for check-in."
+        }
+        emptyTitle={search ? "No matching visitors" : "No visitors waiting"}
         footer={<View style={styles.footerSpacer} />}
-        hasMore={false}
+        hasMore={queue.hasMore}
         isLoading={queue.isLoading}
-        isLoadingMore={false}
+        isLoadingMore={queue.isLoadingMore}
         isRefreshing={queue.isRefreshing}
         keyExtractor={(item) => `waiting-${item.id}`}
         renderItem={({ item }) => {
@@ -78,7 +82,7 @@ export default function GuardWaitingAtGateScreen() {
             />
           );
         }}
-        onLoadMore={() => undefined}
+        onLoadMore={queue.loadMore}
         onRefresh={() => {
           void queue.refresh();
         }}
@@ -101,12 +105,13 @@ const styles = StyleSheet.create({
     height: spacing.lg,
   },
   searchInput: {
-    backgroundColor: colors.surface.card,
-    borderColor: colors.guard.border,
+    backgroundColor: colors.surface.input,
+    borderColor: colors.border.input,
     borderRadius: 14,
     borderWidth: 1,
     color: colors.text.primary,
     fontSize: 15,
+    fontWeight: "600",
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,
   },

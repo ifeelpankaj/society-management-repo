@@ -1,5 +1,4 @@
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -146,10 +145,10 @@ export default function ForgetScreen() {
               contentPosition="center"
               style={StyleSheet.absoluteFill}
             />
-            <LinearGradient
+            {/* <LinearGradient
               colors={["rgba(23,17,15,0.05)", "rgba(23,17,15,0.78)"]}
               style={[StyleSheet.absoluteFill, styles.noPointerEvents]}
-            />
+            /> */}
             <View style={styles.heroCopy}>
               <Text style={styles.heroTitle}>APNA GATE</Text>
               <Text style={styles.heroSubtitle}>
@@ -228,7 +227,9 @@ export default function ForgetScreen() {
                           showNewPassword ? "Hide password" : "Show password"
                         }
                         accessibilityRole="button"
-                        onPress={() => setShowNewPassword((current) => !current)}
+                        onPress={() =>
+                          setShowNewPassword((current) => !current)
+                        }
                         style={styles.eyeButton}
                       >
                         <SymbolView

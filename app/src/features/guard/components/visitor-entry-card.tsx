@@ -7,7 +7,14 @@ import { colors } from "@/theme/colors";
 import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
 
-import { formatDateTime, getFlatLabel, getVisitorName, titleize } from "../guard-utils";
+import {
+  formatDateOnly,
+  formatDateTime,
+  formatTimeOfDay,
+  getFlatLabel,
+  getVisitorName,
+  titleize,
+} from "../guard-utils";
 import type { WaitingDurationTone } from "../guard-utils";
 
 type VisitorEntryCardProps = {
@@ -93,6 +100,8 @@ export function VisitorEntryCard({
   const statusStyle = getVisitorStatusStyle(entry.status);
   const waitStyle = waitingToneStyle(waitingTone);
   const hasActions = Boolean(primaryActionLabel || secondaryActionLabel);
+  const checkedInDate = formatDateOnly(entry.checked_in_at);
+  const checkedInTime = formatTimeOfDay(entry.checked_in_at);
 
   const header = (
     <View style={styles.header}>
@@ -104,14 +113,32 @@ export function VisitorEntryCard({
           {entry.delivery_partner ? ` · ${entry.delivery_partner}` : ""}
         </Text>
         <Text style={styles.timestamp}>
-          {entry.expected_at
-            ? `Expected ${formatDateTime(entry.expected_at)}`
-            : entry.approved_at
-              ? `Approved ${formatDateTime(entry.approved_at)}`
-              : entry.created_at
-                ? `Created ${formatDateTime(entry.created_at)}`
-                : "Gate record"}
+          {entry.checked_in_at
+            ? "Checked in"
+            : entry.expected_at
+              ? `Expected ${formatDateTime(entry.expected_at)}`
+              : entry.approved_at
+                ? `Approved ${formatDateTime(entry.approved_at)}`
+                : entry.created_at
+                  ? `Created ${formatDateTime(entry.created_at)}`
+                  : "Gate record"}
         </Text>
+        {entry.checked_in_at ? (
+          <View style={styles.checkInMeta}>
+            {checkedInDate ? (
+              <View style={styles.checkInPill}>
+                <Text style={styles.checkInLabel}>Date</Text>
+                <Text style={styles.checkInValue}>{checkedInDate}</Text>
+              </View>
+            ) : null}
+            {checkedInTime ? (
+              <View style={styles.checkInPill}>
+                <Text style={styles.checkInLabel}>Time</Text>
+                <Text style={styles.checkInValue}>{checkedInTime}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
       <View style={styles.badges}>
         {waitingLabel ? (
@@ -210,6 +237,32 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: spacing.lg,
+  },
+  checkInLabel: {
+    color: colors.guard.textMuted,
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  checkInMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  checkInPill: {
+    backgroundColor: colors.surface.secondary,
+    borderColor: colors.border.input,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  checkInValue: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: "700",
   },
   copy: {
     flex: 1,

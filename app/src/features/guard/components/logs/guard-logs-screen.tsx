@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,6 +11,7 @@ import { LogsDateSheet } from "@/features/guard/components/logs/logs-date-sheet"
 import { LogsFilterSheet } from "@/features/guard/components/logs/logs-filter-sheet";
 import { LogsSearchHeader } from "@/features/guard/components/logs/logs-search-header";
 import { LogsStatsSummary } from "@/features/guard/components/logs/logs-stats-summary";
+import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardLogsFromParams } from "@/features/guard/hooks/use-guard-logs";
@@ -23,6 +24,7 @@ import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
 export function GuardLogsScreen() {
+  const router = useRouter();
   const { preset: presetParam } = useLocalSearchParams<{ preset?: string | string[] }>();
   const { isLoading, isReady, memberships, requiresSelection, selectedSocietyId } = useGuardScreen();
   const feedback = useGuardFeedback();
@@ -108,6 +110,11 @@ export function GuardLogsScreen() {
           <LogEntryRow
             entry={item}
             isCheckingOut={actions.activeEntryId === item.id}
+            onPress={() => {
+              if (item.id) {
+                router.push(guardEntryDetailRoute(item.id));
+              }
+            }}
             onCheckOut={
               item.status === "checked_in" ? () => void handleCheckOut(item.id) : undefined
             }

@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 
@@ -20,33 +19,30 @@ export function DashboardAnnouncement({
   title = "Society Announcement",
 }: DashboardAnnouncementProps) {
   const content = (
-    <LinearGradient
-      colors={[colors.dashboard.announcementGradientStart, colors.dashboard.announcementGradientEnd]}
-      end={{ x: 1, y: 0.5 }}
-      start={{ x: 0, y: 0.5 }}
-      style={styles.container}
-    >
-      <Row align="center" gap="md" justify="flex-start">
-        <View style={styles.iconWrap}>
-          <SymbolView
-            name={{ ios: "megaphone.fill", android: "campaign", web: "campaign" }}
-            size={18}
-            tintColor={colors.brand.orange}
-          />
-        </View>
-        <View style={styles.copy}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-        </View>
-        {onPress ? (
-          <SymbolView
-            name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-            size={16}
-            tintColor={colors.brand.orange}
-          />
-        ) : null}
-      </Row>
-    </LinearGradient>
+    <Row align="center" gap="md" justify="flex-start">
+      <View style={styles.iconWrap}>
+        <SymbolView
+          name={{ ios: "megaphone.fill", android: "campaign", web: "campaign" }}
+          size={18}
+          tintColor={colors.brand.orange}
+        />
+      </View>
+      <View style={styles.copy}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.message}>{message}</Text>
+      </View>
+      {onPress ? (
+        <SymbolView
+          name={{
+            ios: "chevron.right",
+            android: "chevron_right",
+            web: "chevron_right",
+          }}
+          size={16}
+          tintColor={colors.brand.orange}
+        />
+      ) : null}
+    </Row>
   );
 
   if (!onPress) {
@@ -54,7 +50,11 @@ export function DashboardAnnouncement({
   }
 
   return (
-    <Pressable accessibilityRole="button" style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+      onPress={onPress}
+    >
       {content}
     </Pressable>
   );

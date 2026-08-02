@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { DashboardActivityRow } from "@/components/dashboard/dashboard-activity-row";
 import { DashboardSection } from "@/components/dashboard/dashboard-section";
@@ -9,9 +9,7 @@ import {
   getVisitorStatusMeta,
   titleize,
 } from "@/features/guard/guard-utils";
-import {
-  ACTIVITY_LIST_HEIGHT,
-} from "@/features/shared/activity-feed-config";
+import { ACTIVITY_LIST_HEIGHT } from "@/features/shared/activity-feed-config";
 import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { colors } from "@/theme/colors";
 import { radius } from "@/theme/radius";
@@ -31,6 +29,34 @@ type DashboardActivityFeedProps = {
 
 function ItemSeparator() {
   return <View style={styles.separator} />;
+}
+
+function ActivityRow({
+  item,
+  showFlat,
+}: {
+  item: ModelsVisitorEntry;
+  showFlat: boolean;
+}) {
+  const name = getVisitorName(item);
+  const statusMeta = getVisitorStatusMeta(item.status);
+  const timestamp = formatActivityTimestamp(
+    item.checked_out_at ?? item.checked_in_at ?? item.updated_at ?? item.created_at,
+  );
+  const purpose = item.purpose ? titleize(item.purpose) : "Visitor";
+  const flatLabel = showFlat ? getFlatLabel(item) : null;
+  const meta = [flatLabel, timestamp].filter(Boolean).join(" - ");
+
+  return (
+    <DashboardActivityRow
+      meta={meta || purpose}
+      name={name}
+      statusBg={statusMeta.bg}
+      statusBorder={statusMeta.border}
+      statusColor={statusMeta.color}
+      statusLabel={statusMeta.label}
+    />
+  );
 }
 
 export function DashboardActivityFeed({
@@ -55,50 +81,27 @@ export function DashboardActivityFeed({
             <Text style={styles.emptyText}>No entries for today.</Text>
           </View>
         ) : (
-          <FlatList
-            nestedScrollEnabled
-            data={items}
-            ItemSeparatorComponent={ItemSeparator}
-            keyExtractor={(item) => `activity-${item.id}`}
-            renderItem={({ item }) => {
-              const name = getVisitorName(item);
-              const statusMeta = getVisitorStatusMeta(item.status);
-              const timestamp = formatActivityTimestamp(
-                item.checked_out_at ??
-                  item.checked_in_at ??
-                  item.updated_at ??
-                  item.created_at,
-              );
-              const purpose = item.purpose ? titleize(item.purpose) : "Visitor";
-              const flatLabel = showFlat ? getFlatLabel(item) : null;
-              const meta = [flatLabel, timestamp].filter(Boolean).join(" • ");
-
-              return (
-                <DashboardActivityRow
-                  meta={meta || purpose}
-                  name={name}
-                  statusBg={statusMeta.bg}
-                  statusBorder={statusMeta.border}
-                  statusColor={statusMeta.color}
-                  statusLabel={statusMeta.label}
-                />
-              );
-            }}
-            scrollEnabled={items.length > 4 || hasMore}
-            showsVerticalScrollIndicator={false}
-            style={{ height: ACTIVITY_LIST_HEIGHT }}
-            onEndReached={() => {
-              onLoadMore();
-            }}
-            onEndReachedThreshold={0.35}
-            ListFooterComponent={
-              isLoadingMore ? (
-                <View style={styles.loadingMore}>
-                  <ActivityIndicator color={colors.guard.teal} size="small" />
-                </View>
-              ) : null
-            }
-          />
+          <View style={styles.list}>
+            {items.map((item, index) => (
+              <View key={`activity-${item.id}`}>
+                {index > 0 ? <ItemSeparator /> : null}
+                <ActivityRow item={item} showFlat={showFlat} />
+              </View>
+            ))}
+            {isLoadingMore ? (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator color={colors.guard.teal} size="small" />
+              </View>
+            ) : hasMore ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.loadMoreButton}
+                onPress={onLoadMore}
+              >
+                <Text style={styles.loadMoreText}>Load more</Text>
+              </Pressable>
+            ) : null}
+          </View>
         )}
       </View>
     </DashboardSection>
@@ -121,9 +124,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
   },
+  list: {
+    minHeight: ACTIVITY_LIST_HEIGHT,
+  },
   loadingMore: {
     alignItems: "center",
     paddingVertical: spacing.md,
+  },
+  loadMoreButton: {
+    alignItems: "center",
+    borderTopColor: "rgba(226, 232, 240, 0.8)",
+    borderTopWidth: 1,
+    paddingVertical: spacing.md,
+  },
+  loadMoreText: {
+    color: colors.guard.teal,
+    fontSize: 13,
+    fontWeight: "600",
   },
   panel: {
     backgroundColor: colors.surface.card,

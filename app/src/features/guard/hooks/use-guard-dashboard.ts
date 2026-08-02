@@ -58,14 +58,12 @@ export function useGuardDashboard() {
   const pendingEntries = desk?.pending_preview ?? [];
 
   const resolvedSocietyName = useMemo(
-    () =>
-      desk?.society?.name ??
-      societyName ??
-      `Society #${selectedSocietyId}`,
+    () => desk?.society?.name ?? societyName ?? `Society #${selectedSocietyId}`,
     [desk?.society?.name, selectedSocietyId, societyName],
   );
 
-  const isInitialLoading = shouldSkip || (bootstrapQuery.isLoading && !bootstrapQuery.data);
+  const isInitialLoading =
+    shouldSkip || (bootstrapQuery.isLoading && !bootstrapQuery.data);
 
   return {
     checkOutEntry,
@@ -73,8 +71,10 @@ export function useGuardDashboard() {
     errorMessage: bootstrapQuery.isError
       ? getApiMessage(bootstrapQuery.error, "Unable to load guard desk data.")
       : null,
-    expectedTodayCount: desk?.waiting_at_gate_count ?? desk?.expected_today_count ?? 0,
-    waitingAtGateCount: desk?.waiting_at_gate_count ?? desk?.expected_today_count ?? 0,
+    expectedTodayCount:
+      desk?.waiting_at_gate_count ?? desk?.waiting_at_gate_count ?? 0,
+    waitingAtGateCount:
+      desk?.waiting_at_gate_count ?? desk?.waiting_at_gate_count ?? 0,
     hasError: bootstrapQuery.isError,
     isInitialLoading,
     isRefreshing: bootstrapQuery.isFetching && !bootstrapQuery.isLoading,

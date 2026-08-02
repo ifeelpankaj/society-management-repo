@@ -229,6 +229,24 @@ export function formatTimeOfDay(value?: string | null) {
   }).format(date);
 }
 
+export function formatDateOnly(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 export function formatDateTime(value?: string | null) {
   if (!value) {
     return "-";
