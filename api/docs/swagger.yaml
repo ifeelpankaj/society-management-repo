@@ -1180,6 +1180,8 @@ definitions:
     type: object
   models.GuardDeskBootstrapResponse:
     properties:
+      expected_guests_count:
+        type: integer
       pending_preview:
         items:
           $ref: '#/definitions/models.VisitorPendingEntry'
@@ -8469,6 +8471,66 @@ paths:
       security:
       - AccessToken: []
       summary: Check in visitor
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/expected-guests:
+    get:
+      description: '[Owner/Admin/Staff] Lists pre-invited resident-link visitor entries
+        expected today and ready for arrival.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Search by name, phone, flat, vehicle, or purpose
+        in: query
+        name: search
+        type: string
+      - description: Expected window start (RFC3339, defaults to IST today start)
+        in: query
+        name: event_from
+        type: string
+      - description: Expected window end (RFC3339, defaults to IST tomorrow start)
+        in: query
+        name: event_to
+        type: string
+      - default: 50
+        description: Maximum records to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Records to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expected guest entries fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntriesAPIResponse'
+        "400":
+          description: Invalid query or path parameter
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: List expected guest entries
       tags:
       - Visitor Entries
   /v1/societies/{societyId}/visitor-entries/guard:

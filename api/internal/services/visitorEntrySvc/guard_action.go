@@ -229,6 +229,34 @@ func (s *VisitorEntrySvc) ListWaitingAtGate(ctx context.Context, filter models.W
 	}, nil
 }
 
+func (s *VisitorEntrySvc) ListExpectedGuests(ctx context.Context, filter models.ExpectedGuestFilter) (*models.VisitorEntryListResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	if filter.FromAt.IsZero() || filter.ToAt.IsZero() {
+		filter.FromAt, filter.ToAt = istDayRange(time.Now())
+	}
+
+	entries, err := s.entryRepo.ListExpectedGuests(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	total, err := s.entryRepo.CountExpectedGuestsFiltered(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.VisitorEntryListResult{
+		Entries: entries,
+		Total:   total,
+		Limit:   filter.Limit,
+		Offset:  filter.Offset,
+	}, nil
+}
+
 func (s *VisitorEntrySvc) buildOnBehalfAudit(ctx context.Context, entry *models.VisitorEntry, guardUserID int64, reason *string) (map[string]any, error) {
 	audit := map[string]any{
 		"approved_on_behalf":    true,

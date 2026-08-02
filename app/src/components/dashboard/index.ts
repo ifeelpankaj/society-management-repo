@@ -6,6 +6,7 @@ export { DashboardAlertBar } from "./dashboard-alert-bar";
 export { DashboardSection } from "./dashboard-section";
 export { DashboardActionTile } from "./dashboard-action-tile";
 export type { DashboardActionTileConfig, DashboardActionTone } from "./dashboard-action-tile";
+export { dashboardActionToneStyles } from "./dashboard-action-tile";
 export { DashboardActionGrid } from "./dashboard-action-grid";
 export { DashboardActionRow } from "./dashboard-action-row";
 export { DashboardOverviewStat } from "./dashboard-overview-stat";

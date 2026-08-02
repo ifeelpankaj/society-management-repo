@@ -1,3 +1,4 @@
+export { AppErrorBoundary } from "./app-error-boundary";
 export { AppStatusBar } from "./app-status-bar";
 export { Container } from "./container";
 export { NotchedTabBar, notchedTabBarHeight } from "./notched-tab-bar";

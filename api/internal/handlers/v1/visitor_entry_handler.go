@@ -691,7 +691,7 @@ func (h *VisitorEntryHandler) ListSocietyPendingApprovals(c *gin.Context) {
 
 // ListWaitingAtGate godoc
 // @Summary List visitors waiting at gate
-// @Description [Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.
+// @Description [Owner/Admin/Staff] Lists approved non-invite visitor entries awaiting manual check-in. Excludes resident-link QR guests (see Expected Guests).
 // @Tags Visitor Entries
 // @Produce json
 // @Param societyId path int true "Society ID"
@@ -719,6 +719,45 @@ func (h *VisitorEntryHandler) ListWaitingAtGate(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, "Waiting at gate entries fetched successfully", gin.H{
+		"entries": result.Entries,
+		"total":   result.Total,
+		"limit":   result.Limit,
+		"offset":  result.Offset,
+	})
+}
+
+// ListExpectedGuests godoc
+// @Summary List expected guest entries
+// @Description [Owner/Admin/Staff] Lists pre-invited resident-link visitor entries expected today and ready for arrival.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param search query string false "Search by name, phone, flat, vehicle, or purpose"
+// @Param event_from query string false "Expected window start (RFC3339, defaults to IST today start)"
+// @Param event_to query string false "Expected window end (RFC3339, defaults to IST tomorrow start)"
+// @Param limit query int false "Maximum records to return" default(50)
+// @Param offset query int false "Records to skip" default(0)
+// @Success 200 {object} models.VisitorEntriesAPIResponse "Expected guest entries fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid query or path parameter"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/expected-guests [get]
+func (h *VisitorEntryHandler) ListExpectedGuests(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	filter, ok := expectedGuestFilterFromQuery(c, societyID)
+	if !ok {
+		return
+	}
+	result, err := h.entrySvc.ListExpectedGuests(c.Request.Context(), filter)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Expected guest entries fetched successfully", gin.H{
 		"entries": result.Entries,
 		"total":   result.Total,
 		"limit":   result.Limit,
@@ -1214,6 +1253,46 @@ func waitingAtGateFilterFromQuery(c *gin.Context, societyID int64) (models.Waiti
 	filter := models.WaitingAtGateFilter{SocietyID: societyID, Limit: 50}
 	if raw := c.Query("search"); raw != "" {
 		filter.Search = &raw
+	}
+	if raw := c.Query("limit"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value <= 0 {
+			utils.BadRequestResponse(c, "limit must be a positive integer")
+			return filter, false
+		}
+		filter.Limit = int32(value)
+	}
+	if raw := c.Query("offset"); raw != "" {
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || value < 0 {
+			utils.BadRequestResponse(c, "offset must be zero or positive")
+			return filter, false
+		}
+		filter.Offset = int32(value)
+	}
+	return filter, true
+}
+
+func expectedGuestFilterFromQuery(c *gin.Context, societyID int64) (models.ExpectedGuestFilter, bool) {
+	filter := models.ExpectedGuestFilter{SocietyID: societyID, Limit: 50}
+	if raw := c.Query("search"); raw != "" {
+		filter.Search = &raw
+	}
+	if raw := c.Query("event_from"); raw != "" {
+		value, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			utils.BadRequestResponse(c, "event_from must be a valid RFC3339 timestamp")
+			return filter, false
+		}
+		filter.FromAt = value
+	}
+	if raw := c.Query("event_to"); raw != "" {
+		value, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			utils.BadRequestResponse(c, "event_to must be a valid RFC3339 timestamp")
+			return filter, false
+		}
+		filter.ToAt = value
 	}
 	if raw := c.Query("limit"); raw != "" {
 		value, err := strconv.ParseInt(raw, 10, 32)

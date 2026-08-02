@@ -487,5 +487,6 @@ export const DELIVERY_PARTNERS = [
   "Blinkit",
   "Amazon",
   "Dunzo",
-  "Other",
 ] as const;
+
+export const DELIVERY_PARTNER_OTHER_LABEL = "Not listed";

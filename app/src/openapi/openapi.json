@@ -2707,7 +2707,7 @@
     },
     "/v1/public/visitor-invites/{token}": {
       "get": {
-        "description": "[Public] Fetches an active visitor invite from its public token before the visitor submits details.",
+        "description": "[Public] Fetches a visitor invite for the web form, or recovers entry/QR when the invite was already used.",
         "tags": [
           "Visitor Entries"
         ],
@@ -2755,7 +2755,7 @@
             }
           },
           "409": {
-            "description": "Visitor invite is expired, used, or cancelled",
+            "description": "Visitor invite is expired, used without entry, or cancelled",
             "content": {
               "application/json": {
                 "schema": {
@@ -9266,6 +9266,125 @@
         }
       }
     },
+    "/v1/societies/{societyId}/visitor-entries/expected-guests": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Lists pre-invited resident-link visitor entries expected today and ready for arrival.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "List expected guest entries",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search by name, phone, flat, vehicle, or purpose",
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected window start (RFC3339, defaults to IST today start)",
+            "name": "event_from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected window end (RFC3339, defaults to IST tomorrow start)",
+            "name": "event_to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum records to return",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "description": "Records to skip",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected guest entries fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntriesAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/visitor-entries/guard": {
       "post": {
         "security": [
@@ -13096,6 +13215,9 @@
       "models.GuardDeskBootstrapResponse": {
         "type": "object",
         "properties": {
+          "expected_guests_count": {
+            "type": "integer"
+          },
           "pending_preview": {
             "type": "array",
             "items": {
@@ -15690,6 +15812,9 @@
           "auto_closed_today": {
             "type": "integer"
           },
+          "checked_out_in_range": {
+            "type": "integer"
+          },
           "checked_out_today": {
             "type": "integer"
           },
@@ -15869,8 +15994,18 @@
       "models.VisitorInviteData": {
         "type": "object",
         "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/models.VisitorEntry"
+          },
           "invite": {
             "$ref": "#/components/schemas/models.PublicVisitorInviteView"
+          },
+          "qr": {
+            "$ref": "#/components/schemas/models.QRTokenResponse"
+          },
+          "view": {
+            "type": "string",
+            "example": "form"
           }
         }
       },

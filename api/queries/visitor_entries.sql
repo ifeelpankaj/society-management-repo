@@ -345,7 +345,9 @@ WHERE ve.society_id = sqlc.arg('society_id');
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve
 WHERE ve.society_id = sqlc.arg('society_id')
-  AND ve.status = 'approved';
+  AND ve.status = 'approved'
+  AND ve.checked_in_at IS NULL
+  AND ve.source <> 'resident_link';
 
 -- name: ListWaitingAtGateVisitorEntries :many
 SELECT
@@ -362,6 +364,8 @@ JOIN visitors v ON v.id = ve.visitor_id
 JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.status = 'approved'
+  AND ve.checked_in_at IS NULL
+  AND ve.source <> 'resident_link'
   AND (
       COALESCE(sqlc.narg('search')::text, '') = ''
       OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
@@ -382,6 +386,8 @@ JOIN visitors v ON v.id = ve.visitor_id
 JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.status = 'approved'
+  AND ve.checked_in_at IS NULL
+  AND ve.source <> 'resident_link'
   AND (
       COALESCE(sqlc.narg('search')::text, '') = ''
       OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
@@ -390,6 +396,68 @@ WHERE ve.society_id = sqlc.arg('society_id')
       OR COALESCE(f.block, '') ILIKE '%' || sqlc.narg('search')::text || '%'
       OR COALESCE(ve.vehicle_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
       OR COALESCE(ve.delivery_partner, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR ve.purpose::text ILIKE '%' || sqlc.narg('search')::text || '%'
+  );
+
+-- name: CountExpectedGuestEntries :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.source = 'resident_link'
+  AND ve.status = 'approved'
+  AND ve.checked_in_at IS NULL
+  AND COALESCE(ve.expected_at, ve.approved_at, ve.created_at) >= sqlc.arg('from_at')::timestamptz
+  AND COALESCE(ve.expected_at, ve.approved_at, ve.created_at) < sqlc.arg('to_at')::timestamptz;
+
+-- name: ListExpectedGuestEntries :many
+SELECT
+    ve.*,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.source = 'resident_link'
+  AND ve.status = 'approved'
+  AND ve.checked_in_at IS NULL
+  AND COALESCE(ve.expected_at, ve.approved_at, ve.created_at) >= sqlc.arg('from_at')::timestamptz
+  AND COALESCE(ve.expected_at, ve.approved_at, ve.created_at) < sqlc.arg('to_at')::timestamptz
+  AND (
+      COALESCE(sqlc.narg('search')::text, '') = ''
+      OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(ve.vehicle_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR ve.purpose::text ILIKE '%' || sqlc.narg('search')::text || '%'
+  )
+ORDER BY COALESCE(ve.expected_at, ve.approved_at, ve.created_at) ASC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountExpectedGuestEntriesFiltered :one
+SELECT COUNT(*)::bigint
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.source = 'resident_link'
+  AND ve.status = 'approved'
+  AND ve.checked_in_at IS NULL
+  AND COALESCE(ve.expected_at, ve.approved_at, ve.created_at) >= sqlc.arg('from_at')::timestamptz
+  AND COALESCE(ve.expected_at, ve.approved_at, ve.created_at) < sqlc.arg('to_at')::timestamptz
+  AND (
+      COALESCE(sqlc.narg('search')::text, '') = ''
+      OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || sqlc.narg('search')::text || '%'
+      OR COALESCE(ve.vehicle_number, '') ILIKE '%' || sqlc.narg('search')::text || '%'
       OR ve.purpose::text ILIKE '%' || sqlc.narg('search')::text || '%'
   );
 

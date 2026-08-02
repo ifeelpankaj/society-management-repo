@@ -7177,6 +7177,96 @@
                 }
             }
         },
+        "/v1/societies/{societyId}/visitor-entries/expected-guests": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "[Owner/Admin/Staff] Lists pre-invited resident-link visitor entries expected today and ready for arrival.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Visitor Entries"
+                ],
+                "summary": "List expected guest entries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Society ID",
+                        "name": "societyId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by name, phone, flat, vehicle, or purpose",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Expected window start (RFC3339, defaults to IST today start)",
+                        "name": "event_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Expected window end (RFC3339, defaults to IST tomorrow start)",
+                        "name": "event_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum records to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Records to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expected guest entries fetched successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.VisitorEntriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid query or path parameter",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, or expired access token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "403": {
+                        "description": "Owner, admin, or staff access required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/societies/{societyId}/visitor-entries/guard": {
             "post": {
                 "security": [
@@ -10496,6 +10586,9 @@
         "models.GuardDeskBootstrapResponse": {
             "type": "object",
             "properties": {
+                "expected_guests_count": {
+                    "type": "integer"
+                },
                 "pending_preview": {
                     "type": "array",
                     "items": {

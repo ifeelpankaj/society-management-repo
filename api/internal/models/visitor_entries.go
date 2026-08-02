@@ -353,6 +353,15 @@ type WaitingAtGateFilter struct {
 	Offset    int32
 }
 
+type ExpectedGuestFilter struct {
+	SocietyID int64
+	Search    *string
+	FromAt    time.Time
+	ToAt      time.Time
+	Limit     int32
+	Offset    int32
+}
+
 type RejectVisitorEntryRequest struct {
 	Reason string `json:"reason"`
 }
@@ -465,6 +474,7 @@ type FlatRecentVisitorSummary struct {
 type GuardDeskBootstrapResponse struct {
 	Society            *SocietyResponse           `json:"society"`
 	Stats              *VisitorEntryStatsResponse `json:"stats"`
+	ExpectedGuestsCount int64                     `json:"expected_guests_count"`
 	WaitingAtGateCount int64                      `json:"waiting_at_gate_count"`
 	PendingPreview     []*VisitorPendingEntry     `json:"pending_preview"`
 }

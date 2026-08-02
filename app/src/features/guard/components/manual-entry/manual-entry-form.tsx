@@ -18,7 +18,11 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Row, Stack } from "@/components/layout";
-import { DELIVERY_PARTNERS, getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
+import {
+  dashboardActionToneStyles,
+  type DashboardActionTone,
+} from "@/components/dashboard";
+import { DELIVERY_PARTNERS, DELIVERY_PARTNER_OTHER_LABEL, getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import {
   flatFromResponse,
   formatSelectedFlatLabel,
@@ -65,15 +69,18 @@ const PURPOSE_META = {
   other: { ios: "ellipsis.circle.fill", android: "more_horiz", web: "more_horiz", label: "Other" },
 } as const;
 
-function StepLabel({ step, title }: { step: number; title: string }) {
-  return (
-    <Row align="center" gap={10} style={styles.stepLabel}>
-      <View style={styles.stepBadge}>
-        <Text style={styles.stepBadgeText}>{step}</Text>
-      </View>
-      <Text style={styles.stepTitle}>{title}</Text>
-    </Row>
-  );
+const PURPOSE_TONES: Record<ModelsVisitorPurpose, DashboardActionTone> = {
+  guest: "blue",
+  delivery: "orange",
+  cab: "purple",
+  service: "neutral",
+  maintenance: "orange",
+  staff: "blue",
+  other: "neutral",
+};
+
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
 function Field({
@@ -95,13 +102,13 @@ function Field({
           styles.fieldInputWrapper,
           multiline && styles.fieldInputWrapperMultiline,
           {
-            borderColor: error ? "#fca5a5" : focused ? colors.guard.teal : colors.guard.border,
-            ...(focused ? styles.fieldInputWrapperFocused : shadows.card),
+            borderColor: error ? "#fca5a5" : focused ? colors.brand.orange : colors.guard.border,
+            ...(focused ? styles.fieldInputWrapperFocused : shadows.sm),
           },
         ]}
       >
         <TextInput
-          cursorColor={colors.guard.teal}
+          cursorColor={colors.brand.orange}
           multiline={multiline}
           placeholderTextColor={colors.guard.textMuted}
           selectionColor={colors.accent.selection}
@@ -152,21 +159,21 @@ function SearchField({
         style={[
           styles.searchFieldWrapper,
           {
-            borderColor: focused ? colors.guard.teal : colors.guard.border,
-            ...(focused ? styles.fieldInputWrapperFocused : shadows.card),
+            borderColor: focused ? colors.brand.orange : colors.guard.border,
+            ...(focused ? styles.fieldInputWrapperFocused : shadows.sm),
           },
         ]}
       >
         <SymbolView
           name={{ ios: "magnifyingglass", android: "search", web: "search" }}
           size={20}
-          tintColor={focused ? colors.guard.teal : colors.guard.textMuted}
+          tintColor={focused ? colors.brand.orange : colors.guard.textMuted}
         />
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
           autoFocus={autoFocus}
-          cursorColor={colors.guard.teal}
+          cursorColor={colors.brand.orange}
           placeholder={placeholder}
           placeholderTextColor={colors.guard.textMuted}
           selectionColor={colors.accent.selection}
@@ -311,55 +318,38 @@ function ResidentPreviewCard({
     : flat.floor
       ? `Tower ${flat.floor}`
       : null;
+  const residentLine = loading
+    ? "Loading resident..."
+    : [resident ?? "No primary resident", wingLabel].filter(Boolean).join(" · ");
 
   return (
-    <Pressable style={styles.previewCard} onPress={onPress}>
-      <View style={styles.previewCardAccent} />
-      <Stack gap="lg" style={styles.previewCardBody}>
-        <Row align="flex-start" justify="space-between">
-          <View style={styles.previewIcon}>
-            <SymbolView
-              name={{ ios: "house.fill", android: "home", web: "home" }}
-              size={24}
-              tintColor={colors.guard.teal}
-            />
-          </View>
-          <Row align="center" gap="xs" style={styles.changeBadge}>
-            <Text style={styles.changeBadgeText}>Change</Text>
-            <SymbolView
-              name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-              size={10}
-              tintColor={colors.guard.teal}
-            />
-          </Row>
-        </Row>
-
-        {loading ? (
-          <Row align="center" gap="sm">
-            <ActivityIndicator color={colors.guard.teal} size="small" />
-            <Text style={styles.loadingResidentText}>Loading resident...</Text>
-          </Row>
-        ) : (
-          <Stack gap="xs">
-            <Text style={styles.previewEyebrow}>Flat number</Text>
-            <Text style={styles.previewFlatNumber}>
-              {flat.flat_number ?? `Flat ${flat.id}`}
-            </Text>
-            <Text style={[styles.previewEyebrow, styles.previewEyebrowSpaced]}>Resident</Text>
-            <Text style={styles.previewResidentName}>
-              {resident ?? "No primary resident"}
-            </Text>
-            {wingLabel ? (
-              <>
-                <Text style={[styles.previewEyebrow, styles.previewEyebrowSpaced]}>
-                  Wing / Tower
-                </Text>
-                <Text style={styles.previewWingLabel}>{wingLabel}</Text>
-              </>
-            ) : null}
-          </Stack>
-        )}
+    <Pressable style={styles.flatSearchCard} onPress={onPress}>
+      <View
+        style={[
+          styles.flatSearchIcon,
+          { backgroundColor: dashboardActionToneStyles.blue.backgroundColor },
+        ]}
+      >
+        <SymbolView
+          name={{ ios: "house.fill", android: "home", web: "home" }}
+          size={24}
+          tintColor={dashboardActionToneStyles.blue.iconColor}
+        />
+      </View>
+      <Stack gap={2} style={styles.flatSearchCopy}>
+        <Text style={styles.flatSearchTitle}>{flat.flat_number ?? `Flat ${flat.id}`}</Text>
+        <Text numberOfLines={1} style={styles.flatSearchSubtitle}>
+          {residentLine}
+        </Text>
       </Stack>
+      <Row align="center" gap="xs" style={styles.changeBadge}>
+        <Text style={styles.changeBadgeText}>Change</Text>
+        <SymbolView
+          name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+          size={10}
+          tintColor={colors.brand.orange}
+        />
+      </Row>
     </Pressable>
   );
 }
@@ -383,8 +373,8 @@ function FlatPicker({
   const resident = data?.data?.context?.primary_resident?.full_name;
 
   return (
-    <View>
-      <StepLabel step={1} title="Select flat" />
+    <Stack gap="md">
+      <SectionHeader title="Select flat" />
 
       {selected ? (
         <ResidentPreviewCard
@@ -395,23 +385,30 @@ function FlatPicker({
         />
       ) : (
         <Pressable
-          style={[styles.emptyFlatPicker, error && styles.emptyFlatPickerError]}
+          style={[styles.flatSearchCard, error && styles.flatSearchCardError]}
           onPress={() => setOpen(true)}
         >
-          <View style={styles.previewCardAccent} />
-          <Stack gap="md" style={styles.emptyFlatPickerBody}>
-            <View style={styles.previewIcon}>
-              <SymbolView
-                name={{ ios: "magnifyingglass", android: "search", web: "search" }}
-                size={22}
-                tintColor={colors.guard.teal}
-              />
-            </View>
-            <Stack gap="xs">
-              <Text style={styles.emptyFlatPickerTitle}>Search flat</Text>
-              <Text style={styles.emptyFlatPickerSubtitle}>Flat no., resident, or wing</Text>
-            </Stack>
+          <View
+            style={[
+              styles.flatSearchIcon,
+              { backgroundColor: dashboardActionToneStyles.blue.backgroundColor },
+            ]}
+          >
+            <SymbolView
+              name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+              size={24}
+              tintColor={dashboardActionToneStyles.blue.iconColor}
+            />
+          </View>
+          <Stack gap={2} style={styles.flatSearchCopy}>
+            <Text style={styles.flatSearchTitle}>Search flat</Text>
+            <Text style={styles.flatSearchSubtitle}>Flat no., resident, or wing</Text>
           </Stack>
+          <SymbolView
+            name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+            size={16}
+            tintColor={colors.guard.textMuted}
+          />
         </Pressable>
       )}
 
@@ -422,7 +419,7 @@ function FlatPicker({
         onClose={() => setOpen(false)}
         onSelect={onSelect}
       />
-    </View>
+    </Stack>
   );
 }
 
@@ -434,45 +431,53 @@ function PurposePicker({
   onChange: (p: ModelsVisitorPurpose) => void;
 }) {
   return (
-    <View>
-      <StepLabel step={2} title="Select purpose" />
-      <ScrollView
-        horizontal
-        contentContainerStyle={styles.purposeScrollContent}
-        showsHorizontalScrollIndicator={false}
-      >
+    <Stack gap="md">
+      <SectionHeader title="Select purpose" />
+      <View style={styles.purposeGrid}>
         {visitorPurposes.map((p) => {
           const meta = PURPOSE_META[p];
+          const tone = PURPOSE_TONES[p];
+          const toneStyle = dashboardActionToneStyles[tone];
           const active = value === p;
+
           return (
             <Pressable
               key={p}
-              style={[
-                styles.purposeCard,
-                active ? styles.purposeCardActive : styles.purposeCardInactive,
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              style={({ pressed }) => [
+                styles.purposeTile,
+                {
+                  opacity: pressed ? 0.85 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
               ]}
               onPress={() => onChange(p)}
             >
               <View
                 style={[
-                  styles.purposeIcon,
-                  { backgroundColor: active ? "rgba(255,255,255,0.2)" : colors.guard.tealSoft },
+                  styles.purposeIconWrap,
+                  { backgroundColor: toneStyle.backgroundColor },
+                  active && styles.purposeIconWrapActive,
                 ]}
               >
                 <SymbolView
                   name={{ ios: meta.ios, android: meta.android, web: meta.web }}
-                  size={18}
-                  tintColor={active ? colors.text.inverse : colors.guard.teal}
+                  size={24}
+                  tintColor={toneStyle.iconColor}
                 />
               </View>
-              <Text style={[styles.purposeLabel, active && styles.purposeLabelActive]}>
+              <Text
+                numberOfLines={1}
+                style={[styles.purposeTileLabel, active && styles.purposeTileLabelActive]}
+              >
                 {meta.label}
               </Text>
             </Pressable>
           );
         })}
-      </ScrollView>
-    </View>
+      </View>
+    </Stack>
   );
 }
 
@@ -489,13 +494,17 @@ function EntryLinkModeButton({
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       hitSlop={8}
-      style={({ pressed }) => [styles.linkModeButton, pressed && styles.linkModeButtonPressed]}
+      style={({ pressed }) => [
+        styles.linkModeButton,
+        active && styles.linkModeButtonActive,
+        pressed && styles.linkModeButtonPressed,
+      ]}
       onPress={onPress}
     >
       <SymbolView
         name={{ ios: "link", android: "link", web: "link" }}
         size={20}
-        tintColor={active ? colors.guard.teal : colors.text.placeholder}
+        tintColor={active ? colors.brand.orange : colors.text.placeholder}
       />
     </Pressable>
   );
@@ -647,7 +656,7 @@ export function ManualEntryForm({
         {!isFormLinkMode ? (
           <>
             <Stack gap="lg">
-              <StepLabel step={3} title="Visitor details" />
+              <SectionHeader title="Visitor details" />
               {form.purpose !== "delivery" ? (
                 <Field
                   autoCapitalize="words"
@@ -679,25 +688,50 @@ export function ManualEntryForm({
               {form.purpose === "delivery" ? (
                 <>
                   <Text style={styles.fieldLabel}>Delivery partner</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <Row align="center" gap={8}>
-                      {DELIVERY_PARTNERS.map((partner) => {
-                        const active = form.deliveryPartner === partner;
-                        return (
-                          <Pressable
-                            key={partner}
-                            style={[styles.partnerChip, active && styles.partnerChipActive]}
-                            onPress={() => form.setDeliveryPartner(partner)}
-                          >
-                            <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
-                              {partner}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </Row>
-                  </ScrollView>
-                  {form.errors.deliveryPartner ? (
+                  <View style={styles.partnerChipGrid}>
+                    {DELIVERY_PARTNERS.map((partner) => {
+                      const active =
+                        !form.deliveryPartnerIsOther && form.deliveryPartner === partner;
+                      return (
+                        <Pressable
+                          key={partner}
+                          style={[styles.partnerChip, active && styles.partnerChipActive]}
+                          onPress={() => form.selectDeliveryPartner(partner)}
+                        >
+                          <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
+                            {partner}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                    <Pressable
+                      style={[
+                        styles.partnerChip,
+                        form.deliveryPartnerIsOther && styles.partnerChipActive,
+                      ]}
+                      onPress={form.selectCustomDeliveryPartner}
+                    >
+                      <Text
+                        style={[
+                          styles.partnerChipText,
+                          form.deliveryPartnerIsOther && styles.partnerChipTextActive,
+                        ]}
+                      >
+                        {DELIVERY_PARTNER_OTHER_LABEL}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {form.deliveryPartnerIsOther ? (
+                    <Field
+                      autoCapitalize="words"
+                      error={form.errors.deliveryPartner}
+                      label="Delivery from"
+                      placeholder="Company or service name"
+                      value={form.deliveryPartner}
+                      onChangeText={form.setDeliveryPartner}
+                    />
+                  ) : null}
+                  {!form.deliveryPartnerIsOther && form.errors.deliveryPartner ? (
                     <Text style={styles.flatPickerError}>{form.errors.deliveryPartner}</Text>
                   ) : null}
                 </>
@@ -753,7 +787,7 @@ export function ManualEntryForm({
                   web: showExtra ? "remove_circle" : "add_circle",
                 }}
                 size={18}
-                tintColor={colors.guard.teal}
+                tintColor={colors.brand.orange}
               />
               <Text style={styles.extraToggleText}>
                 {showExtra ? "Hide details" : "Additional details"}
@@ -865,40 +899,50 @@ export function ManualEntryForm({
 
 const styles = StyleSheet.create({
   changeBadge: {
-    backgroundColor: colors.guard.tealSoft,
+    backgroundColor: colors.brand.orangeSoft,
     borderRadius: 999,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
   },
   changeBadgeText: {
-    color: colors.guard.teal,
+    color: colors.brand.orange,
     fontSize: 12,
     fontWeight: "600",
   },
-  emptyFlatPicker: {
+  flatSearchCard: {
+    alignItems: "center",
     backgroundColor: colors.surface.card,
     borderColor: colors.guard.border,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    minHeight: 120,
-    overflow: "hidden",
-    ...shadows.hero,
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    ...shadows.sm,
   },
-  emptyFlatPickerBody: {
-    flex: 1,
-    justifyContent: "center",
-    padding: layout.screenPaddingHorizontal,
-  },
-  emptyFlatPickerError: {
+  flatSearchCardError: {
     borderColor: "#fca5a5",
   },
-  emptyFlatPickerSubtitle: {
-    color: colors.guard.textMuted,
-    fontSize: 14,
+  flatSearchCopy: {
+    flex: 1,
+    minWidth: 0,
   },
-  emptyFlatPickerTitle: {
+  flatSearchIcon: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+  flatSearchSubtitle: {
+    color: colors.guard.textMuted,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  flatSearchTitle: {
     color: colors.guard.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
   },
   entryCreatedMeta: {
@@ -912,7 +956,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   extraToggleText: {
-    color: colors.guard.teal,
+    color: colors.brand.orange,
     fontSize: 14,
     fontWeight: "500",
   },
@@ -941,7 +985,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   fieldInputWrapperFocused: {
-    boxShadow: `0 0 0 3px ${colors.guard.tealSoft}`,
+    boxShadow: `0 0 0 3px ${colors.brand.orangeSoft}`,
   },
   fieldInputWrapperMultiline: {
     height: undefined,
@@ -950,16 +994,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   partnerChip: {
-    backgroundColor: colors.surface.card,
-    borderColor: colors.guard.border,
+    backgroundColor: colors.dashboard.actionNeutralSoft,
     borderRadius: 999,
-    borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
   },
+  partnerChipGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
   partnerChipActive: {
-    backgroundColor: colors.guard.teal,
-    borderColor: colors.guard.teal,
+    backgroundColor: colors.brand.orangeSoft,
   },
   partnerChipText: {
     color: colors.text.secondary,
@@ -967,7 +1013,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   partnerChipTextActive: {
-    color: colors.text.inverse,
+    color: colors.brand.orange,
   },
   vehicleTypeRow: {
     flexWrap: "wrap",
@@ -1033,8 +1079,9 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     color: colors.guard.text,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
+    letterSpacing: -0.5,
   },
   formTitleBlock: {
     flex: 1,
@@ -1042,17 +1089,21 @@ const styles = StyleSheet.create({
   },
   linkModeButton: {
     alignItems: "center",
-    borderRadius: 999,
-    height: 40,
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 44,
     justifyContent: "center",
-    width: 40,
+    width: 44,
+    ...shadows.sm,
+  },
+  linkModeButtonActive: {
+    backgroundColor: colors.brand.orangeSoft,
+    borderColor: colors.brand.orange,
   },
   linkModeButtonPressed: {
     opacity: 0.7,
-  },
-  loadingResidentText: {
-    color: colors.guard.textMuted,
-    fontSize: 14,
   },
   modalBackButton: {
     alignItems: "center",
@@ -1128,68 +1179,52 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   optionalCountBadge: {
-    backgroundColor: colors.guard.tealSoft,
+    backgroundColor: colors.brand.orangeSoft,
     borderRadius: 999,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   optionalCountText: {
-    color: colors.guard.teal,
+    color: colors.brand.orange,
     fontSize: 11,
     fontWeight: "700",
   },
-  previewCard: {
-    backgroundColor: colors.surface.card,
-    borderColor: colors.accent.selection,
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: "hidden",
-    ...shadows.hero,
+  purposeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "flex-start",
   },
-  previewCardAccent: {
-    backgroundColor: colors.guard.teal,
-    height: 3,
-  },
-  previewCardBody: {
-    padding: layout.screenPaddingHorizontal,
-  },
-  previewEyebrow: {
-    color: colors.guard.textMuted,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-  },
-  previewEyebrowSpaced: {
-    marginTop: spacing.sm,
-  },
-  previewFlatNumber: {
-    color: colors.guard.text,
-    fontSize: 26,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-  },
-  previewIcon: {
+  purposeIconWrap: {
     alignItems: "center",
-    backgroundColor: colors.guard.tealSoft,
     borderRadius: radius.lg,
     height: 48,
     justifyContent: "center",
     width: 48,
   },
-  previewResidentName: {
-    color: colors.guard.text,
-    fontSize: 17,
-    fontWeight: "600",
+  purposeIconWrapActive: {
+    borderColor: colors.brand.orange,
+    borderWidth: 2,
   },
-  previewWingLabel: {
+  purposeTile: {
+    alignItems: "center",
+    gap: spacing.sm,
+    width: "22%",
+    minWidth: 72,
+  },
+  purposeTileLabel: {
     color: colors.guard.textMuted,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: "500",
+    textAlign: "center",
+  },
+  purposeTileLabelActive: {
+    color: colors.guard.text,
+    fontWeight: "700",
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.guard.teal,
+    backgroundColor: colors.brand.orange,
     borderRadius: radius.lg,
     paddingVertical: spacing.md,
   },
@@ -1197,44 +1232,11 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     fontWeight: "600",
   },
-  purposeCard: {
-    alignItems: "center",
-    borderRadius: radius.lg,
-    height: layout.purposeCardHeight,
-    justifyContent: "center",
-    width: layout.purposeCardWidth,
-  },
-  purposeCardActive: {
-    backgroundColor: colors.guard.teal,
-    transform: [{ scale: 1.04 }],
-    ...shadows.cta,
-  },
-  purposeCardInactive: {
-    backgroundColor: colors.surface.card,
-    borderColor: colors.guard.border,
-    borderWidth: 1,
-    transform: [{ scale: 1 }],
-    ...shadows.card,
-  },
-  purposeIcon: {
-    alignItems: "center",
-    borderRadius: radius.lg,
-    height: 32,
-    justifyContent: "center",
-    marginBottom: spacing.xs,
-    width: 32,
-  },
-  purposeLabel: {
+  sectionTitle: {
     color: colors.guard.text,
-    fontSize: 12,
+    fontSize: 18,
     fontWeight: "700",
-  },
-  purposeLabelActive: {
-    color: colors.text.inverse,
-  },
-  purposeScrollContent: {
-    gap: 10,
-    paddingBottom: spacing.xs,
+    letterSpacing: -0.2,
   },
   searchFieldWrapper: {
     backgroundColor: colors.surface.card,
@@ -1263,28 +1265,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontWeight: "600",
   },
-  stepBadge: {
-    alignItems: "center",
-    backgroundColor: colors.guard.tealSoft,
-    borderRadius: 999,
-    height: 28,
-    justifyContent: "center",
-    width: 28,
-  },
-  stepBadgeText: {
-    color: colors.guard.teal,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  stepLabel: {
-    marginBottom: spacing.md,
-  },
-  stepTitle: {
-    color: colors.guard.text,
-    fontSize: 15,
-    fontWeight: "600",
-    letterSpacing: -0.3,
-  },
   submitButton: {
     alignItems: "center",
     borderRadius: radius.xl,
@@ -1295,7 +1275,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border.default,
   },
   submitButtonEnabled: {
-    backgroundColor: colors.guard.teal,
+    backgroundColor: colors.brand.orange,
     ...shadows.cta,
   },
   submitButtonText: {

@@ -112,7 +112,7 @@ export function LogsSearchHeader<T extends string = LogsSegment>({
               <Text style={styles.dateChevron}>▼</Text>
             </Pressable>
           ) : segment === "expected" ? (
-            <Text style={styles.expectedHint}>Approved visitors expected today</Text>
+            <Text style={styles.expectedHint}>Guests invited by flat members (pre-approved)</Text>
           ) : segment === "today" ? (
             <Text style={styles.expectedHint}>Entries with activity today</Text>
           ) : segment === "all" ? (

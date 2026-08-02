@@ -59,9 +59,9 @@ export default function GuardWaitingAtGateScreen() {
         emptyMessage={
           search
             ? "Try a different name, phone, flat, or vehicle."
-            : "Approved visitors will appear here when ready for check-in."
+            : "No approved visitors waiting for manual check-in (walk-ins and guard-approved entries only)."
         }
-        emptyTitle={search ? "No matching visitors" : "No visitors waiting"}
+        emptyTitle={search ? "No matching visitors" : "No visitors waiting at gate"}
         footer={<View style={styles.footerSpacer} />}
         hasMore={queue.hasMore}
         isLoading={queue.isLoading}

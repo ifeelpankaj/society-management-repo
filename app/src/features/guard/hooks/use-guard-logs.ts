@@ -12,11 +12,13 @@ import {
 } from "@/features/guard/guard-routes";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
 import {
+  generatedApi,
   type ModelsVisitorEntry,
   type ModelsVisitorPurpose,
   type ModelsVisitorStatus,
 } from "@/lib/api/generated-api";
 import { useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery } from "@/lib/api/guard-api-extensions";
+import { useAppDispatch } from "@/redux/hooks";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -36,6 +38,7 @@ function segmentStatus(segment: LogsSegment): ModelsVisitorStatus | undefined {
 export function useGuardLogs(initialPreset: LogsPreset = "today") {
   const initial = presetToInitialState(initialPreset);
   const { selectedSocietyId } = useGuardScreen();
+  const dispatch = useAppDispatch();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [segment, setSegment] = useState<LogsSegment>(initial.segment);
@@ -84,10 +87,40 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
 
   const [fetchEntries] = useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery();
 
+  const usesExpectedGuestsApi =
+    !purpose && (segment === "expected" || sheetStatus === "approved");
+
   const fetchPage = useCallback(
     async ({ limit, offset }: { limit: number; offset: number }) => {
       if (!selectedSocietyId) {
         return { items: [], total: 0, limit, offset };
+      }
+
+      if (usesExpectedGuestsApi) {
+        const todayRange = getHalfOpenRangeIST("today");
+        const request = dispatch(
+          generatedApi.endpoints.getV1SocietiesBySocietyIdVisitorEntriesExpectedGuests.initiate(
+            {
+              societyId: selectedSocietyId,
+              search: debouncedSearch || undefined,
+              eventFrom: todayRange?.eventFrom,
+              eventTo: todayRange?.eventTo,
+              limit,
+              offset,
+            },
+            { forceRefetch: true },
+          ),
+        );
+
+        const response = await request.unwrap();
+        request.unsubscribe();
+
+        return {
+          items: response.data?.entries ?? [],
+          total: response.data?.total ?? 0,
+          limit: response.data?.limit ?? limit,
+          offset: response.data?.offset ?? offset,
+        };
       }
 
       const response = await fetchEntries({
@@ -111,14 +144,17 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
     },
     [
       debouncedSearch,
+      dispatch,
       fetchEntries,
       isSearchActive,
+      purpose,
       queryFilters.event,
       queryFilters.eventFrom,
       queryFilters.eventTo,
       queryFilters.purpose,
       queryFilters.status,
       selectedSocietyId,
+      usesExpectedGuestsApi,
     ],
   );
 

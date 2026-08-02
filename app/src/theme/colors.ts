@@ -85,6 +85,8 @@ export const colors = {
     statOrangeSoft: "#fff7ed",
     statBlue: "#2563eb",
     statBlueSoft: "#eff6ff",
+    statPurple: "#7c3aed",
+    statPurpleSoft: "#f5f3ff",
     statNeutral: "#64748b",
     statNeutralSoft: "#f8fafc",
     announcementGradientStart: "#fff4eb",

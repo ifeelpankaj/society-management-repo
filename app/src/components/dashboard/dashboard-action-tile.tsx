@@ -10,7 +10,7 @@ import { spacing } from "@/theme/spacing";
 
 export type DashboardActionTone = "orange" | "blue" | "purple" | "neutral";
 
-const toneStyles: Record<
+export const dashboardActionToneStyles: Record<
   DashboardActionTone,
   { backgroundColor: string; iconColor: string }
 > = {
@@ -50,7 +50,7 @@ export function DashboardActionTile({
   // title,
   tone,
 }: DashboardActionTileProps) {
-  const toneStyle = toneStyles[tone];
+  const toneStyle = dashboardActionToneStyles[tone];
 
   return (
     <Pressable

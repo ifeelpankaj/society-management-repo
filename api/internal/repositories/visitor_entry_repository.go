@@ -44,6 +44,9 @@ type VisitorEntryRepository interface {
 	CountWaitingAtGate(ctx context.Context, societyID int64) (int64, error)
 	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) ([]*models.VisitorEntry, error)
 	CountWaitingAtGateFiltered(ctx context.Context, filter models.WaitingAtGateFilter) (int64, error)
+	CountExpectedGuests(ctx context.Context, societyID int64, fromAt, toAt time.Time) (int64, error)
+	ListExpectedGuests(ctx context.Context, filter models.ExpectedGuestFilter) ([]*models.VisitorEntry, error)
+	CountExpectedGuestsFiltered(ctx context.Context, filter models.ExpectedGuestFilter) (int64, error)
 	CountMemberApprovals(ctx context.Context, societyID int64, userID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	Approve(ctx context.Context, societyID int64, entryID int64, actorUserID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error)
 	MergeMetadata(ctx context.Context, societyID int64, entryID int64, metadata map[string]any) (*models.VisitorEntry, error)
@@ -307,6 +310,42 @@ func (r *visitorEntryRepository) CountWaitingAtGateFiltered(ctx context.Context,
 	})
 }
 
+func (r *visitorEntryRepository) CountExpectedGuests(ctx context.Context, societyID int64, fromAt, toAt time.Time) (int64, error) {
+	return GetQueries(ctx, r.db).CountExpectedGuestEntries(ctx, db.CountExpectedGuestEntriesParams{
+		SocietyID: societyID,
+		FromAt:    visitorTimeToPgTimestamptz(fromAt),
+		ToAt:      visitorTimeToPgTimestamptz(toAt),
+	})
+}
+
+func (r *visitorEntryRepository) ListExpectedGuests(ctx context.Context, filter models.ExpectedGuestFilter) ([]*models.VisitorEntry, error) {
+	rows, err := GetQueries(ctx, r.db).ListExpectedGuestEntries(ctx, db.ListExpectedGuestEntriesParams{
+		SocietyID: filter.SocietyID,
+		FromAt:    visitorTimeToPgTimestamptz(filter.FromAt),
+		ToAt:      visitorTimeToPgTimestamptz(filter.ToAt),
+		Search:    filter.Search,
+		Limit:     normalizeVisitorLimit(filter.Limit),
+		Offset:    normalizeOffset(filter.Offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*models.VisitorEntry, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, visitorEntryFromExpectedGuest(row))
+	}
+	return items, nil
+}
+
+func (r *visitorEntryRepository) CountExpectedGuestsFiltered(ctx context.Context, filter models.ExpectedGuestFilter) (int64, error) {
+	return GetQueries(ctx, r.db).CountExpectedGuestEntriesFiltered(ctx, db.CountExpectedGuestEntriesFilteredParams{
+		SocietyID: filter.SocietyID,
+		FromAt:    visitorTimeToPgTimestamptz(filter.FromAt),
+		ToAt:      visitorTimeToPgTimestamptz(filter.ToAt),
+		Search:    filter.Search,
+	})
+}
+
 func (r *visitorEntryRepository) MergeMetadata(ctx context.Context, societyID int64, entryID int64, metadata map[string]any) (*models.VisitorEntry, error) {
 	raw, err := jsonMap(metadata)
 	if err != nil {
@@ -505,6 +544,10 @@ func visitorEntryFromSocietyPending(row db.ListSocietyPendingVisitorApprovalsRow
 }
 
 func visitorEntryFromWaitingAtGate(row db.ListWaitingAtGateVisitorEntriesRow) *models.VisitorEntry {
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
+}
+
+func visitorEntryFromExpectedGuest(row db.ListExpectedGuestEntriesRow) *models.VisitorEntry {
 	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
 

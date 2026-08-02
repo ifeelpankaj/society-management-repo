@@ -64,7 +64,7 @@ export function GuardCommandCenter() {
   const activityFeed = useGuardActivityFeed();
   const {
     errorMessage,
-    waitingAtGateCount,
+    expectedGuestsCount,
     hasError,
     isInitialLoading,
     isRefreshing,
@@ -94,8 +94,8 @@ export function GuardCommandCenter() {
         case "pending":
           router.push(guardPendingRoute());
           break;
-        case "waiting-at-gate":
-          router.push(guardWaitingAtGateRoute());
+        case "expected-guests":
+          router.push(guardEntriesRoute("expected"));
           break;
         case "checked-out":
           router.push(guardEntriesRoute("checked_out"));
@@ -182,14 +182,14 @@ export function GuardCommandCenter() {
         },
       },
       {
-        id: "waiting-at-gate",
-        label: "Waiting at Gate",
-        value: waitingAtGateCount,
-        tone: "blue",
+        id: "expected-guests",
+        label: "Expected Guests",
+        value: expectedGuestsCount,
+        tone: "purple",
         icon: {
-          ios: "door.left.hand.open",
-          android: "meeting_room",
-          web: "meeting_room",
+          ios: "calendar.badge.clock",
+          android: "event_available",
+          web: "event_available",
         },
       },
       {
@@ -200,7 +200,7 @@ export function GuardCommandCenter() {
         icon: { ios: "arrow.right.square", android: "logout", web: "logout" },
       },
     ],
-    [checkedOutCount, insideCount, pendingCount, waitingAtGateCount],
+    [checkedOutCount, expectedGuestsCount, insideCount, pendingCount],
   );
 
   return (
@@ -221,8 +221,8 @@ export function GuardCommandCenter() {
                   {
                     accessibilityLabel:
                       pendingCount > 0
-                        ? `${pendingCount} pending notifications`
-                        : "Notifications",
+                        ? `${pendingCount} pending approvals`
+                        : "Pending approvals",
                     icon: {
                       ios: "bell",
                       android: "notifications_none",

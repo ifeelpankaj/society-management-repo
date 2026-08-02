@@ -1,4 +1,5 @@
 import { AppToast } from "@/components/ui";
+import { AppErrorBoundary } from "@/components/layout/app-error-boundary";
 import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { AuthProvider } from "@/features/auth/auth-provider";
 import { store } from "@/redux/store";
@@ -15,8 +16,10 @@ export default function RootLayout() {
       <AuthProvider>
         <NotificationRegistrationProvider>
           <NotificationSyncProvider>
-            <AppStatusBar />
-            <Stack screenOptions={{ headerShown: false }} />
+            <AppErrorBoundary>
+              <AppStatusBar />
+              <Stack screenOptions={{ headerShown: false }} />
+            </AppErrorBoundary>
           </NotificationSyncProvider>
         </NotificationRegistrationProvider>
       </AuthProvider>

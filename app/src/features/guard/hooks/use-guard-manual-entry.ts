@@ -84,6 +84,7 @@ export function useGuardManualEntry(societyId: number) {
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleType, setVehicleType] = useState<ModelsVisitorVehicleType | "">("");
   const [deliveryPartner, setDeliveryPartner] = useState("");
+  const [deliveryPartnerIsOther, setDeliveryPartnerIsOther] = useState(false);
   const [serviceProvider, setServiceProvider] = useState("");
   const [companionsCount, setCompanionsCount] = useState(0);
   const [notes, setNotes] = useState("");
@@ -127,7 +128,9 @@ export function useGuardManualEntry(societyId: number) {
     }
 
     if (purpose === "delivery" && !deliveryPartner.trim()) {
-      nextErrors.deliveryPartner = "Delivery partner is required";
+      nextErrors.deliveryPartner = deliveryPartnerIsOther
+        ? "Enter where the delivery is from"
+        : "Select a delivery partner";
     }
 
     if ((purpose === "service" || purpose === "maintenance") && !serviceProvider.trim()) {
@@ -148,6 +151,7 @@ export function useGuardManualEntry(societyId: number) {
   }, [
     companionsCount,
     deliveryPartner,
+    deliveryPartnerIsOther,
     fullName,
     phoneNumber,
     purpose,
@@ -197,6 +201,7 @@ export function useGuardManualEntry(societyId: number) {
     setVehicleNumber("");
     setVehicleType("");
     setDeliveryPartner("");
+    setDeliveryPartnerIsOther(false);
     setServiceProvider("");
     setCompanionsCount(0);
     setNotes("");
@@ -277,12 +282,31 @@ export function useGuardManualEntry(societyId: number) {
     setCreatedEntry(undefined);
   }, []);
 
+  const selectDeliveryPartner = useCallback((partner: string) => {
+    setDeliveryPartnerIsOther(false);
+    setDeliveryPartner(partner);
+  }, []);
+
+  const selectCustomDeliveryPartner = useCallback(() => {
+    setDeliveryPartnerIsOther(true);
+    setDeliveryPartner("");
+  }, []);
+
+  const handleSetPurpose = useCallback((next: ModelsVisitorPurpose) => {
+    setPurpose(next);
+    if (next !== "delivery") {
+      setDeliveryPartner("");
+      setDeliveryPartnerIsOther(false);
+    }
+  }, []);
+
   return {
     clearCreatedEntry,
     companionsCount,
     createdEntry,
     createEntryState,
     deliveryPartner,
+    deliveryPartnerIsOther,
     email,
     errors,
     fullName,
@@ -300,11 +324,13 @@ export function useGuardManualEntry(societyId: number) {
     setFullName,
     setNotes,
     setPhoneNumber,
-    setPurpose,
+    setPurpose: handleSetPurpose,
     setSelectedFlat,
     setServiceProvider,
     setVehicleNumber,
     setVehicleType,
+    selectCustomDeliveryPartner,
+    selectDeliveryPartner,
     submit,
     validate,
     vehicleNumber,

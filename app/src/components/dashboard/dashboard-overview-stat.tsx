@@ -4,7 +4,7 @@ import type { SymbolViewProps } from "expo-symbols";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
-export type DashboardOverviewTone = "green" | "orange" | "blue" | "neutral";
+export type DashboardOverviewTone = "green" | "orange" | "blue" | "purple" | "neutral";
 
 const toneStyles: Record<
   DashboardOverviewTone,
@@ -24,6 +24,11 @@ const toneStyles: Record<
     backgroundColor: colors.dashboard.statBlueSoft,
     iconColor: colors.dashboard.statBlue,
     valueColor: colors.dashboard.statBlue,
+  },
+  purple: {
+    backgroundColor: colors.dashboard.statPurpleSoft,
+    iconColor: colors.dashboard.statPurple,
+    valueColor: colors.dashboard.statPurple,
   },
   neutral: {
     backgroundColor: colors.dashboard.statNeutralSoft,
@@ -51,7 +56,7 @@ export function DashboardOverviewStat({
   tone,
   value,
 }: DashboardOverviewStatProps) {
-  const toneStyle = toneStyles[tone];
+  const toneStyle = toneStyles[tone] ?? toneStyles.neutral;
 
   const content = (
     <View style={styles.card}>

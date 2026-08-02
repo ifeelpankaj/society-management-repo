@@ -6,6 +6,7 @@ export const enhancedApi = generatedApi.enhanceEndpoints({
     "VisitorStats",
     "VisitorPending",
     "VisitorWaitingAtGate",
+    "VisitorExpectedGuests",
     "FlatVisitorContext",
     "FlatMembers",
     "FlatMemberInvites",
@@ -13,7 +14,7 @@ export const enhancedApi = generatedApi.enhanceEndpoints({
   ],
   endpoints: {
     getV1SocietiesBySocietyIdGuardDeskBootstrap: {
-      providesTags: ["GuardDesk", "VisitorStats", "VisitorPending", "VisitorWaitingAtGate"],
+      providesTags: ["GuardDesk", "VisitorStats", "VisitorPending", "VisitorWaitingAtGate", "VisitorExpectedGuests"],
     },
     getV1SocietiesBySocietyIdVisitorEntriesStats: {
       providesTags: ["VisitorStats", "Visitor Entries"],
@@ -33,6 +34,9 @@ export const enhancedApi = generatedApi.enhanceEndpoints({
     getV1SocietiesBySocietyIdVisitorEntries: {
       providesTags: ["Visitor Entries"],
     },
+    getV1SocietiesBySocietyIdVisitorEntriesExpectedGuests: {
+      providesTags: ["Visitor Entries", "VisitorExpectedGuests"],
+    },
     postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApprove: {
       invalidatesTags: [
         "Visitor Entries",
@@ -40,6 +44,7 @@ export const enhancedApi = generatedApi.enhanceEndpoints({
         "GuardDesk",
         "VisitorPending",
         "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
         "FlatVisitorContext",
       ],
     },
@@ -53,13 +58,32 @@ export const enhancedApi = generatedApi.enhanceEndpoints({
       ],
     },
     postV1SocietiesBySocietyIdVisitorEntriesCheckIn: {
-      invalidatesTags: ["Visitor Entries", "VisitorStats", "GuardDesk", "VisitorWaitingAtGate"],
+      invalidatesTags: [
+        "Visitor Entries",
+        "VisitorStats",
+        "GuardDesk",
+        "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
+      ],
     },
     postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOut: {
-      invalidatesTags: ["Visitor Entries", "VisitorStats", "GuardDesk", "VisitorWaitingAtGate"],
+      invalidatesTags: [
+        "Visitor Entries",
+        "VisitorStats",
+        "GuardDesk",
+        "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
+      ],
     },
     postV1SocietiesBySocietyIdVisitorEntriesGuard: {
-      invalidatesTags: ["Visitor Entries", "VisitorStats", "GuardDesk", "VisitorPending", "VisitorWaitingAtGate"],
+      invalidatesTags: [
+        "Visitor Entries",
+        "VisitorStats",
+        "GuardDesk",
+        "VisitorPending",
+        "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
+      ],
     },
   },
 });
@@ -69,6 +93,7 @@ export type VisitorNotificationCacheTag =
   | "VisitorStats"
   | "VisitorPending"
   | "VisitorWaitingAtGate"
+  | "VisitorExpectedGuests"
   | "GuardDesk"
   | "FlatVisitorContext"
   | "FlatMembers"
@@ -80,18 +105,31 @@ export function invalidateVisitorNotificationTags(type?: string): VisitorNotific
     case "visitor.pending":
       return ["VisitorPending", "VisitorStats"];
     case "visitor.approved":
-      return ["Visitor Entries", "VisitorStats", "GuardDesk", "VisitorWaitingAtGate"];
+      return [
+        "Visitor Entries",
+        "VisitorStats",
+        "GuardDesk",
+        "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
+      ];
     case "visitor.rejected":
       return ["VisitorPending", "VisitorStats", "Visitor Entries"];
     case "visitor.checkin":
     case "visitor.checkout":
-      return ["Visitor Entries", "VisitorStats", "GuardDesk", "VisitorWaitingAtGate"];
+      return [
+        "Visitor Entries",
+        "VisitorStats",
+        "GuardDesk",
+        "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
+      ];
     default:
       return [
         "Visitor Entries",
         "VisitorStats",
         "VisitorPending",
         "VisitorWaitingAtGate",
+        "VisitorExpectedGuests",
         "GuardDesk",
         "FlatVisitorContext",
       ];

@@ -43,6 +43,7 @@ type VisitorEntryService interface {
 	GetGuardDeskBootstrap(ctx context.Context, societyID int64) (*models.GuardDeskBootstrapResponse, error)
 	ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error)
 	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) (*models.VisitorEntryListResult, error)
+	ListExpectedGuests(ctx context.Context, filter models.ExpectedGuestFilter) (*models.VisitorEntryListResult, error)
 	NotifyPendingEntry(ctx context.Context, societyID int64, entryID int64, guardUserID int64) error
 	GuardApproveEntry(ctx context.Context, societyID int64, entryID int64, guardUserID int64, opts GuardApproveOptions) (*models.VisitorEntryMutationResponse, error)
 	GuardApproveAndCheckIn(ctx context.Context, societyID int64, entryID int64, guardUserID int64, opts GuardApproveOptions) (*models.VisitorEntry, error)

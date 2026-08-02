@@ -88,7 +88,12 @@ func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string,
 		if err != nil {
 			return err
 		}
-		entry, err := s.entryRepo.Create(txCtx, req, invite.SocietyID, invite.FlatID, visitor.ID, &invite.ID, models.VisitorEntrySourceResidentLink, invite.Purpose, models.VisitorStatusApproved, &invite.CreatedBy, nil, &qr.hash, &qr.expiresAt)
+		entryReq := req
+		if entryReq.ExpectedAt == nil {
+			now := time.Now()
+			entryReq.ExpectedAt = &now
+		}
+		entry, err := s.entryRepo.Create(txCtx, entryReq, invite.SocietyID, invite.FlatID, visitor.ID, &invite.ID, models.VisitorEntrySourceResidentLink, invite.Purpose, models.VisitorStatusApproved, &invite.CreatedBy, nil, &qr.hash, &qr.expiresAt)
 		if err != nil {
 			return err
 		}

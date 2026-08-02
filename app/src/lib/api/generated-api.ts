@@ -1199,6 +1199,22 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Visitor Entries"],
       }),
+      getV1SocietiesBySocietyIdVisitorEntriesExpectedGuests: build.query<
+        GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiResponse,
+        GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/expected-guests`,
+          params: {
+            search: queryArg.search,
+            event_from: queryArg.eventFrom,
+            event_to: queryArg.eventTo,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+          },
+        }),
+        providesTags: ["Visitor Entries"],
+      }),
       postV1SocietiesBySocietyIdVisitorEntriesGuard: build.mutation<
         PostV1SocietiesBySocietyIdVisitorEntriesGuardApiResponse,
         PostV1SocietiesBySocietyIdVisitorEntriesGuardApiArg
@@ -2514,6 +2530,22 @@ export type PostV1SocietiesBySocietyIdVisitorEntriesCheckInApiArg = {
   /** Visitor QR token */
   modelsQrTokenRequest: ModelsQrTokenRequest;
 };
+export type GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiResponse =
+  /** status 200 Expected guest entries fetched successfully */ ModelsVisitorEntriesApiResponse;
+export type GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Search by name, phone, flat, vehicle, or purpose */
+  search?: string;
+  /** Expected window start (RFC3339, defaults to IST today start) */
+  eventFrom?: string;
+  /** Expected window end (RFC3339, defaults to IST tomorrow start) */
+  eventTo?: string;
+  /** Maximum records to return */
+  limit?: number;
+  /** Records to skip */
+  offset?: number;
+};
 export type PostV1SocietiesBySocietyIdVisitorEntriesGuardApiResponse =
   /** status 201 Visitor entry created successfully */ ModelsVisitorEntryMutationApiResponse;
 export type PostV1SocietiesBySocietyIdVisitorEntriesGuardApiArg = {
@@ -3499,7 +3531,10 @@ export type ModelsPublicVisitorInviteView = {
   status?: ModelsVisitorInviteStatus;
 };
 export type ModelsVisitorInviteData = {
+  entry?: ModelsVisitorEntry;
   invite?: ModelsPublicVisitorInviteView;
+  qr?: ModelsQrTokenResponse;
+  view?: string;
 };
 export type ModelsVisitorInviteApiResponse = {
   data?: ModelsVisitorInviteData;
@@ -3949,6 +3984,7 @@ export type ModelsVisitorPendingEntry = {
 };
 export type ModelsVisitorEntryStatsResponse = {
   auto_closed_today?: number;
+  checked_out_in_range?: number;
   checked_out_today?: number;
   pending_approvals?: number;
   rejected_today?: number;
@@ -3956,6 +3992,7 @@ export type ModelsVisitorEntryStatsResponse = {
   visitors_inside?: number;
 };
 export type ModelsGuardDeskBootstrapResponse = {
+  expected_guests_count?: number;
   pending_preview?: ModelsVisitorPendingEntry[];
   society?: ModelsSocietyResponse;
   stats?: ModelsVisitorEntryStatsResponse;
@@ -4338,6 +4375,7 @@ export const {
   usePostV1SocietiesBySocietyIdTransferOwnershipMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation,
+  useGetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesGuardMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesPendingQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,

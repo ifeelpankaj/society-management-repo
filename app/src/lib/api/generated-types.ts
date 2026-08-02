@@ -2683,7 +2683,7 @@ export interface paths {
         };
         /**
          * Get visitor invite by token
-         * @description [Public] Fetches an active visitor invite from its public token before the visitor submits details.
+         * @description [Public] Fetches a visitor invite for the web form, or recovers entry/QR when the invite was already used.
          */
         get: {
             parameters: {
@@ -2724,7 +2724,7 @@ export interface paths {
                         "application/json": components["schemas"]["models.ErrorResponseDoc"];
                     };
                 };
-                /** @description Visitor invite is expired, used, or cancelled */
+                /** @description Visitor invite is expired, used without entry, or cancelled */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -8252,6 +8252,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/societies/{societyId}/visitor-entries/expected-guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List expected guest entries
+         * @description [Owner/Admin/Staff] Lists pre-invited resident-link visitor entries expected today and ready for arrival.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Search by name, phone, flat, vehicle, or purpose */
+                    search?: string;
+                    /** @description Expected window start (RFC3339, defaults to IST today start) */
+                    event_from?: string;
+                    /** @description Expected window end (RFC3339, defaults to IST tomorrow start) */
+                    event_to?: string;
+                    /** @description Maximum records to return */
+                    limit?: number;
+                    /** @description Records to skip */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Expected guest entries fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntriesAPIResponse"];
+                    };
+                };
+                /** @description Invalid query or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/societies/{societyId}/visitor-entries/guard": {
         parameters: {
             query?: never;
@@ -10698,6 +10787,7 @@ export interface components {
             desk?: components["schemas"]["models.GuardDeskBootstrapResponse"];
         };
         "models.GuardDeskBootstrapResponse": {
+            expected_guests_count?: number;
             pending_preview?: components["schemas"]["models.VisitorPendingEntry"][];
             society?: components["schemas"]["models.SocietyResponse"];
             stats?: components["schemas"]["models.VisitorEntryStatsResponse"];
@@ -11605,6 +11695,7 @@ export interface components {
         };
         "models.VisitorEntryStatsResponse": {
             auto_closed_today?: number;
+            checked_out_in_range?: number;
             checked_out_today?: number;
             pending_approvals?: number;
             rejected_today?: number;
@@ -11664,7 +11755,11 @@ export interface components {
             success?: boolean;
         };
         "models.VisitorInviteData": {
+            entry?: components["schemas"]["models.VisitorEntry"];
             invite?: components["schemas"]["models.PublicVisitorInviteView"];
+            qr?: components["schemas"]["models.QRTokenResponse"];
+            /** @example form */
+            view?: string;
         };
         /** @enum {string} */
         "models.VisitorInviteStatus": "active" | "used" | "expired" | "cancelled";

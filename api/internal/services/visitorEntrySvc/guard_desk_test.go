@@ -48,6 +48,8 @@ func (r *guardDeskSocietyRepo) CountPendingByCreator(context.Context, int64) (in
 
 type guardDeskEntryRepo struct {
 	stats                *models.VisitorEntryStatsResponse
+	expectedGuestsCount  int64
+	expectedGuests       []*models.VisitorEntry
 	waitingAtGateCount   int64
 	pending              []*models.VisitorPendingEntry
 }
@@ -85,6 +87,9 @@ func (r *guardDeskEntryRepo) ListRecentByFlat(context.Context, int64, int64, int
 func (r *guardDeskEntryRepo) GetStats(context.Context, int64) (*models.VisitorEntryStatsResponse, error) {
 	return r.stats, nil
 }
+func (r *guardDeskEntryRepo) GetStatsInRange(context.Context, int64, time.Time, time.Time) (*models.VisitorEntryStatsResponse, error) {
+	return r.stats, nil
+}
 func (r *guardDeskEntryRepo) CountWaitingAtGate(context.Context, int64) (int64, error) {
 	return r.waitingAtGateCount, nil
 }
@@ -93,6 +98,15 @@ func (r *guardDeskEntryRepo) ListWaitingAtGate(context.Context, models.WaitingAt
 }
 func (r *guardDeskEntryRepo) CountWaitingAtGateFiltered(context.Context, models.WaitingAtGateFilter) (int64, error) {
 	return r.waitingAtGateCount, nil
+}
+func (r *guardDeskEntryRepo) CountExpectedGuests(_ context.Context, _ int64, _, _ time.Time) (int64, error) {
+	return r.expectedGuestsCount, nil
+}
+func (r *guardDeskEntryRepo) ListExpectedGuests(context.Context, models.ExpectedGuestFilter) ([]*models.VisitorEntry, error) {
+	return r.expectedGuests, nil
+}
+func (r *guardDeskEntryRepo) CountExpectedGuestsFiltered(context.Context, models.ExpectedGuestFilter) (int64, error) {
+	return r.expectedGuestsCount, nil
 }
 func (r *guardDeskEntryRepo) MergeMetadata(context.Context, int64, int64, map[string]any) (*models.VisitorEntry, error) {
 	return nil, nil
@@ -138,7 +152,7 @@ func TestGetGuardDeskBootstrap(t *testing.T) {
 	_, entrySvc := visitorentrysvc.NewVisitorService(
 		nil,
 		nil,
-		&guardDeskEntryRepo{stats: stats, waitingAtGateCount: 4, pending: pending},
+		&guardDeskEntryRepo{stats: stats, expectedGuestsCount: 2, waitingAtGateCount: 4, pending: pending},
 		nil,
 		nil,
 		nil,
@@ -160,11 +174,50 @@ func TestGetGuardDeskBootstrap(t *testing.T) {
 	if got.Stats == nil || got.Stats.PendingApprovals != 1 {
 		t.Fatalf("expected pending approvals 1, got %+v", got.Stats)
 	}
+	if got.ExpectedGuestsCount != 2 {
+		t.Fatalf("expected guests count = 2, got %d", got.ExpectedGuestsCount)
+	}
 	if got.WaitingAtGateCount != 4 {
 		t.Fatalf("waiting at gate count = 4, got %d", got.WaitingAtGateCount)
 	}
 	if len(got.PendingPreview) != 1 {
 		t.Fatalf("expected 1 pending preview entry, got %d", len(got.PendingPreview))
+	}
+}
+
+func TestListExpectedGuests(t *testing.T) {
+	societyID := int64(10)
+	entries := []*models.VisitorEntry{
+		{ID: 1, SocietyID: societyID, FlatID: 3, Source: models.VisitorEntrySourceResidentLink, Status: models.VisitorStatusApproved},
+	}
+
+	_, entrySvc := visitorentrysvc.NewVisitorService(
+		nil,
+		nil,
+		&guardDeskEntryRepo{expectedGuestsCount: 1, expectedGuests: entries},
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		noopTxManager{},
+	)
+
+	got, err := entrySvc.ListExpectedGuests(context.Background(), models.ExpectedGuestFilter{
+		SocietyID: societyID,
+		Limit:     20,
+	})
+	if err != nil {
+		t.Fatalf("ListExpectedGuests() error = %v", err)
+	}
+	if got.Total != 1 {
+		t.Fatalf("expected total 1, got %d", got.Total)
+	}
+	if len(got.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(got.Entries))
 	}
 }
 

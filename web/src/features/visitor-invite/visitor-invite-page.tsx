@@ -45,6 +45,7 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
     pageView,
     showOptional,
     setShowOptional,
+    submitResult,
     submitState,
     updateField,
   } = useVisitorInvitePage(token);
@@ -58,7 +59,12 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
       <div className="mx-auto w-full max-w-lg px-4 py-8">
         <VisitorInviteSuccess
           entry={displayResult.entry}
+          isRetrying={inviteQuery.isFetching && !displayResult.qr?.token}
           qr={displayResult.qr}
+          variant={submitResult ? "submitted" : "recovered"}
+          onRetry={() => {
+            void inviteQuery.refetch();
+          }}
         />
       </div>
     );

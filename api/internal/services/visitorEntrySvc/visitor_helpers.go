@@ -71,6 +71,16 @@ func blockKey(block *string) string {
 	return *block
 }
 
+func istDayRange(now time.Time) (time.Time, time.Time) {
+	loc, err := time.LoadLocation("Asia/Kolkata")
+	if err != nil {
+		loc = time.UTC
+	}
+	local := now.In(loc)
+	start := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc)
+	return start, start.Add(24 * time.Hour)
+}
+
 func guardActor(source models.VisitorEntrySource, actorUserID *int64) *int64 {
 	if source == models.VisitorEntrySourceGuardEntry {
 		return actorUserID

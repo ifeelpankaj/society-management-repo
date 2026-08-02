@@ -2,7 +2,6 @@ package visitorentrysvc
 
 import (
 	"context"
-	"time"
 
 	"go-server/internal/models"
 	service "go-server/internal/services"
@@ -100,18 +99,16 @@ func (s *VisitorEntrySvc) publicInvitePageForUsed(ctx context.Context, inviteVie
 	switch entry.Status {
 	case models.VisitorStatusApproved:
 		page.View = models.PublicVisitorInviteViewQR
-		if entry.QRExpiresAt == nil || time.Now().After(*entry.QRExpiresAt) {
-			qrResult, err := s.GenerateQR(ctx, invite.SocietyID, entry.ID)
-			if err != nil {
-				return nil, err
-			}
-			enriched, err := s.entryRepo.GetByInviteID(ctx, invite.ID)
-			if err != nil {
-				return nil, err
-			}
-			page.Entry = enriched
-			page.QR = qrResult.QR
+		qrResult, err := s.GenerateQR(ctx, invite.SocietyID, entry.ID)
+		if err != nil {
+			return nil, err
 		}
+		enriched, err := s.entryRepo.GetByInviteID(ctx, invite.ID)
+		if err != nil {
+			return nil, err
+		}
+		page.Entry = enriched
+		page.QR = qrResult.QR
 		return page, nil
 	case models.VisitorStatusCheckedIn:
 		page.View = models.PublicVisitorInviteViewCheckedIn

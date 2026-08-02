@@ -2,6 +2,7 @@ package visitorentrysvc
 
 import (
 	"context"
+	"time"
 
 	"go-server/internal/models"
 	service "go-server/internal/services"
@@ -28,7 +29,13 @@ func (s *VisitorEntrySvc) GetGuardDeskBootstrap(ctx context.Context, societyID i
 		return nil, err
 	}
 
-	expectedTodayCount, err := s.entryRepo.CountWaitingAtGate(ctx, societyID)
+	fromAt, toAt := istDayRange(time.Now())
+	expectedGuestsCount, err := s.entryRepo.CountExpectedGuests(ctx, societyID, fromAt, toAt)
+	if err != nil {
+		return nil, err
+	}
+
+	waitingAtGateCount, err := s.entryRepo.CountWaitingAtGate(ctx, societyID)
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +50,11 @@ func (s *VisitorEntrySvc) GetGuardDeskBootstrap(ctx context.Context, societyID i
 	}
 
 	return &models.GuardDeskBootstrapResponse{
-		Society:            society.ToResponse(),
-		Stats:              stats,
-		WaitingAtGateCount: expectedTodayCount,
-		PendingPreview:     pending,
+		Society:             society.ToResponse(),
+		Stats:               stats,
+		ExpectedGuestsCount: expectedGuestsCount,
+		WaitingAtGateCount:  waitingAtGateCount,
+		PendingPreview:      pending,
 	}, nil
 }
 
