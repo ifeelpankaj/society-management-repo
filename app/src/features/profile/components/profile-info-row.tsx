@@ -26,7 +26,7 @@ export function ProfileInfoRow({
   return (
     <View style={[styles.row, !isLast && styles.rowBorder]}>
       <View style={styles.icon}>
-        <SymbolView name={icon} size={18} tintColor={colors.guard.teal} />
+        <SymbolView name={icon} size={18} tintColor={colors.brand.orange} />
       </View>
       <Stack gap="xs" style={styles.copy}>
         <Text style={styles.label}>{label}</Text>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     alignItems: "center",
-    backgroundColor: colors.guard.tealSoft,
+    backgroundColor: colors.brand.orangeSoft,
     borderRadius: 999,
     height: 40,
     justifyContent: "center",

@@ -2,6 +2,7 @@ package visitorentrysvc
 
 import (
 	"context"
+	"time"
 
 	"go-server/internal/models"
 	service "go-server/internal/services"
@@ -24,14 +25,38 @@ func (s *VisitorEntrySvc) GetInviteByToken(ctx context.Context, rawToken string)
 	return invite, nil
 }
 
-func (s *VisitorEntrySvc) GetPublicInviteByToken(ctx context.Context, rawToken string) (*models.PublicVisitorInviteView, error) {
+func (s *VisitorEntrySvc) GetPublicInviteByToken(ctx context.Context, rawToken string) (*models.PublicVisitorInvitePageResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
-	invite, err := s.GetInviteByToken(ctx, rawToken)
+	invite, err := s.inviteRepo.GetByTokenHash(ctx, hashToken(rawToken))
 	if err != nil {
 		return nil, err
 	}
+	if invite == nil {
+		return nil, ErrVisitorInviteNotFound
+	}
+
+	inviteView, err := s.buildPublicInviteView(ctx, invite)
+	if err != nil {
+		return nil, err
+	}
+
+	if inviteUsable(invite) {
+		return &models.PublicVisitorInvitePageResponse{
+			Invite: inviteView,
+			View:   models.PublicVisitorInviteViewForm,
+		}, nil
+	}
+
+	if invite.Status == models.VisitorInviteStatusUsed {
+		return s.publicInvitePageForUsed(ctx, inviteView, invite)
+	}
+
+	return nil, ErrVisitorInviteUnavailable
+}
+
+func (s *VisitorEntrySvc) buildPublicInviteView(ctx context.Context, invite *models.VisitorInvite) (*models.PublicVisitorInviteView, error) {
 	flat, err := s.flatRepo.Get(ctx, &models.FlatFilter{ID: &invite.FlatID, SocietyID: &invite.SocietyID})
 	if err != nil {
 		return nil, err
@@ -56,4 +81,46 @@ func (s *VisitorEntrySvc) GetPublicInviteByToken(ctx context.Context, rawToken s
 		Block:       flat.Block,
 		Floor:       flat.Floor,
 	}, nil
+}
+
+func (s *VisitorEntrySvc) publicInvitePageForUsed(ctx context.Context, inviteView *models.PublicVisitorInviteView, invite *models.VisitorInvite) (*models.PublicVisitorInvitePageResponse, error) {
+	entry, err := s.entryRepo.GetByInviteID(ctx, invite.ID)
+	if err != nil {
+		return nil, err
+	}
+	if entry == nil {
+		return nil, ErrVisitorInviteUnavailable
+	}
+
+	page := &models.PublicVisitorInvitePageResponse{
+		Invite: inviteView,
+		Entry:  entry,
+	}
+
+	switch entry.Status {
+	case models.VisitorStatusApproved:
+		page.View = models.PublicVisitorInviteViewQR
+		if entry.QRExpiresAt == nil || time.Now().After(*entry.QRExpiresAt) {
+			qrResult, err := s.GenerateQR(ctx, invite.SocietyID, entry.ID)
+			if err != nil {
+				return nil, err
+			}
+			enriched, err := s.entryRepo.GetByInviteID(ctx, invite.ID)
+			if err != nil {
+				return nil, err
+			}
+			page.Entry = enriched
+			page.QR = qrResult.QR
+		}
+		return page, nil
+	case models.VisitorStatusCheckedIn:
+		page.View = models.PublicVisitorInviteViewCheckedIn
+		return page, nil
+	case models.VisitorStatusCheckedOut:
+		page.View = models.PublicVisitorInviteViewCheckedOut
+		return page, nil
+	default:
+		page.View = models.PublicVisitorInviteViewClosed
+		return page, nil
+	}
 }

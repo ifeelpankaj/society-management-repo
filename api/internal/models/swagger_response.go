@@ -337,6 +337,9 @@ type VisitorEntryOptionsData struct {
 
 type VisitorInviteData struct {
 	Invite *PublicVisitorInviteView `json:"invite"`
+	View   string                   `json:"view,omitempty" example:"form"`
+	Entry  *VisitorEntry            `json:"entry,omitempty"`
+	QR     *QRTokenResponse         `json:"qr,omitempty"`
 }
 
 type VisitorInviteTokenData struct {

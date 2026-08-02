@@ -3,6 +3,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
 import { PaginatedList } from "@/components/ui";
 import { LogEntryDivider, LogEntryRow } from "@/features/guard/components/logs/log-entry-row";
@@ -71,6 +72,7 @@ export function ResidentEntriesScreen() {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+      <AppStatusBar />
       <PaginatedList<ModelsVisitorEntry>
         ItemSeparatorComponent={LogEntryDivider}
         data={logs.items}

@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     backgroundColor: colors.surface.card,
-    borderColor: colors.guard.teal,
+    borderColor: colors.brand.orange,
     borderRadius: radius["2xl"],
     borderWidth: 1,
     flex: 1,
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   buttonText: {
-    color: colors.guard.teal,
+    color: colors.brand.orange,
     fontSize: 14,
     fontWeight: "700",
   },

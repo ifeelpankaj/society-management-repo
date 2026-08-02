@@ -362,14 +362,25 @@
             "RefreshToken": []
           }
         ],
-        "description": "Validates the refresh_token cookie and reissues only the access_token cookie.",
+        "description": "Validates the refresh token from either the refresh_token cookie or the request body.",
         "tags": [
           "Auth"
         ],
         "summary": "Refresh access token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.RefreshTokenRequest"
+              }
+            }
+          },
+          "description": "Refresh token payload",
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Access token refreshed successfully",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -379,7 +390,7 @@
             }
           },
           "401": {
-            "description": "Missing, invalid, or expired refresh token",
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -389,7 +400,7 @@
             }
           },
           "403": {
-            "description": "Account disabled",
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -399,7 +410,7 @@
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -2187,6 +2198,165 @@
         }
       }
     },
+    "/v1/public/flat-member-invites/{token}": {
+      "get": {
+        "description": "[Public] Fetches an active flat member invite from its public token before acceptance.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "Get flat member invite by token",
+        "parameters": [
+          {
+            "description": "Member invite token",
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member invite fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.PublicFlatMemberInviteAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Member invite is expired, accepted, or cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/flat-member-invites/{token}/accept": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[User] Accepts a flat member invite using the public token. The authenticated user becomes an active flat resident.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "Accept flat member invite",
+        "parameters": [
+          {
+            "description": "Member invite token",
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member invite accepted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.AcceptFlatMemberInviteAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Member invite unavailable or resident conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/public/societies/{societyCode}/claim-options": {
       "get": {
         "description": "Public QR flow endpoint that resolves an active society code and returns safe society details plus active flats for resident claims.",
@@ -2537,7 +2707,7 @@
     },
     "/v1/public/visitor-invites/{token}": {
       "get": {
-        "description": "[Public] Fetches an active visitor invite from its public token before the visitor submits details.",
+        "description": "[Public] Fetches a visitor invite for the web form, or recovers entry/QR when the invite was already used.",
         "tags": [
           "Visitor Entries"
         ],
@@ -2585,7 +2755,7 @@
             }
           },
           "409": {
-            "description": "Visitor invite is expired, used, or cancelled",
+            "description": "Visitor invite is expired, used without entry, or cancelled",
             "content": {
               "application/json": {
                 "schema": {
@@ -4800,6 +4970,460 @@
         }
       }
     },
+    "/v1/societies/{societyId}/flats/{flatId}/member-invites": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Resident] Lists pending member invites for a flat. Requires flat owner or primary resident access.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "List pending flat member invites",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member invites fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.FlatMemberInvitesAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Flat member management access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flat not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Resident] Creates a member invite for a flat and returns the invite plus shareable token details.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "Create flat member invite",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.CreateFlatMemberInviteRequest"
+              }
+            }
+          },
+          "description": "Member invite request",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Member invite created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.FlatMemberInviteTokenAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Flat member management access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flat not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/flats/{flatId}/member-invites/{inviteId}/cancel": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Resident] Cancels a pending member invite for a flat.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "Cancel flat member invite",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Member invite ID",
+            "name": "inviteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member invite cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.MessageAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Flat member management access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Member invite cannot be cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/flats/{flatId}/members": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Resident] Lists active members for a flat. Requires permission to view flat visitor data.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "List flat residents (resident)",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Resident role: owner, tenant, family",
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Primary resident flag",
+            "name": "is_primary",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Search user, contact, flat, block, role, or status",
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Limit",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "description": "Offset",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Residents fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.FlatResidentsAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path or query parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Resident access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flat not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/flats/{flatId}/residents": {
       "get": {
         "description": "[Owner/Admin/Staff] Lists residents for the flat identified in the path.",
@@ -5998,6 +6622,111 @@
           },
           "404": {
             "description": "Flat not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/flats/{flatId}/visitor-entries/{entryId}": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Resident] Fetches a single visitor entry for a resident flat.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Get flat visitor entry",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Flat ID",
+            "name": "flatId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor entry ID",
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visitor entry fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntryAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Resident access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor entry or flat not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -8825,6 +9554,109 @@
         }
       }
     },
+    "/v1/societies/{societyId}/visitor-entries/waiting-at-gate": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "List visitors waiting at gate",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search by name, phone, flat, vehicle, delivery partner, or purpose",
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum records to return",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "description": "Records to skip",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Waiting at gate entries fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntriesAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/visitor-entries/{entryId}": {
       "get": {
         "security": [
@@ -9027,6 +9859,201 @@
         }
       }
     },
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/approve-and-check-in": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Atomically approves and checks in a pending visitor entry.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Guard approve and check in visitor",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor entry ID",
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/models.GuardApproveEntryRequest"
+        },
+        "responses": {
+          "200": {
+            "description": "Visitor approved and checked in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntryAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter or visitor entry state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/check-in": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Checks in an approved visitor entry without scanning QR.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Check in visitor by entry ID",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor entry ID",
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visitor checked in successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntryAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter or visitor entry state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/visitor-entries/{entryId}/check-out": {
       "post": {
         "security": [
@@ -9178,6 +10205,201 @@
           },
           "400": {
             "description": "Invalid path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/guard-approve": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Approves a pending visitor entry without check-in.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Guard approve visitor entry",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor entry ID",
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/models.GuardApproveEntryRequest"
+        },
+        "responses": {
+          "200": {
+            "description": "Visitor entry approved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntryMutationAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter or visitor entry state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/visitor-entries/{entryId}/notify": {
+      "post": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Re-sends a pending approval notification to flat residents.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Notify resident about pending visitor",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor entry ID",
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resident notified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.APIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path parameter or visitor entry state",
             "content": {
               "application/json": {
                 "schema": {
@@ -10075,7 +11297,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8000/api"
+      "url": "http://localhost:8080/api"
     }
   ],
   "components": {
@@ -10090,6 +11312,16 @@
         },
         "description": "Visitor QR token",
         "required": true
+      },
+      "models.GuardApproveEntryRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/models.GuardApproveEntryRequest"
+            }
+          }
+        },
+        "description": "Guard approval options"
       },
       "models.CreateVisitorInviteRequest": {
         "content": {
@@ -10134,6 +11366,56 @@
       }
     },
     "schemas": {
+      "models.APIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {},
+          "error": {
+            "$ref": "#/components/schemas/models.ErrorData"
+          },
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "models.AcceptFlatMemberInviteAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.AcceptFlatMemberInviteData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Member invite accepted successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.AcceptFlatMemberInviteData": {
+        "type": "object",
+        "properties": {
+          "acceptance": {
+            "$ref": "#/components/schemas/models.AcceptFlatMemberInviteResponse"
+          }
+        }
+      },
+      "models.AcceptFlatMemberInviteResponse": {
+        "type": "object",
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteResponse"
+          },
+          "resident": {
+            "$ref": "#/components/schemas/models.FlatResidentResponse"
+          }
+        }
+      },
       "models.ActivateSubscriptionRequest": {
         "type": "object",
         "required": [
@@ -10434,6 +11716,30 @@
           },
           "user_id": {
             "type": "integer"
+          }
+        }
+      },
+      "models.CreateFlatMemberInviteRequest": {
+        "type": "object",
+        "required": [
+          "full_name",
+          "role"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "role": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteRole"
           }
         }
       },
@@ -11090,6 +12396,138 @@
           }
         }
       },
+      "models.FlatMemberInviteResponse": {
+        "type": "object",
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "flat_id": {
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "invited_by": {
+            "type": "integer"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteRole"
+          },
+          "society_id": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteStatus"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "models.FlatMemberInviteRole": {
+        "type": "string",
+        "enum": [
+          "family",
+          "tenant"
+        ],
+        "x-enum-varnames": [
+          "FlatMemberInviteRoleFamily",
+          "FlatMemberInviteRoleTenant"
+        ]
+      },
+      "models.FlatMemberInviteStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "expired",
+          "cancelled"
+        ],
+        "x-enum-varnames": [
+          "FlatMemberInviteStatusPending",
+          "FlatMemberInviteStatusAccepted",
+          "FlatMemberInviteStatusExpired",
+          "FlatMemberInviteStatusCancelled"
+        ]
+      },
+      "models.FlatMemberInviteTokenAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteTokenData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Member invite created successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.FlatMemberInviteTokenData": {
+        "type": "object",
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteResponse"
+          },
+          "token": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteTokenResponse"
+          }
+        }
+      },
+      "models.FlatMemberInviteTokenResponse": {
+        "type": "object",
+        "properties": {
+          "expires_at": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "models.FlatMemberInvitesAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.FlatMemberInvitesData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Member invites fetched successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.FlatMemberInvitesData": {
+        "type": "object",
+        "properties": {
+          "invites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/models.FlatMemberInviteResponse"
+            }
+          }
+        }
+      },
       "models.FlatRecentVisitorSummary": {
         "type": "object",
         "properties": {
@@ -11612,6 +13050,17 @@
           }
         }
       },
+      "models.GuardApproveEntryRequest": {
+        "type": "object",
+        "properties": {
+          "on_behalf": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
       "models.GuardData": {
         "type": "object",
         "properties": {
@@ -11647,9 +13096,6 @@
       "models.GuardDeskBootstrapResponse": {
         "type": "object",
         "properties": {
-          "expected_today_count": {
-            "type": "integer"
-          },
           "pending_preview": {
             "type": "array",
             "items": {
@@ -11661,6 +13107,9 @@
           },
           "stats": {
             "$ref": "#/components/schemas/models.VisitorEntryStatsResponse"
+          },
+          "waiting_at_gate_count": {
+            "type": "integer"
           }
         }
       },
@@ -12206,6 +13655,62 @@
           }
         }
       },
+      "models.PublicFlatMemberInviteAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.PublicFlatMemberInviteData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Member invite fetched successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.PublicFlatMemberInviteData": {
+        "type": "object",
+        "properties": {
+          "invite": {
+            "$ref": "#/components/schemas/models.PublicFlatMemberInviteView"
+          }
+        }
+      },
+      "models.PublicFlatMemberInviteView": {
+        "type": "object",
+        "properties": {
+          "block": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "flat_number": {
+            "type": "string"
+          },
+          "floor": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "role": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteRole"
+          },
+          "society_name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/models.FlatMemberInviteStatus"
+          }
+        }
+      },
       "models.PublicVisitorInviteView": {
         "type": "object",
         "properties": {
@@ -12284,6 +13789,14 @@
           "success": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "models.RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string"
           }
         }
       },
@@ -13840,6 +15353,9 @@
       "models.VisitorEntry": {
         "type": "object",
         "properties": {
+          "approved_at": {
+            "type": "string"
+          },
           "approved_by": {
             "type": "integer"
           },
@@ -13867,6 +15383,9 @@
           },
           "created_by": {
             "type": "integer"
+          },
+          "delivery_partner": {
+            "type": "string"
           },
           "expected_at": {
             "type": "string"
@@ -13909,6 +15428,9 @@
             "type": "integer"
           },
           "rejection_reason": {
+            "type": "string"
+          },
+          "service_provider": {
             "type": "string"
           },
           "society_id": {
@@ -14168,6 +15690,9 @@
           "auto_closed_today": {
             "type": "integer"
           },
+          "checked_out_in_range": {
+            "type": "integer"
+          },
           "checked_out_today": {
             "type": "integer"
           },
@@ -14197,7 +15722,8 @@
           "expired",
           "auto_closed",
           "qr_generated",
-          "qr_used"
+          "qr_used",
+          "guard_approved_on_behalf"
         ],
         "x-enum-varnames": [
           "VisitorEventTypeCreated",
@@ -14209,7 +15735,8 @@
           "VisitorEventTypeExpired",
           "VisitorEventTypeAutoClosed",
           "VisitorEventTypeQRGenerated",
-          "VisitorEventTypeQRUsed"
+          "VisitorEventTypeQRUsed",
+          "VisitorEventTypeGuardApprovedOnBehalf"
         ]
       },
       "models.VisitorFlatSummary": {
@@ -14242,6 +15769,9 @@
           "companions_count": {
             "type": "integer"
           },
+          "delivery_partner": {
+            "type": "string"
+          },
           "email": {
             "type": "string"
           },
@@ -14272,6 +15802,9 @@
           },
           "purpose": {
             "$ref": "#/components/schemas/models.VisitorPurpose"
+          },
+          "service_provider": {
+            "type": "string"
           },
           "vehicle_number": {
             "type": "string"
@@ -14339,8 +15872,18 @@
       "models.VisitorInviteData": {
         "type": "object",
         "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/models.VisitorEntry"
+          },
           "invite": {
             "$ref": "#/components/schemas/models.PublicVisitorInviteView"
+          },
+          "qr": {
+            "$ref": "#/components/schemas/models.QRTokenResponse"
+          },
+          "view": {
+            "type": "string",
+            "example": "form"
           }
         }
       },
@@ -14425,6 +15968,9 @@
       "models.VisitorPendingEntry": {
         "type": "object",
         "properties": {
+          "approved_at": {
+            "type": "string"
+          },
           "approved_by": {
             "type": "integer"
           },
@@ -14452,6 +15998,9 @@
           },
           "created_by": {
             "type": "integer"
+          },
+          "delivery_partner": {
+            "type": "string"
           },
           "expected_at": {
             "type": "string"
@@ -14500,6 +16049,9 @@
             "type": "integer"
           },
           "rejection_reason": {
+            "type": "string"
+          },
+          "service_provider": {
             "type": "string"
           },
           "society_id": {

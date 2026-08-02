@@ -444,6 +444,19 @@ export function isExpectedTodayEntry(entry?: ModelsVisitorEntry) {
   return isToday(entry.expected_at) || isToday(entry.created_at);
 }
 
+export function isTodayActivityEntry(entry?: ModelsVisitorEntry) {
+  if (!entry) {
+    return false;
+  }
+
+  return (
+    isToday(entry.created_at) ||
+    isToday(entry.checked_in_at) ||
+    isToday(entry.checked_out_at) ||
+    isToday(entry.expected_at)
+  );
+}
+
 export type WaitingDurationTone = "success" | "warning" | "error";
 
 export function getWaitingDuration(approvedAt?: string | null): {

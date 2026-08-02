@@ -1,8 +1,9 @@
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Image } from "expo-image";
 import { Redirect, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -64,7 +65,7 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" />
+      <AppStatusBar />
       <ScrollView bounces={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.hero}>
           <ScrollView
@@ -166,6 +167,24 @@ export default function Index() {
   );
 }
 
+const heroTextShadow =
+  Platform.OS === "web"
+    ? { textShadow: "0 1px 6px rgba(0, 0, 0, 0.45)" as const }
+    : {
+        textShadowColor: "rgba(0, 0, 0, 0.45)",
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 6,
+      };
+
+const heroSubtitleTextShadow =
+  Platform.OS === "web"
+    ? { textShadow: "0 1px 5px rgba(0, 0, 0, 0.45)" as const }
+    : {
+        textShadowColor: "rgba(0, 0, 0, 0.45)",
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 5,
+      };
+
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: HERO_BG,
@@ -195,16 +214,12 @@ const styles = StyleSheet.create({
     fontSize: 27,
     fontWeight: "500",
     lineHeight: 36,
-    textShadowColor: "rgba(0, 0, 0, 0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    ...heroTextShadow,
   },
   heroSubtitle: {
     ...typography.label,
     color: "rgba(255, 255, 255, 0.9)",
-    textShadowColor: "rgba(0, 0, 0, 0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 5,
+    ...heroSubtitleTextShadow,
   },
   paginationWrap: {
     alignItems: "center",

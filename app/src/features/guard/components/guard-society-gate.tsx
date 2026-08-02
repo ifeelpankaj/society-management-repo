@@ -1,6 +1,7 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
 import { Button, Card, EmptyState, ScreenHeader, StatusPill } from "@/components/ui";
 import { useGuardSociety } from "@/features/guard/guard-context";
@@ -13,6 +14,7 @@ export function GuardSocietyGate() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.screen}>
+        <AppStatusBar />
         <View style={styles.inlineLoading}>
           <ActivityIndicator color={colors.guard.teal} size="small" />
         </View>
@@ -23,6 +25,7 @@ export function GuardSocietyGate() {
   if (memberships.length === 0) {
     return (
       <SafeAreaView style={styles.screen}>
+        <AppStatusBar />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <EmptyState
             title="No guard access"
@@ -37,6 +40,7 @@ export function GuardSocietyGate() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <AppStatusBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Stack gap="3xl">
           <ScreenHeader

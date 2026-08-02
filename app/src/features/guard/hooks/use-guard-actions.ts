@@ -4,10 +4,10 @@ import { getApiMessage } from "@/features/auth/api-error";
 import type { ModelsGuardApproveEntryRequest } from "@/lib/api/generated-api";
 import {
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInMutation,
-  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInByIdMutation,
+  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdGuardApproveMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdNotifyMutation,
-} from "@/lib/api/guard-api-extensions";
+} from "@/lib/api/generated-api";
 import { usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation } from "@/lib/api/generated-api";
 
 export type GuardActionOptions = {
@@ -30,7 +30,7 @@ export function useGuardActions(societyId: number) {
   const [approveAndCheckIn, approveAndCheckInState] =
     usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInMutation();
   const [checkIn, checkInState] =
-    usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInByIdMutation();
+    usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInMutation();
   const [checkOut, checkOutState] =
     usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation();
 

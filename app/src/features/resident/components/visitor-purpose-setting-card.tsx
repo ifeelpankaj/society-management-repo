@@ -162,11 +162,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   optionLabelSelected: {
-    color: colors.operational.teal,
+    color: colors.guard.teal,
   },
   optionSelected: {
-    backgroundColor: colors.operational.primarySoft,
-    borderColor: colors.operational.teal,
+    backgroundColor: colors.guard.tealSoft,
+    borderColor: colors.guard.teal,
   },
   options: {
     gap: spacing.sm,
@@ -182,13 +182,13 @@ const styles = StyleSheet.create({
     width: 20,
   },
   radioDot: {
-    backgroundColor: colors.operational.teal,
+    backgroundColor: colors.guard.teal,
     borderRadius: 999,
     height: 10,
     width: 10,
   },
   radioSelected: {
-    borderColor: colors.operational.teal,
+    borderColor: colors.guard.teal,
   },
   readOnlyBadge: {
     alignSelf: "flex-start",

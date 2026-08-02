@@ -133,6 +133,21 @@ JOIN visitors v ON v.id = ve.visitor_id
 JOIN flats f ON f.id = ve.flat_id
 WHERE ve.qr_token_hash = $1;
 
+-- name: GetVisitorEntryByInviteID :one
+SELECT
+    ve.*,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.invite_id = $1;
+
 -- name: ListVisitorEntries :many
 SELECT
     ve.*,
@@ -153,7 +168,51 @@ WHERE ve.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('purpose')::visitor_purpose IS NULL OR ve.purpose = sqlc.narg('purpose')::visitor_purpose)
   AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
   AND (sqlc.narg('created_from')::timestamptz IS NULL OR ve.created_at >= sqlc.narg('created_from')::timestamptz)
-  AND (sqlc.narg('created_to')::timestamptz IS NULL OR ve.created_at <= sqlc.narg('created_to')::timestamptz)
+  AND (sqlc.narg('created_to')::timestamptz IS NULL OR ve.created_at < sqlc.narg('created_to')::timestamptz)
+  AND (
+      sqlc.narg('event')::text IS NULL
+      OR sqlc.narg('event_from')::timestamptz IS NULL
+      OR sqlc.narg('event_to')::timestamptz IS NULL
+      OR (
+          sqlc.narg('event')::text = 'created'
+          AND ve.created_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.created_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'checked_in'
+          AND ve.checked_in_at IS NOT NULL
+          AND ve.checked_in_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.checked_in_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'checked_out'
+          AND ve.checked_out_at IS NOT NULL
+          AND ve.checked_out_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.checked_out_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'expected'
+          AND ve.expected_at IS NOT NULL
+          AND ve.expected_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.expected_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'activity'
+          AND (
+              (ve.created_at >= sqlc.narg('event_from')::timestamptz AND ve.created_at < sqlc.narg('event_to')::timestamptz)
+              OR (
+                  ve.checked_in_at IS NOT NULL
+                  AND ve.checked_in_at >= sqlc.narg('event_from')::timestamptz
+                  AND ve.checked_in_at < sqlc.narg('event_to')::timestamptz
+              )
+              OR (
+                  ve.checked_out_at IS NOT NULL
+                  AND ve.checked_out_at >= sqlc.narg('event_from')::timestamptz
+                  AND ve.checked_out_at < sqlc.narg('event_to')::timestamptz
+              )
+          )
+      )
+  )
   AND (
       COALESCE(sqlc.narg('search')::text, '') = ''
       OR v.full_name ILIKE '%' || sqlc.narg('search')::text || '%'
@@ -175,7 +234,51 @@ WHERE ve.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('purpose')::visitor_purpose IS NULL OR ve.purpose = sqlc.narg('purpose')::visitor_purpose)
   AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
   AND (sqlc.narg('created_from')::timestamptz IS NULL OR ve.created_at >= sqlc.narg('created_from')::timestamptz)
-  AND (sqlc.narg('created_to')::timestamptz IS NULL OR ve.created_at <= sqlc.narg('created_to')::timestamptz)
+  AND (sqlc.narg('created_to')::timestamptz IS NULL OR ve.created_at < sqlc.narg('created_to')::timestamptz)
+  AND (
+      sqlc.narg('event')::text IS NULL
+      OR sqlc.narg('event_from')::timestamptz IS NULL
+      OR sqlc.narg('event_to')::timestamptz IS NULL
+      OR (
+          sqlc.narg('event')::text = 'created'
+          AND ve.created_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.created_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'checked_in'
+          AND ve.checked_in_at IS NOT NULL
+          AND ve.checked_in_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.checked_in_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'checked_out'
+          AND ve.checked_out_at IS NOT NULL
+          AND ve.checked_out_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.checked_out_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'expected'
+          AND ve.expected_at IS NOT NULL
+          AND ve.expected_at >= sqlc.narg('event_from')::timestamptz
+          AND ve.expected_at < sqlc.narg('event_to')::timestamptz
+      )
+      OR (
+          sqlc.narg('event')::text = 'activity'
+          AND (
+              (ve.created_at >= sqlc.narg('event_from')::timestamptz AND ve.created_at < sqlc.narg('event_to')::timestamptz)
+              OR (
+                  ve.checked_in_at IS NOT NULL
+                  AND ve.checked_in_at >= sqlc.narg('event_from')::timestamptz
+                  AND ve.checked_in_at < sqlc.narg('event_to')::timestamptz
+              )
+              OR (
+                  ve.checked_out_at IS NOT NULL
+                  AND ve.checked_out_at >= sqlc.narg('event_from')::timestamptz
+                  AND ve.checked_out_at < sqlc.narg('event_to')::timestamptz
+              )
+          )
+      )
+  )
   AND (
       COALESCE(sqlc.narg('search')::text, '') = ''
       OR EXISTS (
@@ -202,21 +305,41 @@ WHERE ve.society_id = sqlc.arg('society_id')
 SELECT
     COUNT(*) FILTER (
         WHERE ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS today_visitors,
     COUNT(*) FILTER (WHERE ve.status = 'checked_in')::bigint AS visitors_inside,
     COUNT(*) FILTER (WHERE ve.status = 'waiting_approval')::bigint AS pending_approvals,
     COUNT(*) FILTER (
-        WHERE ve.checked_out_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+        WHERE ve.checked_out_at IS NOT NULL
+          AND ve.status = 'checked_out'
+          AND ve.checked_out_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.checked_out_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS checked_out_today,
     COUNT(*) FILTER (
         WHERE ve.status = 'rejected'
           AND ve.updated_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.updated_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS rejected_today,
     COUNT(*) FILTER (
-        WHERE ve.auto_closed_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+        WHERE ve.auto_closed_at IS NOT NULL
+          AND ve.auto_closed_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.auto_closed_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS auto_closed_today
 FROM visitor_entries ve
 WHERE ve.society_id = $1;
+
+-- name: GetVisitorEntryStatsInRange :one
+SELECT
+    COUNT(*) FILTER (WHERE ve.status = 'checked_in')::bigint AS visitors_inside,
+    COUNT(*) FILTER (WHERE ve.status = 'waiting_approval')::bigint AS pending_approvals,
+    COUNT(*) FILTER (
+        WHERE ve.checked_out_at IS NOT NULL
+          AND ve.status = 'checked_out'
+          AND ve.checked_out_at >= sqlc.arg('event_from')::timestamptz
+          AND ve.checked_out_at < sqlc.arg('event_to')::timestamptz
+    )::bigint AS checked_out_in_range
+FROM visitor_entries ve
+WHERE ve.society_id = sqlc.arg('society_id');
 
 -- name: CountWaitingAtGateVisitorEntries :one
 SELECT COUNT(*)::bigint

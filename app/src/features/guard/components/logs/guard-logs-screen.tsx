@@ -3,6 +3,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
 import { PaginatedList } from "@/components/ui";
 import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
@@ -18,8 +19,8 @@ import { useGuardLogsFromParams } from "@/features/guard/hooks/use-guard-logs";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import {
   type ModelsVisitorEntry,
-  useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,
 } from "@/lib/api/generated-api";
+import { useGetV1SocietiesBySocietyIdVisitorEntriesStatsExtendedQuery } from "@/lib/api/guard-api-extensions";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
@@ -32,8 +33,12 @@ export function GuardLogsScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const logs = useGuardLogsFromParams(presetParam);
-  const statsQuery = useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery(
-    { societyId: selectedSocietyId ?? 0 },
+  const statsQuery = useGetV1SocietiesBySocietyIdVisitorEntriesStatsExtendedQuery(
+    {
+      societyId: selectedSocietyId ?? 0,
+      eventFrom: logs.statsRange?.eventFrom,
+      eventTo: logs.statsRange?.eventTo,
+    },
     { skip: !selectedSocietyId },
   );
 
@@ -42,6 +47,8 @@ export function GuardLogsScreen() {
   }
 
   const stats = statsQuery.data?.data?.stats;
+  const checkedOutCount =
+    stats?.checked_out_in_range ?? stats?.checked_out_today ?? 0;
   const listLoading = logs.isLoading || (isLoading && !isReady);
 
   const handleCheckOut = async (entryId?: number) => {
@@ -72,6 +79,7 @@ export function GuardLogsScreen() {
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+      <AppStatusBar />
       <PaginatedList<ModelsVisitorEntry>
         ItemSeparatorComponent={LogEntryDivider}
         data={logs.items}
@@ -95,7 +103,7 @@ export function GuardLogsScreen() {
             />
             {!logs.isSearchActive ? (
               <LogsStatsSummary
-                checkedOutToday={stats?.checked_out_today ?? 0}
+                checkedOutToday={checkedOutCount}
                 pendingCount={stats?.pending_approvals ?? 0}
                 visitorsInside={stats?.visitors_inside ?? 0}
               />

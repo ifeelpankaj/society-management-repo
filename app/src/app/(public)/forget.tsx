@@ -1,6 +1,6 @@
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
-import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -128,7 +128,7 @@ export default function ForgetScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+      <AppStatusBar />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.screen}

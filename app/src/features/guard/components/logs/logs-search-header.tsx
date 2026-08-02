@@ -9,14 +9,17 @@ import {
   type DateRangePreset,
   type LogsSegment,
 } from "@/features/guard/guard-routes";
+import { colors } from "@/theme/colors";
 import { theme } from "@/theme";
 
 const G = theme.guard;
+const accent = colors.brand.orange;
 
 const DEFAULT_SEGMENT_OPTIONS: { label: string; value: LogsSegment }[] = [
   { label: "Today", value: "today" },
   { label: "Expected", value: "expected" },
   { label: "Inside", value: "inside" },
+  { label: "All", value: "all" },
 ];
 
 type LogsSearchHeaderProps<T extends string = LogsSegment> = {
@@ -51,7 +54,7 @@ export function LogsSearchHeader<T extends string = LogsSegment>({
   title = "Visitor Logs",
 }: LogsSearchHeaderProps<T>) {
   const options = segmentOptions ?? (DEFAULT_SEGMENT_OPTIONS as { label: string; value: T }[]);
-  const hideDatePicker = segment === "expected";
+  const hideDatePicker = segment === "expected" || segment === "today" || segment === "all";
 
   return (
     <View style={styles.container}>
@@ -64,7 +67,7 @@ export function LogsSearchHeader<T extends string = LogsSegment>({
           autoCorrect={false}
           placeholder="Search visitor..."
           placeholderTextColor={G.textMuted}
-          selectionColor={G.teal}
+          selectionColor={accent}
           style={[styles.searchInput, Platform.OS === "web" ? styles.searchInputWeb : null]}
           value={searchValue}
           onChangeText={onSearchChange}
@@ -104,13 +107,17 @@ export function LogsSearchHeader<T extends string = LogsSegment>({
 
           {!hideDatePicker ? (
             <Pressable accessibilityRole="button" style={styles.dateRow} onPress={onDatePress}>
-              <AppIcon color={G.teal} name="calendar" size={14} />
+              <AppIcon color={accent} name="calendar" size={14} />
               <Text style={styles.dateLabel}>{getDateRangeLabel(datePreset)}</Text>
               <Text style={styles.dateChevron}>▼</Text>
             </Pressable>
-          ) : (
+          ) : segment === "expected" ? (
             <Text style={styles.expectedHint}>Approved visitors expected today</Text>
-          )}
+          ) : segment === "today" ? (
+            <Text style={styles.expectedHint}>Entries with activity today</Text>
+          ) : segment === "all" ? (
+            <Text style={styles.expectedHint}>All visitor entries</Text>
+          ) : null}
         </>
       )}
     </View>
@@ -119,7 +126,7 @@ export function LogsSearchHeader<T extends string = LogsSegment>({
 
 const styles = StyleSheet.create({
   clearText: {
-    color: G.teal,
+    color: accent,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -127,11 +134,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dateChevron: {
-    color: G.teal,
+    color: accent,
     fontSize: 10,
   },
   dateLabel: {
-    color: G.teal,
+    color: accent,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -148,7 +155,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   filterDot: {
-    backgroundColor: G.teal,
+    backgroundColor: accent,
     borderRadius: 999,
     height: 7,
     position: "absolute",

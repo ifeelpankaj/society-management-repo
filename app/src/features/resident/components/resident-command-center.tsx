@@ -103,15 +103,15 @@ export function ResidentCommandCenter() {
     const tiles: DashboardActionTileConfig[] = [
       {
         id: "invite",
-        title: "Invite",
-        subtitle: "Add visitor",
+        title: "Invite visitor",
+        subtitle: "Pre-approve guest",
         tone: "blue",
         icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
         onPress: () => {
           if (!dashboard.canManageFlatVisitors) {
             feedback.showInfo(
               "Permission required",
-              "Only active flat residents with visitor access can create invites.",
+              "Only active flat residents with visitor access can invite guests.",
             );
             return;
           }
@@ -120,8 +120,8 @@ export function ResidentCommandCenter() {
       },
       {
         id: "members",
-        title: "Members",
-        subtitle: "View flat",
+        title: "Flat members",
+        subtitle: "People in your flat",
         tone: "blue",
         icon: { ios: "person.2.fill", android: "group", web: "group" },
         onPress: () => router.push(residentMembersRoute()),

@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
 import { Button, Card, EmptyState, LoadingState, ScreenHeader, StatusPill } from "@/components/ui";
 import { useResident } from "@/features/resident/resident-context";
@@ -16,6 +17,7 @@ export function ResidentSocietyGate() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <AppStatusBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Stack gap="3xl">
           <ScreenHeader

@@ -2,7 +2,8 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { LoadingState } from "@/components/ui";
+import { AppStatusBar } from "@/components/layout/app-status-bar";
+import { LoadingState } from "@/components/ui/loading-state";
 import { ScrollContainer } from "@/components/layout/scroll-container";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
@@ -41,11 +42,17 @@ export function ScreenShell({
   }
 
   if (!isReady && gate) {
-    return <>{gate}</>;
+    return (
+      <>
+        <AppStatusBar />
+        {gate}
+      </>
+    );
   }
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={[styles.flex, { backgroundColor }]}>
+      <AppStatusBar />
       <View style={styles.flex}>
         <ScrollContainer
           style={styles.flex}

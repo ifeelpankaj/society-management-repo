@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, StatusPill } from "@/components/ui";
 import { titleize } from "@/features/guard/guard-utils";
 import type { ModelsFlatResidentResponse } from "@/lib/api/generated-api";
+import { colors } from "@/theme/colors";
 import { theme } from "@/theme";
 
 type ResidenceSwitchSheetProps = {
@@ -105,8 +106,6 @@ export function ResidenceSwitchSheet({
   );
 }
 
-const G = theme.guard;
-
 const styles = StyleSheet.create({
   backdrop: {
     backgroundColor: "rgba(15, 23, 42, 0.42)",
@@ -114,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   closeText: {
-    color: G.teal,
+    color: colors.brand.orange,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -167,8 +166,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   residenceCardActive: {
-    backgroundColor: G.tealSoft,
-    borderColor: "#99f6e4",
+    backgroundColor: colors.brand.orangeSoft,
+    borderColor: colors.brand.orange,
   },
   residenceCopy: {
     flex: 1,

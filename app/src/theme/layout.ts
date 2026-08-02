@@ -10,6 +10,6 @@ export const layout = {
   purposeCardHeight: 61,
   actionTileMinHeight: 96,
   overviewStatMinHeight: 88,
-  tabBarHeight: 68,
+  tabBarHeight: 88,
   fabSize: 56,
 } as const;

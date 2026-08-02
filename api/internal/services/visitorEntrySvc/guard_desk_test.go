@@ -61,6 +61,9 @@ func (r *guardDeskEntryRepo) Get(context.Context, int64, int64) (*models.Visitor
 func (r *guardDeskEntryRepo) GetByQRHash(context.Context, string) (*models.VisitorEntry, error) {
 	return nil, nil
 }
+func (r *guardDeskEntryRepo) GetByInviteID(context.Context, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
 func (r *guardDeskEntryRepo) List(context.Context, models.VisitorEntryFilter) ([]*models.VisitorEntry, error) {
 	return nil, nil
 }

@@ -2181,7 +2181,7 @@ const docTemplate = `{
         },
         "/v1/public/visitor-invites/{token}": {
             "get": {
-                "description": "[Public] Fetches an active visitor invite from its public token before the visitor submits details.",
+                "description": "[Public] Fetches a visitor invite for the web form, or recovers entry/QR when the invite was already used.",
                 "produces": [
                     "application/json"
                 ],
@@ -2218,7 +2218,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "Visitor invite is expired, used, or cancelled",
+                        "description": "Visitor invite is expired, used without entry, or cancelled",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponseDoc"
                         }
@@ -13093,6 +13093,9 @@ const docTemplate = `{
                 "auto_closed_today": {
                     "type": "integer"
                 },
+                "checked_out_in_range": {
+                    "type": "integer"
+                },
                 "checked_out_today": {
                     "type": "integer"
                 },
@@ -13272,8 +13275,18 @@ const docTemplate = `{
         "models.VisitorInviteData": {
             "type": "object",
             "properties": {
+                "entry": {
+                    "$ref": "#/definitions/models.VisitorEntry"
+                },
                 "invite": {
                     "$ref": "#/definitions/models.PublicVisitorInviteView"
+                },
+                "qr": {
+                    "$ref": "#/definitions/models.QRTokenResponse"
+                },
+                "view": {
+                    "type": "string",
+                    "example": "form"
                 }
             }
         },

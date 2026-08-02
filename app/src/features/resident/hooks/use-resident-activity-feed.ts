@@ -3,17 +3,14 @@ import { useCallback } from "react";
 import { getTodayRange } from "@/features/guard/guard-routes";
 import { useResident } from "@/features/resident/resident-context";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
-import {
-  type ModelsVisitorEntry,
-  generatedApi,
-} from "@/lib/api/generated-api";
+import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
+import { useLazyGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesQuery } from "@/lib/api/resident-api-extensions";
 
 const ACTIVITY_PAGE_SIZE = 5;
 
 export function useResidentActivityFeed() {
   const { flatId, societyId } = useResident();
-  const [fetchEntries] =
-    generatedApi.endpoints.getV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntries.useLazyQuery();
+  const [fetchEntries] = useLazyGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesQuery();
 
   const fetchPage = useCallback(
     async ({ limit, offset }: { limit: number; offset: number }) => {
@@ -21,12 +18,13 @@ export function useResidentActivityFeed() {
         return { items: [], total: 0, limit, offset };
       }
 
-      const { createdFrom, createdTo } = getTodayRange();
+      const todayRange = getTodayRange();
       const response = await fetchEntries({
         societyId,
         flatId,
-        createdFrom,
-        createdTo,
+        event: todayRange ? "activity" : undefined,
+        eventFrom: todayRange?.eventFrom,
+        eventTo: todayRange?.eventTo,
         limit,
         offset,
       }).unwrap();

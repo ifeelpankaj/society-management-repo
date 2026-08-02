@@ -82,14 +82,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   primaryBadge: {
-    backgroundColor: colors.operational.primarySoft,
+    backgroundColor: colors.guard.tealSoft,
     borderRadius: radius["2xl"],
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   primaryText: {
     ...typography.caption,
-    color: colors.operational.teal,
+    color: colors.guard.teal,
     fontWeight: "700",
   },
   roleBadge: {

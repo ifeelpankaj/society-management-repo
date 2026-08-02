@@ -12,6 +12,8 @@ import {
 import { getApiErrorMessage, getApiMessage } from "@/lib/api-message";
 import { isIndianPhone } from "@/lib/validations";
 
+import type { VisitorInviteStatusView } from "./visitor-invite-status";
+
 type VisitorInviteFormValues = {
   fullName: string;
   phoneNumber: string;
@@ -24,6 +26,11 @@ type SubmitResult = {
   entry?: ModelsVisitorEntry;
   qr?: ModelsQrTokenResponse;
 };
+
+export type VisitorInvitePageView =
+  | "form"
+  | "qr"
+  | VisitorInviteStatusView;
 
 export function useVisitorInvitePage(token: string) {
   const normalizedToken = decodeURIComponent(token).trim();
@@ -45,7 +52,22 @@ export function useVisitorInvitePage(token: string) {
   const [submitInvite, submitState] =
     usePostV1PublicVisitorInvitesByTokenSubmitMutation();
 
-  const invite = inviteQuery.data?.data?.invite ?? null;
+  const pageData = inviteQuery.data?.data;
+  const invite = pageData?.invite ?? null;
+  const pageView = pageData?.view as VisitorInvitePageView | undefined;
+
+  const recoveredResult = useMemo(() => {
+    if (pageView !== "qr") {
+      return null;
+    }
+
+    return {
+      entry: pageData?.entry,
+      qr: pageData?.qr,
+    };
+  }, [pageData?.entry, pageData?.qr, pageView]);
+
+  const displayResult = submitResult ?? recoveredResult;
 
   const validationError = useMemo(() => {
     if (!form.fullName.trim()) {
@@ -110,10 +132,13 @@ export function useVisitorInvitePage(token: string) {
   };
 
   return {
+    displayResult,
     form,
     handleSubmit,
     invite,
     inviteQuery,
+    pageData,
+    pageView,
     showOptional,
     setShowOptional,
     submitResult,

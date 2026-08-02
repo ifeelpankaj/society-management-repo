@@ -4,15 +4,12 @@ import { getTodayRange } from "@/features/guard/guard-routes";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { ACTIVITY_PAGE_SIZE } from "@/features/shared/activity-feed-config";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
-import {
-  type ModelsVisitorEntry,
-  generatedApi,
-} from "@/lib/api/generated-api";
+import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
+import { useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery } from "@/lib/api/guard-api-extensions";
 
 export function useGuardActivityFeed() {
   const { selectedSocietyId } = useGuardScreen();
-  const [fetchEntries] =
-    generatedApi.endpoints.getV1SocietiesBySocietyIdVisitorEntries.useLazyQuery();
+  const [fetchEntries] = useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery();
 
   const fetchPage = useCallback(
     async ({ limit, offset }: { limit: number; offset: number }) => {
@@ -20,11 +17,12 @@ export function useGuardActivityFeed() {
         return { items: [], total: 0, limit, offset };
       }
 
-      const { createdFrom, createdTo } = getTodayRange();
+      const todayRange = getTodayRange();
       const response = await fetchEntries({
         societyId: selectedSocietyId,
-        createdFrom,
-        createdTo,
+        event: todayRange ? "activity" : undefined,
+        eventFrom: todayRange?.eventFrom,
+        eventTo: todayRange?.eventTo,
         limit,
         offset,
       }).unwrap();

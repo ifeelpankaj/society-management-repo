@@ -40,12 +40,12 @@ export function Input({ label, error, editable = true, style, onBlur, onFocus, .
         {label}
       </Text>
       <TextInput
-        cursorColor={colors.operational.teal}
+        cursorColor={colors.guard.teal}
         editable={editable}
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholderTextColor={colors.text.placeholder}
-        selectionColor={colors.operational.primarySoft}
+        selectionColor={colors.guard.tealSoft}
         style={[
           styles.input,
           error ? styles.inputError : isActive ? styles.inputActive : styles.inputDefault,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
   },
   inputActive: {
-    borderColor: colors.operational.teal,
+    borderColor: colors.guard.teal,
   },
   inputDefault: {
     borderColor: colors.text.primary,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   labelActive: {
-    color: colors.operational.teal,
+    color: colors.guard.teal,
   },
   labelDefault: {
     color: colors.text.primary,

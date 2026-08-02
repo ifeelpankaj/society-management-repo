@@ -2,6 +2,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
 import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
 import { useResident } from "@/features/resident/resident-context";
@@ -23,6 +24,7 @@ export function ResidentSubScreen({ children, headerExtra, title }: ResidentSubS
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+      <AppStatusBar />
       <View style={styles.header}>
         <GuardBackHeader title={title} />
         {headerExtra}

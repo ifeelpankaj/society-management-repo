@@ -34,6 +34,12 @@ export const colors = {
     primaryShadow: "rgba(13, 148, 136, 0.18)",
     teal: "#0d9488",
   },
+  accent: {
+    primary: "#0d9488",
+    primarySoft: "#f0fdfa",
+    primaryShadow: "rgba(13, 148, 136, 0.18)",
+    selection: "#99f6e4",
+  },
   status: {
     success: "#16a34a",
     successSoft: "#ecfdf3",

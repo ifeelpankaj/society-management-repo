@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   backButtonPressed: {
-    backgroundColor: colors.guard.tealSoft,
+    backgroundColor: colors.brand.orangeSoft,
   },
   header: {
     justifyContent: "flex-start",

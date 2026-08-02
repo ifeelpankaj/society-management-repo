@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   purposeChipActive: {
-    backgroundColor: colors.operational.primarySoft,
-    borderColor: colors.operational.teal,
+    backgroundColor: colors.guard.tealSoft,
+    borderColor: colors.guard.teal,
   },
   purposeChipText: {
     ...typography.bodySmall,

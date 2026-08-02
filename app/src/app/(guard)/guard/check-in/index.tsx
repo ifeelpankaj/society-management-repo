@@ -8,15 +8,34 @@ import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card
 import {
   guardHomeRoute,
   guardScannerRoute,
+  guardWaitingAtGateRoute,
   parseCheckInParams,
 } from "@/features/guard/guard-routes";
-import { useGuardCheckIn } from "@/features/guard/hooks/use-guard-check-in";
+import {
+  type GuardScanOutcome,
+  useGuardCheckIn,
+} from "@/features/guard/hooks/use-guard-check-in";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 import { typography } from "@/theme/typography";
+
+function getSubtitle(outcome: GuardScanOutcome) {
+  switch (outcome) {
+    case "already_inside":
+      return "This visitor is already inside the society.";
+    case "just_checked_in":
+      return "Check-in complete. The visitor may proceed to entry.";
+    case "pending_approval":
+      return "This visitor is waiting for resident approval.";
+    case "loading":
+      return "Review visitor details before allowing entry.";
+    default:
+      return "Review visitor details before allowing entry.";
+  }
+}
 
 export default function GuardCheckInScreen() {
   const router = useRouter();
@@ -30,17 +49,50 @@ export default function GuardCheckInScreen() {
   const checkInInput = parseCheckInParams(params);
   const checkIn = useGuardCheckIn(checkInInput, selectedSocietyId);
   const checkInToastShownRef = useRef(false);
+  const wasCheckingInRef = useRef(false);
+  const redirectTriggeredRef = useRef(false);
 
   useEffect(() => {
     checkInToastShownRef.current = false;
+    wasCheckingInRef.current = false;
+    redirectTriggeredRef.current = false;
   }, [checkInInput?.token]);
 
   useEffect(() => {
-    if (checkIn.isCheckedIn && !checkIn.isCheckingIn && !checkInToastShownRef.current) {
+    if (checkIn.isCheckingIn) {
+      wasCheckingInRef.current = true;
+      return;
+    }
+
+    if (
+      wasCheckingInRef.current &&
+      checkIn.scanOutcome === "just_checked_in" &&
+      !checkInToastShownRef.current
+    ) {
       checkInToastShownRef.current = true;
+      wasCheckingInRef.current = false;
       feedback.showSuccess("Checked in", "The visitor may proceed to entry.");
     }
-  }, [checkIn.isCheckedIn, checkIn.isCheckingIn, feedback]);
+  }, [checkIn.isCheckingIn, checkIn.scanOutcome, feedback]);
+
+  useEffect(() => {
+    if (
+      checkIn.entryError?.redirectToWaitingAtGate &&
+      !checkIn.entry &&
+      !checkIn.isLoadingEntry &&
+      !redirectTriggeredRef.current
+    ) {
+      redirectTriggeredRef.current = true;
+      feedback.showError("QR not recognized", checkIn.entryError.message);
+      router.replace(guardWaitingAtGateRoute());
+    }
+  }, [
+    checkIn.entry,
+    checkIn.entryError,
+    checkIn.isLoadingEntry,
+    feedback,
+    router,
+  ]);
 
   useEffect(() => {
     if (
@@ -79,20 +131,22 @@ export default function GuardCheckInScreen() {
     );
   }
 
+  const { scanOutcome } = checkIn;
+
   return (
     <GuardSubScreen title="Check In">
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <Text style={styles.subtitle}>Review visitor details before allowing entry.</Text>
+          <Text style={styles.subtitle}>{getSubtitle(scanOutcome)}</Text>
 
-          {checkIn.isLoadingEntry ? (
+          {scanOutcome === "loading" ? (
             <View style={styles.inlineLoading}>
               <ActivityIndicator color={colors.guard.teal} />
               <Text style={styles.cardBody}>Validating QR...</Text>
             </View>
           ) : null}
 
-          {checkIn.entryError && !checkIn.entry ? (
+          {scanOutcome === "error" && checkIn.entryError && !checkIn.entryError.redirectToWaitingAtGate ? (
             <Card style={styles.errorCard}>
               <Text style={styles.errorTitle}>Unable to load visitor</Text>
               <Text style={styles.errorBody}>{checkIn.entryError.message}</Text>
@@ -103,30 +157,47 @@ export default function GuardCheckInScreen() {
             <VisitorEntryCard
               entry={checkIn.entry}
               loading={checkIn.isCheckingIn}
-              primaryActionLabel={
-                checkIn.isCheckedIn ? undefined : checkIn.canCheckIn ? "Check In" : undefined
-              }
+              primaryActionLabel={scanOutcome === "ready" ? "Check In" : undefined}
               onPrimaryAction={() => {
                 void checkIn.checkIn();
               }}
             />
           ) : null}
 
-          {checkIn.entry && !checkIn.canCheckIn && checkIn.disabledReason ? (
+          {scanOutcome === "pending_approval" ? (
+            <Card style={styles.warningCard}>
+              <Text style={styles.warningTitle}>Waiting for approval</Text>
+              <Text style={styles.warningBody}>
+                {checkIn.disabledReason ??
+                  "This visitor is not approved for check-in yet."}
+              </Text>
+            </Card>
+          ) : null}
+
+          {scanOutcome === "blocked" && checkIn.disabledReason ? (
             <Card style={styles.warningCard}>
               <Text style={styles.warningTitle}>Check-in unavailable</Text>
               <Text style={styles.warningBody}>{checkIn.disabledReason}</Text>
             </Card>
           ) : null}
 
-          {checkIn.isCheckedIn ? (
+          {scanOutcome === "already_inside" ? (
+            <Card style={styles.successCard}>
+              <Text style={styles.successTitle}>Already checked in</Text>
+              <Text style={styles.successBody}>
+                This visitor is already inside. No further action is needed.
+              </Text>
+            </Card>
+          ) : null}
+
+          {scanOutcome === "just_checked_in" ? (
             <Card style={styles.successCard}>
               <Text style={styles.successTitle}>Checked in successfully</Text>
               <Text style={styles.successBody}>The visitor may proceed to entry.</Text>
             </Card>
           ) : null}
 
-          {checkIn.entryError && checkIn.entry ? (
+          {checkIn.entryError && checkIn.entry && scanOutcome !== "just_checked_in" ? (
             <Card style={styles.errorCard}>
               <Text style={styles.errorTitle}>Check-in failed</Text>
               <Text style={styles.errorBody}>{checkIn.entryError.message}</Text>

@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tabActive: {
-    backgroundColor: colors.guard.teal,
+    backgroundColor: colors.brand.orange,
   },
   tabText: {
     color: colors.guard.textMuted,

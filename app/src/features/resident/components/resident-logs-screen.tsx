@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
 import { LoadingState, PaginatedList, ScreenHeader } from "@/components/ui";
 import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
@@ -62,6 +63,7 @@ export function ResidentLogsScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <AppStatusBar />
       <PaginatedList
         ItemSeparatorComponent={LogEntryDivider}
         data={pagination.items}

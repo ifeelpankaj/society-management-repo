@@ -16,6 +16,7 @@ import {
 import { SymbolView } from "expo-symbols";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Row, Stack } from "@/components/layout";
 import { DELIVERY_PARTNERS, getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import {
@@ -103,7 +104,7 @@ function Field({
           cursorColor={colors.guard.teal}
           multiline={multiline}
           placeholderTextColor={colors.guard.textMuted}
-          selectionColor="#99f6e4"
+          selectionColor={colors.accent.selection}
           underlineColorAndroid="transparent"
           onBlur={(e) => {
             setFocused(false);
@@ -168,7 +169,7 @@ function SearchField({
           cursorColor={colors.guard.teal}
           placeholder={placeholder}
           placeholderTextColor={colors.guard.textMuted}
-          selectionColor="#99f6e4"
+          selectionColor={colors.accent.selection}
           underlineColorAndroid="transparent"
           value={value}
           onBlur={() => setFocused(false)}
@@ -219,6 +220,7 @@ function FlatSearchModal({
   return (
     <Modal animationType="slide" visible={visible} onRequestClose={onClose}>
       <SafeAreaView style={styles.modalScreen}>
+        <AppStatusBar />
         <Row align="center" gap="sm" style={styles.modalHeader}>
           <Pressable style={styles.modalBackButton} onPress={onClose}>
             <SymbolView
@@ -474,36 +476,28 @@ function PurposePicker({
   );
 }
 
-function EntryModeToggle({
-  value,
-  onChange,
+function EntryLinkModeButton({
+  active,
+  onPress,
 }: {
-  value: EntryMode;
-  onChange: (mode: EntryMode) => void;
+  active: boolean;
+  onPress: () => void;
 }) {
   return (
-    <Row gap="sm" style={styles.entryModeToggle}>
-      {(
-        [
-          { id: "full_entry" as const, label: "Full entry" },
-          { id: "form_link" as const, label: "Send form link" },
-        ] as const
-      ).map((option) => {
-        const active = value === option.id;
-
-        return (
-          <Pressable
-            key={option.id}
-            style={[styles.entryModeOption, active && styles.entryModeOptionActive]}
-            onPress={() => onChange(option.id)}
-          >
-            <Text style={[styles.entryModeLabel, active && styles.entryModeLabelActive]}>
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </Row>
+    <Pressable
+      accessibilityLabel="Send visitor link"
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      hitSlop={8}
+      style={({ pressed }) => [styles.linkModeButton, pressed && styles.linkModeButtonPressed]}
+      onPress={onPress}
+    >
+      <SymbolView
+        name={{ ios: "link", android: "link", web: "link" }}
+        size={20}
+        tintColor={active ? colors.guard.teal : colors.text.placeholder}
+      />
+    </Pressable>
   );
 }
 
@@ -524,7 +518,7 @@ function InviteLinkSuccessCard({
 
   return (
     <Stack gap="md" style={styles.successCard}>
-      <Text style={styles.successCardTitle}>Form link ready</Text>
+      <Text style={styles.successCardTitle}>Link ready</Text>
       <Text style={styles.successCardSubtitle}>
         {titleize(invite.purpose)} · {formatSelectedFlatLabel(invite.flat)}
       </Text>
@@ -622,14 +616,24 @@ export function ManualEntryForm({
         showsVerticalScrollIndicator={false}
         style={styles.formScroll}
       >
-        <Stack gap="xs">
-          <Text style={styles.formTitle}>Add Visitor</Text>
-          <Text style={styles.formSubtitle}>
-            {societyName ? `Gate entry · ${societyName}` : "Quick gate entry"}
-          </Text>
-        </Stack>
-
-        <EntryModeToggle value={entryMode} onChange={setEntryMode} />
+        <Row align="center" justify="space-between">
+          <Stack gap="xs" style={styles.formTitleBlock}>
+            <Text style={styles.formTitle}>Add Visitor</Text>
+            <Text style={styles.formSubtitle}>
+              {isFormLinkMode
+                ? "Visitor fills details online and gets a gate QR code."
+                : societyName
+                  ? `Gate entry · ${societyName}`
+                  : "Quick gate entry"}
+            </Text>
+          </Stack>
+          <EntryLinkModeButton
+            active={isFormLinkMode}
+            onPress={() =>
+              setEntryMode((mode) => (mode === "form_link" ? "full_entry" : "form_link"))
+            }
+          />
+        </Row>
 
         <FlatPicker
           error={flatError}
@@ -817,13 +821,6 @@ export function ManualEntryForm({
           </>
         ) : (
           <>
-            <View style={styles.formLinkInfoCard}>
-              <Text style={styles.formLinkInfoTitle}>Send a web form link</Text>
-              <Text style={styles.formLinkInfoBody}>
-                The visitor will open the link, fill their details on web, and receive a gate QR code.
-              </Text>
-            </View>
-
             {inviteForm.createdInvite ? (
               <InviteLinkSuccessCard
                 invite={inviteForm.createdInvite}
@@ -857,7 +854,7 @@ export function ManualEntryForm({
                 !canSubmit && styles.submitButtonTextDisabled,
               ]}
             >
-              {isFormLinkMode ? "Create form link" : "Create Entry"}
+              {isFormLinkMode ? "Create link" : "Create Entry"}
             </Text>
           )}
         </Pressable>
@@ -907,30 +904,6 @@ const styles = StyleSheet.create({
   entryCreatedMeta: {
     color: colors.text.muted,
     fontSize: 14,
-  },
-  entryModeLabel: {
-    color: colors.guard.textMuted,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  entryModeLabelActive: {
-    color: colors.text.inverse,
-  },
-  entryModeOption: {
-    alignItems: "center",
-    borderRadius: 14,
-    flex: 1,
-    paddingVertical: spacing.md,
-  },
-  entryModeOptionActive: {
-    backgroundColor: colors.guard.teal,
-  },
-  entryModeToggle: {
-    backgroundColor: colors.surface.card,
-    borderColor: colors.guard.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.xs,
   },
   extraToggle: {
     alignItems: "center",
@@ -1042,24 +1015,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.lg,
   },
-  formLinkInfoBody: {
-    color: colors.text.muted,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: spacing.sm,
-  },
-  formLinkInfoCard: {
-    backgroundColor: colors.surface.card,
-    borderColor: colors.guard.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: spacing.lg,
-  },
-  formLinkInfoTitle: {
-    color: colors.text.primary,
-    fontSize: 15,
-    fontWeight: "600",
-  },
   formRoot: {
     flex: 1,
   },
@@ -1078,9 +1033,22 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     color: colors.guard.text,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "700",
-    letterSpacing: -0.5,
+  },
+  formTitleBlock: {
+    flex: 1,
+    paddingRight: spacing.md,
+  },
+  linkModeButton: {
+    alignItems: "center",
+    borderRadius: 999,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  linkModeButtonPressed: {
+    opacity: 0.7,
   },
   loadingResidentText: {
     color: colors.guard.textMuted,
@@ -1172,7 +1140,7 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     backgroundColor: colors.surface.card,
-    borderColor: "#99f6e4",
+    borderColor: colors.accent.selection,
     borderRadius: 20,
     borderWidth: 1,
     overflow: "hidden",
@@ -1341,7 +1309,7 @@ const styles = StyleSheet.create({
   },
   successCard: {
     backgroundColor: colors.surface.card,
-    borderColor: "#99f6e4",
+    borderColor: colors.accent.selection,
     borderRadius: 20,
     borderWidth: 1,
     padding: layout.screenPaddingHorizontal,

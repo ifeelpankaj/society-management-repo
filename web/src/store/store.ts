@@ -6,6 +6,7 @@ import {
   useSelector,
 } from "react-redux";
 import { generatedApi } from "@/lib/api/generated-api";
+import "@/lib/api/visitor-invite-api-extensions";
 import { rootReducer } from "./root-reducer";
 
 export const store = configureStore({

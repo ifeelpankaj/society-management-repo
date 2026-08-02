@@ -111,7 +111,7 @@ export function AddMemberSheet({ onCreated }: AddMemberSheetProps) {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.intro}>
-        <Text style={styles.pageTitle}>Invite member</Text>
+        <Text style={styles.pageTitle}>Add member</Text>
         <Text style={styles.pageSubtitle}>
           Send a join link to a family member or tenant for flat{" "}
           {selectedResidence?.flat_number ?? "—"}.
@@ -145,7 +145,7 @@ export function AddMemberSheet({ onCreated }: AddMemberSheetProps) {
 
       <Button
         loading={createInviteState.isLoading}
-        title="Create invite link"
+        title="Create link"
         onPress={() => void handleCreate()}
       />
     </ScrollView>

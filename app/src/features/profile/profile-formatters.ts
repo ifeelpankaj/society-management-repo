@@ -7,15 +7,21 @@ export function formatPhoneDisplay(phone?: string | null) {
 
   const digits = phone.replace(/\D/g, "");
 
-  if ((digits.length === 12 && digits.startsWith("91")) || digits.length === 10) {
-    return "+91 XXXXX XXXXX";
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
   }
 
-  if (digits.length >= 6) {
-    return phone.replace(/\d/g, "X");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    const local = digits.slice(2);
+    return `+91 ${local.slice(0, 5)} ${local.slice(5)}`;
   }
 
-  return phone;
+  if (digits.length === 11 && digits.startsWith("0")) {
+    const local = digits.slice(1);
+    return `+91 ${local.slice(0, 5)} ${local.slice(5)}`;
+  }
+
+  return phone.trim();
 }
 
 export function formatDateOfBirth(dob?: string | null) {

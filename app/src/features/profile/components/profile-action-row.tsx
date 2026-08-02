@@ -25,8 +25,8 @@ export function ProfileActionRow({
   onPress,
   showChevron = true,
 }: ProfileActionRowProps) {
-  const accent = destructive ? colors.status.error : colors.guard.teal;
-  const iconBg = destructive ? colors.status.errorSoft : colors.guard.tealSoft;
+  const accent = destructive ? colors.status.error : colors.brand.orange;
+  const iconBg = destructive ? colors.status.errorSoft : colors.brand.orangeSoft;
 
   return (
     <Pressable

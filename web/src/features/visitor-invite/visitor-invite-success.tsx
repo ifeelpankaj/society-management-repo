@@ -53,7 +53,7 @@ export function VisitorInviteSuccess({ entry, qr }: VisitorInviteSuccessProps) {
         <div className="space-y-1">
           <CardTitle className="text-2xl">You&apos;re approved to enter</CardTitle>
           <CardDescription>
-            Show this QR code at the gate for check-in.
+            Show this gate QR code at security — not the invite link you received.
           </CardDescription>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -89,8 +89,8 @@ export function VisitorInviteSuccess({ entry, qr }: VisitorInviteSuccessProps) {
         ) : null}
 
         <p className="max-w-sm text-center text-sm text-muted-foreground">
-          Keep this screen open or take a screenshot. Security will scan this QR
-          when you arrive.
+          Keep this screen open or take a screenshot. Security will scan this gate
+          QR when you arrive — do not share your original invite link for check-in.
         </p>
       </CardContent>
     </Card>

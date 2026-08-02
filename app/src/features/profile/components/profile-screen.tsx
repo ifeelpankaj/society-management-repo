@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { useLogout } from "@/features/auth/use-logout";
 import { ProfileActionRow } from "@/features/profile/components/profile-action-row";
 import { ProfileAvatarHero } from "@/features/profile/components/profile-avatar-hero";
@@ -61,13 +62,14 @@ export function ProfileScreen({
 
   return (
     <SafeAreaView style={styles.screen}>
+      <AppStatusBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <ProfileScreenHeader fallbackHomeRoute={fallbackHomeRoute} title="Profile" />
 
           {isLoading ? (
             <View style={styles.inlineLoading}>
-              <ActivityIndicator color={colors.guard.teal} size="small" />
+              <ActivityIndicator color={colors.brand.orange} size="small" />
             </View>
           ) : (
             <>

@@ -6,9 +6,12 @@ import {
   DATE_RANGE_OPTIONS,
   type DateRangePreset,
 } from "@/features/guard/guard-routes";
+import { colors } from "@/theme/colors";
 import { theme } from "@/theme";
 
 const G = theme.guard;
+const accent = colors.brand.orange;
+const accentSoft = colors.brand.orangeSoft;
 
 type LogsDateSheetProps = {
   onApply: (preset: DateRangePreset) => void;
@@ -87,8 +90,8 @@ export function LogsDateSheet({ onApply, onClose, selected, visible }: LogsDateS
 
 const styles = StyleSheet.create({
   applyButton: {
-    backgroundColor: G.teal,
-    borderColor: G.teal,
+    backgroundColor: accent,
+    borderColor: accent,
   },
   applyText: {
     color: "#ffffff",
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
     paddingTop: 18,
   },
   closeText: {
-    color: G.teal,
+    color: accent,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   optionActive: {
-    backgroundColor: G.tealSoft,
+    backgroundColor: accentSoft,
   },
   optionText: {
     color: G.textMuted,
@@ -146,7 +149,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   optionTextActive: {
-    color: G.teal,
+    color: accent,
     fontWeight: "700",
   },
   options: {

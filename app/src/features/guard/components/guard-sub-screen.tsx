@@ -2,6 +2,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { GuardBackHeader } from "@/features/guard/components/guard-back-header";
 import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
@@ -23,6 +24,7 @@ export function GuardSubScreen({ children, headerExtra, title }: GuardSubScreenP
 
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+      <AppStatusBar />
       <View style={styles.header}>
         <GuardBackHeader title={title} />
         {headerExtra}

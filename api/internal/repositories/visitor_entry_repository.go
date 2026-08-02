@@ -32,6 +32,7 @@ type VisitorEntryRepository interface {
 	Create(ctx context.Context, req models.VisitorFormRequest, societyID int64, flatID int64, visitorID int64, inviteID *int64, source models.VisitorEntrySource, purpose models.VisitorPurpose, status models.VisitorStatus, actorUserID *int64, guardUserID *int64, qrHash *string, qrExpiresAt *time.Time) (*models.VisitorEntry, error)
 	Get(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error)
 	GetByQRHash(ctx context.Context, qrHash string) (*models.VisitorEntry, error)
+	GetByInviteID(ctx context.Context, inviteID int64) (*models.VisitorEntry, error)
 	List(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
 	Count(ctx context.Context, filter models.VisitorEntryFilter) (int64, error)
 	ListPending(ctx context.Context, societyID int64, flatID int64) ([]*models.VisitorEntry, error)
@@ -39,6 +40,7 @@ type VisitorEntryRepository interface {
 	CountSocietyPending(ctx context.Context, filter models.VisitorPendingFilter) (int64, error)
 	ListRecentByFlat(ctx context.Context, societyID int64, flatID int64, limit int32) ([]*models.VisitorEntry, error)
 	GetStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	GetStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error)
 	CountWaitingAtGate(ctx context.Context, societyID int64) (int64, error)
 	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) ([]*models.VisitorEntry, error)
 	CountWaitingAtGateFiltered(ctx context.Context, filter models.WaitingAtGateFilter) (int64, error)
@@ -172,6 +174,11 @@ func (r *visitorEntryRepository) GetByQRHash(ctx context.Context, qrHash string)
 	return visitorEntryFromQRNoRows(row, err)
 }
 
+func (r *visitorEntryRepository) GetByInviteID(ctx context.Context, inviteID int64) (*models.VisitorEntry, error) {
+	row, err := GetQueries(ctx, r.db).GetVisitorEntryByInviteID(ctx, &inviteID)
+	return visitorEntryFromInviteNoRows(row, err)
+}
+
 func (r *visitorEntryRepository) List(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error) {
 	params := visitorEntryListParams(filter)
 	rows, err := GetQueries(ctx, r.db).ListVisitorEntries(ctx, params)
@@ -253,6 +260,22 @@ func (r *visitorEntryRepository) GetStats(ctx context.Context, societyID int64) 
 		CheckedOutToday:  row.CheckedOutToday,
 		RejectedToday:    row.RejectedToday,
 		AutoClosedToday:  row.AutoClosedToday,
+	}, nil
+}
+
+func (r *visitorEntryRepository) GetStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error) {
+	row, err := GetQueries(ctx, r.db).GetVisitorEntryStatsInRange(ctx, db.GetVisitorEntryStatsInRangeParams{
+		SocietyID: societyID,
+		EventFrom: timePtrToPgTimestamptz(&from),
+		EventTo:   timePtrToPgTimestamptz(&to),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &models.VisitorEntryStatsResponse{
+		VisitorsInside:    row.VisitorsInside,
+		PendingApprovals:  row.PendingApprovals,
+		CheckedOutInRange: row.CheckedOutInRange,
 	}, nil
 }
 
@@ -451,6 +474,16 @@ func visitorEntryFromQRNoRows(row db.GetVisitorEntryByQRHashRow, err error) (*mo
 	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor), nil
 }
 
+func visitorEntryFromInviteNoRows(row db.GetVisitorEntryByInviteIDRow, err error) (*models.VisitorEntry, error) {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor), nil
+}
+
 func visitorEntryFromGet(row db.GetVisitorEntryRow) *models.VisitorEntry {
 	return visitorEntryFromParts(row.ID, row.SocietyID, row.FlatID, row.VisitorID, row.InviteID, string(row.Source), string(row.Purpose), string(row.Status), row.VehicleNumber, row.VehicleType, row.CompanionsCount, row.CompanionDetails, row.ExpectedAt, row.ExpectedCheckoutAt, row.CheckedInAt, row.CheckedOutAt, row.AutoClosedAt, row.ApprovedBy, row.ApprovedAt, row.DeliveryPartner, row.ServiceProvider, row.RejectedBy, row.HandledByGuardID, row.CreatedBy, row.QrExpiresAt, row.QrUsedAt, row.Notes, row.RejectionReason, row.Metadata, row.CreatedAt, row.UpdatedAt, row.VisitorFullName, row.VisitorPhoneNumber, row.VisitorEmail, row.VisitorPhotoUrl, row.FlatNumber, row.Block, row.Floor)
 }
@@ -477,17 +510,20 @@ func visitorEntryFromWaitingAtGate(row db.ListWaitingAtGateVisitorEntriesRow) *m
 
 func visitorEntryListParams(filter models.VisitorEntryFilter) db.ListVisitorEntriesParams {
 	return db.ListVisitorEntriesParams{
-		SocietyID: filter.SocietyID,
-		FlatID:    filter.FlatID,
-		Status:    dbVisitorStatusPtr(filter.Status),
-		Source:    dbVisitorSourcePtr(filter.Source),
-		Purpose:   dbVisitorPurposePtr(filter.Purpose),
-		Block:     filter.Block,
+		SocietyID:   filter.SocietyID,
+		FlatID:      filter.FlatID,
+		Status:      dbVisitorStatusPtr(filter.Status),
+		Source:      dbVisitorSourcePtr(filter.Source),
+		Purpose:     dbVisitorPurposePtr(filter.Purpose),
+		Block:       filter.Block,
 		CreatedFrom: timePtrToPgTimestamptz(filter.CreatedFrom),
 		CreatedTo:   timePtrToPgTimestamptz(filter.CreatedTo),
+		Event:       visitorEntryEventPtr(filter.Event),
+		EventFrom:   timePtrToPgTimestamptz(filter.EventFrom),
+		EventTo:     timePtrToPgTimestamptz(filter.EventTo),
 		Search:      filter.Search,
 		Limit:       normalizeVisitorLimit(filter.Limit),
-		Offset:    normalizeOffset(filter.Offset),
+		Offset:      normalizeOffset(filter.Offset),
 	}
 }
 
@@ -501,8 +537,19 @@ func visitorEntryCountParams(filter models.VisitorEntryFilter) db.CountVisitorEn
 		Block:       filter.Block,
 		CreatedFrom: timePtrToPgTimestamptz(filter.CreatedFrom),
 		CreatedTo:   timePtrToPgTimestamptz(filter.CreatedTo),
+		Event:       visitorEntryEventPtr(filter.Event),
+		EventFrom:   timePtrToPgTimestamptz(filter.EventFrom),
+		EventTo:     timePtrToPgTimestamptz(filter.EventTo),
 		Search:      filter.Search,
 	}
+}
+
+func visitorEntryEventPtr(event *models.VisitorEntryEventFilter) *string {
+	if event == nil {
+		return nil
+	}
+	value := string(*event)
+	return &value
 }
 
 func visitorEntryFromParts(id, societyID, flatID, visitorID int64, inviteID *int64, source, purpose, status string, vehicleNumber *string, vehicleType *db.VisitorVehicleType, companionsCount int32, companionDetails []byte, expectedAt, expectedCheckoutAt, checkedInAt, checkedOutAt, autoClosedAt pgtype.Timestamptz, approvedBy *int64, approvedAt pgtype.Timestamptz, deliveryPartner, serviceProvider *string, rejectedBy, handledByGuardID, createdBy *int64, qrExpiresAt, qrUsedAt pgtype.Timestamptz, notes, rejectionReason *string, metadata []byte, createdAt, updatedAt pgtype.Timestamptz, visitorFullName string, visitorPhone, visitorEmail, visitorPhoto *string, flatNumber string, block, floor *string) *models.VisitorEntry {

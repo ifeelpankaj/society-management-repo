@@ -1,6 +1,6 @@
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   Pressable,
@@ -176,7 +176,7 @@ export default function SelectSocietyScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+      <AppStatusBar />
       <ScrollView bounces={false} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <Image

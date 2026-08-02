@@ -16,6 +16,7 @@ import { getApiErrorMessage } from "@/lib/api-message";
 
 import { useVisitorInvitePage } from "./use-visitor-invite-page";
 import { VisitorInviteForm } from "./visitor-invite-form";
+import { VisitorInviteStatus } from "./visitor-invite-status";
 import { VisitorInviteSuccess } from "./visitor-invite-success";
 import {
   formatInviteExpiry,
@@ -27,21 +28,48 @@ type VisitorInvitePageProps = {
   token: string;
 };
 
+function isStatusView(
+  view: string | undefined,
+): view is "checked_in" | "checked_out" | "closed" {
+  return view === "checked_in" || view === "checked_out" || view === "closed";
+}
+
 export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
   const {
+    displayResult,
     form,
     handleSubmit,
     invite,
     inviteQuery,
+    pageData,
+    pageView,
     showOptional,
     setShowOptional,
-    submitResult,
     submitState,
     updateField,
   } = useVisitorInvitePage(token);
 
-  if (inviteQuery.isLoading) {
+  if (inviteQuery.isLoading && !displayResult) {
     return <AppLoader label="Loading visitor invite..." />;
+  }
+
+  if (displayResult) {
+    return (
+      <div className="mx-auto w-full max-w-lg px-4 py-8">
+        <VisitorInviteSuccess
+          entry={displayResult.entry}
+          qr={displayResult.qr}
+        />
+      </div>
+    );
+  }
+
+  if (isStatusView(pageView)) {
+    return (
+      <div className="mx-auto w-full max-w-lg px-4 py-8">
+        <VisitorInviteStatus entry={pageData?.entry} view={pageView} />
+      </div>
+    );
   }
 
   if (inviteQuery.isError) {
@@ -55,14 +83,6 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
           icon={<ShieldAlert className="size-5" />}
           title="Invite unavailable"
         />
-      </div>
-    );
-  }
-
-  if (submitResult) {
-    return (
-      <div className="mx-auto w-full max-w-lg px-4 py-8">
-        <VisitorInviteSuccess entry={submitResult.entry} qr={submitResult.qr} />
       </div>
     );
   }

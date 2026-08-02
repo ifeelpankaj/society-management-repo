@@ -51,8 +51,8 @@ export function SettingToggleRow({
         disabled={disabled}
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: "#cbd5e1", true: "#99f6e4" }}
-        thumbColor={value ? colors.operational.teal : colors.surface.screen}
+        trackColor={{ false: "#cbd5e1", true: colors.accent.selection }}
+        thumbColor={value ? colors.guard.teal : colors.surface.screen}
       />
     </Pressable>
   );

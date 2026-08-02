@@ -33,7 +33,7 @@ export function SocietyAccessCard({
           <SymbolView
             name={{ ios: "building.2.fill", android: "business", web: "business" }}
             size={20}
-            tintColor={colors.guard.teal}
+            tintColor={colors.brand.orange}
           />
         </View>
         <Stack gap="xs" style={styles.copy}>
@@ -55,7 +55,7 @@ export function SocietyAccessCard({
           <SymbolView
             name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
             size={14}
-            tintColor={colors.guard.teal}
+            tintColor={colors.brand.orange}
           />
         </Pressable>
       ) : null}
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     alignItems: "center",
-    backgroundColor: colors.guard.tealSoft,
+    backgroundColor: colors.brand.orangeSoft,
     borderRadius: radius["2xl"],
     height: 44,
     justifyContent: "center",
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
   switchButton: {
     alignItems: "center",
-    backgroundColor: colors.guard.tealSoft,
+    backgroundColor: colors.brand.orangeSoft,
     borderRadius: radius.xl,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   switchLabel: {
-    color: colors.guard.teal,
+    color: colors.brand.orange,
     fontSize: 14,
     fontWeight: "600",
   },

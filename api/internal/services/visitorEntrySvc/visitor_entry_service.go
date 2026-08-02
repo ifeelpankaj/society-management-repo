@@ -16,7 +16,7 @@ type VisitorInviteService interface {
 	CreateInvite(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, actorUserID int64, expiresAt *time.Time) (*models.VisitorEntryMutationResponse, *models.VisitorInvite, error)
 	CreateStaffInvite(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, staffUserID int64, expiresAt *time.Time) (*models.VisitorEntryMutationResponse, *models.VisitorInvite, error)
 	GetInviteByToken(ctx context.Context, rawToken string) (*models.VisitorInvite, error)
-	GetPublicInviteByToken(ctx context.Context, rawToken string) (*models.PublicVisitorInviteView, error)
+	GetPublicInviteByToken(ctx context.Context, rawToken string) (*models.PublicVisitorInvitePageResponse, error)
 	SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error)
 	CancelInvite(ctx context.Context, societyID int64, inviteID int64, actorUserID int64) error
 	ExpireOldInvites(ctx context.Context) error
@@ -30,6 +30,7 @@ type VisitorEntryService interface {
 	ApproveEntry(ctx context.Context, societyID int64, entryID int64, actorUserID int64) (*models.VisitorEntryMutationResponse, error)
 	RejectEntry(ctx context.Context, societyID int64, entryID int64, reason string, actorUserID int64) error
 	GenerateQR(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntryMutationResponse, error)
+	GetEntryForQRScan(ctx context.Context, rawToken string) (*models.VisitorEntry, error)
 	ValidateQR(ctx context.Context, rawToken string) (*models.VisitorEntry, error)
 	CheckIn(ctx context.Context, rawToken string, guardUserID int64) (*models.VisitorEntry, error)
 	CheckOut(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
@@ -38,6 +39,7 @@ type VisitorEntryService interface {
 	ListEntries(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
 	ListEntriesPaginated(ctx context.Context, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)
 	GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	GetEntryStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error)
 	GetGuardDeskBootstrap(ctx context.Context, societyID int64) (*models.GuardDeskBootstrapResponse, error)
 	ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error)
 	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) (*models.VisitorEntryListResult, error)

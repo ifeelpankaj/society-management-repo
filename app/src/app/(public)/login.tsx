@@ -436,7 +436,6 @@
 // });
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -451,6 +450,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { getApiMessage } from "@/features/auth/api-error";
 import { useCompleteAuth } from "@/features/auth/use-complete-auth";
 import { usePostV1AuthLoginMutation } from "@/lib/api/generated-api";
@@ -543,7 +543,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" />
+      <AppStatusBar />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.screen}

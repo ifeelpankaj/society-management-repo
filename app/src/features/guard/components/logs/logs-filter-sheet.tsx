@@ -14,9 +14,12 @@ import type {
   ModelsVisitorPurpose,
   ModelsVisitorStatus,
 } from "@/lib/api/generated-api";
+import { colors } from "@/theme/colors";
 import { theme } from "@/theme";
 
 const G = theme.guard;
+const accent = colors.brand.orange;
+const accentSoft = colors.brand.orangeSoft;
 
 type SheetFilters = {
   datePreset: DateRangePreset;
@@ -158,7 +161,7 @@ export function LogsFilterSheet({
                     <SymbolView
                       name={{ ios: "calendar", android: "calendar_today", web: "calendar_today" }}
                       size={16}
-                      tintColor={G.teal}
+                      tintColor={accent}
                     />
                     <Text style={styles.dateSelectorText}>{getDateRangeLabel(draft.datePreset)}</Text>
                     <SymbolView
@@ -232,8 +235,8 @@ export function LogsFilterSheet({
 
 const styles = StyleSheet.create({
   applyButton: {
-    backgroundColor: G.teal,
-    borderColor: G.teal,
+    backgroundColor: accent,
+    borderColor: accent,
   },
   applyButtonText: {
     color: "#ffffff",
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   closeText: {
-    color: G.teal,
+    color: accent,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   dateOptionActive: {
-    backgroundColor: G.tealSoft,
+    backgroundColor: accentSoft,
   },
   dateOptionText: {
     color: G.textMuted,
@@ -276,7 +279,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   dateOptionTextActive: {
-    color: G.teal,
+    color: accent,
     fontWeight: "700",
   },
   dateSelector: {

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
-import { isExpectedTodayEntry } from "@/features/guard/guard-utils";
 import {
-  getDateRange,
+  buildVisitorEntryQueryFilters,
+  getHalfOpenRangeIST,
   type DateRangePreset,
   type LogsPreset,
   type LogsSegment,
@@ -15,8 +15,8 @@ import {
   type ModelsVisitorEntry,
   type ModelsVisitorPurpose,
   type ModelsVisitorStatus,
-  generatedApi,
 } from "@/lib/api/generated-api";
+import { useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery } from "@/lib/api/guard-api-extensions";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -31,10 +31,6 @@ function segmentStatus(segment: LogsSegment): ModelsVisitorStatus | undefined {
   }
 
   return undefined;
-}
-
-function segmentUsesExpectedFilter(segment: LogsSegment) {
-  return segment === "expected";
 }
 
 export function useGuardLogs(initialPreset: LogsPreset = "today") {
@@ -64,13 +60,29 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
     setDebouncedSearch("");
   }, [initialPreset]);
 
-  const activeStatus = sheetStatus ?? segmentStatus(segment);
-  const dateRange = getDateRange(datePreset);
   const isSearchActive = debouncedSearch.length > 0;
-  const isExpectedSegment = segmentUsesExpectedFilter(segment) && !sheetStatus;
+  const queryFilters = useMemo(
+    () =>
+      buildVisitorEntryQueryFilters({
+        segment,
+        sheetStatus,
+        purpose,
+        datePreset,
+        isSearchActive,
+      }),
+    [datePreset, isSearchActive, purpose, segment, sheetStatus],
+  );
 
-  const [fetchEntries] =
-    generatedApi.endpoints.getV1SocietiesBySocietyIdVisitorEntries.useLazyQuery();
+  const statsRange = useMemo(() => {
+    if (isSearchActive) {
+      return undefined;
+    }
+
+    const preset = datePreset === "all" && !sheetStatus ? "today" : datePreset;
+    return getHalfOpenRangeIST(preset === "all" ? "today" : preset);
+  }, [datePreset, isSearchActive, sheetStatus]);
+
+  const [fetchEntries] = useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery();
 
   const fetchPage = useCallback(
     async ({ limit, offset }: { limit: number; offset: number }) => {
@@ -82,38 +94,30 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
         societyId: selectedSocietyId,
         limit,
         offset,
-        status: isSearchActive ? undefined : activeStatus,
-        purpose: isSearchActive ? undefined : purpose,
-        createdFrom:
-          isSearchActive || isExpectedSegment ? undefined : dateRange.createdFrom,
-        createdTo: isSearchActive || isExpectedSegment ? undefined : dateRange.createdTo,
         search: debouncedSearch || undefined,
+        status: isSearchActive ? undefined : queryFilters.status,
+        purpose: isSearchActive ? undefined : queryFilters.purpose,
+        event: isSearchActive ? undefined : queryFilters.event,
+        eventFrom: isSearchActive ? undefined : queryFilters.eventFrom,
+        eventTo: isSearchActive ? undefined : queryFilters.eventTo,
       }).unwrap();
 
-      let items = response.data?.entries ?? [];
-      let total = response.data?.total ?? 0;
-
-      if (isExpectedSegment && !isSearchActive) {
-        items = items.filter(isExpectedTodayEntry);
-        total = items.length;
-      }
-
       return {
-        items,
-        total,
+        items: response.data?.entries ?? [],
+        total: response.data?.total ?? 0,
         limit: response.data?.limit ?? limit,
         offset: response.data?.offset ?? offset,
       };
     },
     [
-      activeStatus,
-      dateRange.createdFrom,
-      dateRange.createdTo,
       debouncedSearch,
       fetchEntries,
-      isExpectedSegment,
       isSearchActive,
-      purpose,
+      queryFilters.event,
+      queryFilters.eventFrom,
+      queryFilters.eventTo,
+      queryFilters.purpose,
+      queryFilters.status,
       selectedSocietyId,
     ],
   );
@@ -128,15 +132,19 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
     let count = 0;
     if (purpose) count += 1;
     if (sheetStatus) count += 1;
-    if (datePreset !== "today") count += 1;
+    if (datePreset !== "today" && segment !== "all") count += 1;
     return count;
-  }, [datePreset, purpose, sheetStatus]);
+  }, [datePreset, purpose, segment, sheetStatus]);
 
   const selectSegment = useCallback((next: LogsSegment) => {
     setSegment(next);
     setSheetStatus(undefined);
 
     if (next === "expected") {
+      setDatePreset("today");
+    } else if (next === "all") {
+      setDatePreset("all");
+    } else if (next === "today") {
       setDatePreset("today");
     }
   }, []);
@@ -154,10 +162,11 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
       setSheetStatus(next.status);
 
       if (next.status === "waiting_approval") {
-        setSegment("today");
-        setSheetStatus("waiting_approval");
+        setSegment("all");
       } else if (next.status === "checked_in") {
-        setSegment("inside");
+        setSegment("all");
+      } else if (next.status === "checked_out") {
+        setSegment("all");
       } else if (next.status === "approved") {
         setSegment("expected");
         setDatePreset("today");
@@ -175,6 +184,8 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
     setSegment("today");
   }, []);
 
+  const activeStatus = sheetStatus ?? segmentStatus(segment);
+
   return {
     ...pagination,
     activeFilterCount,
@@ -190,6 +201,7 @@ export function useGuardLogs(initialPreset: LogsPreset = "today") {
     setDatePreset,
     setSearchInput,
     sheetStatus,
+    statsRange,
   };
 }
 

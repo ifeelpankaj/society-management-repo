@@ -306,16 +306,60 @@ WHERE ve.society_id = $1
   AND ($5::visitor_purpose IS NULL OR ve.purpose = $5::visitor_purpose)
   AND ($6::text IS NULL OR f.block = $6::text)
   AND ($7::timestamptz IS NULL OR ve.created_at >= $7::timestamptz)
-  AND ($8::timestamptz IS NULL OR ve.created_at <= $8::timestamptz)
+  AND ($8::timestamptz IS NULL OR ve.created_at < $8::timestamptz)
   AND (
-      COALESCE($9::text, '') = ''
+      $9::text IS NULL
+      OR $10::timestamptz IS NULL
+      OR $11::timestamptz IS NULL
+      OR (
+          $9::text = 'created'
+          AND ve.created_at >= $10::timestamptz
+          AND ve.created_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'checked_in'
+          AND ve.checked_in_at IS NOT NULL
+          AND ve.checked_in_at >= $10::timestamptz
+          AND ve.checked_in_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'checked_out'
+          AND ve.checked_out_at IS NOT NULL
+          AND ve.checked_out_at >= $10::timestamptz
+          AND ve.checked_out_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'expected'
+          AND ve.expected_at IS NOT NULL
+          AND ve.expected_at >= $10::timestamptz
+          AND ve.expected_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'activity'
+          AND (
+              (ve.created_at >= $10::timestamptz AND ve.created_at < $11::timestamptz)
+              OR (
+                  ve.checked_in_at IS NOT NULL
+                  AND ve.checked_in_at >= $10::timestamptz
+                  AND ve.checked_in_at < $11::timestamptz
+              )
+              OR (
+                  ve.checked_out_at IS NOT NULL
+                  AND ve.checked_out_at >= $10::timestamptz
+                  AND ve.checked_out_at < $11::timestamptz
+              )
+          )
+      )
+  )
+  AND (
+      COALESCE($12::text, '') = ''
       OR EXISTS (
           SELECT 1
           FROM visitors v
           WHERE v.id = ve.visitor_id
             AND (
-                v.full_name ILIKE '%' || $9::text || '%'
-                OR COALESCE(v.phone_number, '') ILIKE '%' || $9::text || '%'
+                v.full_name ILIKE '%' || $12::text || '%'
+                OR COALESCE(v.phone_number, '') ILIKE '%' || $12::text || '%'
             )
       )
       OR EXISTS (
@@ -323,8 +367,8 @@ WHERE ve.society_id = $1
           FROM flats f
           WHERE f.id = ve.flat_id
             AND (
-                COALESCE(f.flat_number, '') ILIKE '%' || $9::text || '%'
-                OR COALESCE(f.block, '') ILIKE '%' || $9::text || '%'
+                COALESCE(f.flat_number, '') ILIKE '%' || $12::text || '%'
+                OR COALESCE(f.block, '') ILIKE '%' || $12::text || '%'
             )
       )
   )
@@ -339,6 +383,9 @@ type CountVisitorEntriesParams struct {
 	Block       *string            `db:"block" json:"block"`
 	CreatedFrom pgtype.Timestamptz `db:"created_from" json:"created_from"`
 	CreatedTo   pgtype.Timestamptz `db:"created_to" json:"created_to"`
+	Event       *string            `db:"event" json:"event"`
+	EventFrom   pgtype.Timestamptz `db:"event_from" json:"event_from"`
+	EventTo     pgtype.Timestamptz `db:"event_to" json:"event_to"`
 	Search      *string            `db:"search" json:"search"`
 }
 
@@ -352,6 +399,9 @@ func (q *Queries) CountVisitorEntries(ctx context.Context, arg CountVisitorEntri
 		arg.Block,
 		arg.CreatedFrom,
 		arg.CreatedTo,
+		arg.Event,
+		arg.EventFrom,
+		arg.EventTo,
 		arg.Search,
 	)
 	var count int64
@@ -875,6 +925,111 @@ func (q *Queries) GetVisitorEntry(ctx context.Context, arg GetVisitorEntryParams
 	return i, err
 }
 
+const getVisitorEntryByInviteID = `-- name: GetVisitorEntryByInviteID :one
+SELECT
+    ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
+    v.full_name AS visitor_full_name,
+    v.phone_number AS visitor_phone_number,
+    v.email AS visitor_email,
+    v.photo_url AS visitor_photo_url,
+    f.flat_number,
+    f.block,
+    f.floor
+FROM visitor_entries ve
+JOIN visitors v ON v.id = ve.visitor_id
+JOIN flats f ON f.id = ve.flat_id
+WHERE ve.invite_id = $1
+`
+
+type GetVisitorEntryByInviteIDRow struct {
+	ID                 int64               `db:"id" json:"id"`
+	SocietyID          int64               `db:"society_id" json:"society_id"`
+	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
+	InviteID           *int64              `db:"invite_id" json:"invite_id"`
+	Source             VisitorSource       `db:"source" json:"source"`
+	Purpose            VisitorPurpose      `db:"purpose" json:"purpose"`
+	Status             VisitorStatus       `db:"status" json:"status"`
+	VehicleNumber      *string             `db:"vehicle_number" json:"vehicle_number"`
+	VehicleType        *VisitorVehicleType `db:"vehicle_type" json:"vehicle_type"`
+	CompanionsCount    int32               `db:"companions_count" json:"companions_count"`
+	CompanionDetails   []byte              `db:"companion_details" json:"companion_details"`
+	ExpectedAt         pgtype.Timestamptz  `db:"expected_at" json:"expected_at"`
+	ExpectedCheckoutAt pgtype.Timestamptz  `db:"expected_checkout_at" json:"expected_checkout_at"`
+	CheckedInAt        pgtype.Timestamptz  `db:"checked_in_at" json:"checked_in_at"`
+	CheckedOutAt       pgtype.Timestamptz  `db:"checked_out_at" json:"checked_out_at"`
+	AutoClosedAt       pgtype.Timestamptz  `db:"auto_closed_at" json:"auto_closed_at"`
+	ApprovedBy         *int64              `db:"approved_by" json:"approved_by"`
+	RejectedBy         *int64              `db:"rejected_by" json:"rejected_by"`
+	HandledByGuardID   *int64              `db:"handled_by_guard_id" json:"handled_by_guard_id"`
+	CreatedBy          *int64              `db:"created_by" json:"created_by"`
+	QrTokenHash        *string             `db:"qr_token_hash" json:"qr_token_hash"`
+	QrExpiresAt        pgtype.Timestamptz  `db:"qr_expires_at" json:"qr_expires_at"`
+	QrUsedAt           pgtype.Timestamptz  `db:"qr_used_at" json:"qr_used_at"`
+	Notes              *string             `db:"notes" json:"notes"`
+	RejectionReason    *string             `db:"rejection_reason" json:"rejection_reason"`
+	Metadata           []byte              `db:"metadata" json:"metadata"`
+	CreatedAt          pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	ApprovedAt         pgtype.Timestamptz  `db:"approved_at" json:"approved_at"`
+	DeliveryPartner    *string             `db:"delivery_partner" json:"delivery_partner"`
+	ServiceProvider    *string             `db:"service_provider" json:"service_provider"`
+	VisitorFullName    string              `db:"visitor_full_name" json:"visitor_full_name"`
+	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
+	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
+	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
+	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	Block              *string             `db:"block" json:"block"`
+	Floor              *string             `db:"floor" json:"floor"`
+}
+
+func (q *Queries) GetVisitorEntryByInviteID(ctx context.Context, inviteID *int64) (GetVisitorEntryByInviteIDRow, error) {
+	row := q.db.QueryRow(ctx, getVisitorEntryByInviteID, inviteID)
+	var i GetVisitorEntryByInviteIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.SocietyID,
+		&i.FlatID,
+		&i.VisitorID,
+		&i.InviteID,
+		&i.Source,
+		&i.Purpose,
+		&i.Status,
+		&i.VehicleNumber,
+		&i.VehicleType,
+		&i.CompanionsCount,
+		&i.CompanionDetails,
+		&i.ExpectedAt,
+		&i.ExpectedCheckoutAt,
+		&i.CheckedInAt,
+		&i.CheckedOutAt,
+		&i.AutoClosedAt,
+		&i.ApprovedBy,
+		&i.RejectedBy,
+		&i.HandledByGuardID,
+		&i.CreatedBy,
+		&i.QrTokenHash,
+		&i.QrExpiresAt,
+		&i.QrUsedAt,
+		&i.Notes,
+		&i.RejectionReason,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
+		&i.VisitorFullName,
+		&i.VisitorPhoneNumber,
+		&i.VisitorEmail,
+		&i.VisitorPhotoUrl,
+		&i.FlatNumber,
+		&i.Block,
+		&i.Floor,
+	)
+	return i, err
+}
+
 const getVisitorEntryByQRHash = `-- name: GetVisitorEntryByQRHash :one
 SELECT
     ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider,
@@ -984,18 +1139,25 @@ const getVisitorEntryStats = `-- name: GetVisitorEntryStats :one
 SELECT
     COUNT(*) FILTER (
         WHERE ve.created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS today_visitors,
     COUNT(*) FILTER (WHERE ve.status = 'checked_in')::bigint AS visitors_inside,
     COUNT(*) FILTER (WHERE ve.status = 'waiting_approval')::bigint AS pending_approvals,
     COUNT(*) FILTER (
-        WHERE ve.checked_out_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+        WHERE ve.checked_out_at IS NOT NULL
+          AND ve.status = 'checked_out'
+          AND ve.checked_out_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.checked_out_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS checked_out_today,
     COUNT(*) FILTER (
         WHERE ve.status = 'rejected'
           AND ve.updated_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.updated_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS rejected_today,
     COUNT(*) FILTER (
-        WHERE ve.auto_closed_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+        WHERE ve.auto_closed_at IS NOT NULL
+          AND ve.auto_closed_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+          AND ve.auto_closed_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
     )::bigint AS auto_closed_today
 FROM visitor_entries ve
 WHERE ve.society_id = $1
@@ -1021,6 +1183,39 @@ func (q *Queries) GetVisitorEntryStats(ctx context.Context, societyID int64) (Ge
 		&i.RejectedToday,
 		&i.AutoClosedToday,
 	)
+	return i, err
+}
+
+const getVisitorEntryStatsInRange = `-- name: GetVisitorEntryStatsInRange :one
+SELECT
+    COUNT(*) FILTER (WHERE ve.status = 'checked_in')::bigint AS visitors_inside,
+    COUNT(*) FILTER (WHERE ve.status = 'waiting_approval')::bigint AS pending_approvals,
+    COUNT(*) FILTER (
+        WHERE ve.checked_out_at IS NOT NULL
+          AND ve.status = 'checked_out'
+          AND ve.checked_out_at >= $1::timestamptz
+          AND ve.checked_out_at < $2::timestamptz
+    )::bigint AS checked_out_in_range
+FROM visitor_entries ve
+WHERE ve.society_id = $3
+`
+
+type GetVisitorEntryStatsInRangeParams struct {
+	EventFrom pgtype.Timestamptz `db:"event_from" json:"event_from"`
+	EventTo   pgtype.Timestamptz `db:"event_to" json:"event_to"`
+	SocietyID int64              `db:"society_id" json:"society_id"`
+}
+
+type GetVisitorEntryStatsInRangeRow struct {
+	VisitorsInside    int64 `db:"visitors_inside" json:"visitors_inside"`
+	PendingApprovals  int64 `db:"pending_approvals" json:"pending_approvals"`
+	CheckedOutInRange int64 `db:"checked_out_in_range" json:"checked_out_in_range"`
+}
+
+func (q *Queries) GetVisitorEntryStatsInRange(ctx context.Context, arg GetVisitorEntryStatsInRangeParams) (GetVisitorEntryStatsInRangeRow, error) {
+	row := q.db.QueryRow(ctx, getVisitorEntryStatsInRange, arg.EventFrom, arg.EventTo, arg.SocietyID)
+	var i GetVisitorEntryStatsInRangeRow
+	err := row.Scan(&i.VisitorsInside, &i.PendingApprovals, &i.CheckedOutInRange)
 	return i, err
 }
 
@@ -1504,16 +1699,60 @@ WHERE ve.society_id = $1
   AND ($5::visitor_purpose IS NULL OR ve.purpose = $5::visitor_purpose)
   AND ($6::text IS NULL OR f.block = $6::text)
   AND ($7::timestamptz IS NULL OR ve.created_at >= $7::timestamptz)
-  AND ($8::timestamptz IS NULL OR ve.created_at <= $8::timestamptz)
+  AND ($8::timestamptz IS NULL OR ve.created_at < $8::timestamptz)
   AND (
-      COALESCE($9::text, '') = ''
-      OR v.full_name ILIKE '%' || $9::text || '%'
-      OR COALESCE(v.phone_number, '') ILIKE '%' || $9::text || '%'
-      OR COALESCE(f.flat_number, '') ILIKE '%' || $9::text || '%'
-      OR COALESCE(f.block, '') ILIKE '%' || $9::text || '%'
+      $9::text IS NULL
+      OR $10::timestamptz IS NULL
+      OR $11::timestamptz IS NULL
+      OR (
+          $9::text = 'created'
+          AND ve.created_at >= $10::timestamptz
+          AND ve.created_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'checked_in'
+          AND ve.checked_in_at IS NOT NULL
+          AND ve.checked_in_at >= $10::timestamptz
+          AND ve.checked_in_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'checked_out'
+          AND ve.checked_out_at IS NOT NULL
+          AND ve.checked_out_at >= $10::timestamptz
+          AND ve.checked_out_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'expected'
+          AND ve.expected_at IS NOT NULL
+          AND ve.expected_at >= $10::timestamptz
+          AND ve.expected_at < $11::timestamptz
+      )
+      OR (
+          $9::text = 'activity'
+          AND (
+              (ve.created_at >= $10::timestamptz AND ve.created_at < $11::timestamptz)
+              OR (
+                  ve.checked_in_at IS NOT NULL
+                  AND ve.checked_in_at >= $10::timestamptz
+                  AND ve.checked_in_at < $11::timestamptz
+              )
+              OR (
+                  ve.checked_out_at IS NOT NULL
+                  AND ve.checked_out_at >= $10::timestamptz
+                  AND ve.checked_out_at < $11::timestamptz
+              )
+          )
+      )
+  )
+  AND (
+      COALESCE($12::text, '') = ''
+      OR v.full_name ILIKE '%' || $12::text || '%'
+      OR COALESCE(v.phone_number, '') ILIKE '%' || $12::text || '%'
+      OR COALESCE(f.flat_number, '') ILIKE '%' || $12::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || $12::text || '%'
   )
 ORDER BY ve.created_at DESC
-LIMIT $11 OFFSET $10
+LIMIT $14 OFFSET $13
 `
 
 type ListVisitorEntriesParams struct {
@@ -1525,6 +1764,9 @@ type ListVisitorEntriesParams struct {
 	Block       *string            `db:"block" json:"block"`
 	CreatedFrom pgtype.Timestamptz `db:"created_from" json:"created_from"`
 	CreatedTo   pgtype.Timestamptz `db:"created_to" json:"created_to"`
+	Event       *string            `db:"event" json:"event"`
+	EventFrom   pgtype.Timestamptz `db:"event_from" json:"event_from"`
+	EventTo     pgtype.Timestamptz `db:"event_to" json:"event_to"`
 	Search      *string            `db:"search" json:"search"`
 	Offset      int32              `db:"offset" json:"offset"`
 	Limit       int32              `db:"limit" json:"limit"`
@@ -1582,6 +1824,9 @@ func (q *Queries) ListVisitorEntries(ctx context.Context, arg ListVisitorEntries
 		arg.Block,
 		arg.CreatedFrom,
 		arg.CreatedTo,
+		arg.Event,
+		arg.EventFrom,
+		arg.EventTo,
 		arg.Search,
 		arg.Offset,
 		arg.Limit,

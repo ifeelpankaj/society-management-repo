@@ -29,6 +29,26 @@ func (s VisitorStatus) IsValid() bool {
 	}
 }
 
+type VisitorEntryEventFilter string
+
+const (
+	VisitorEntryEventCreated    VisitorEntryEventFilter = "created"
+	VisitorEntryEventCheckedIn  VisitorEntryEventFilter = "checked_in"
+	VisitorEntryEventCheckedOut VisitorEntryEventFilter = "checked_out"
+	VisitorEntryEventExpected   VisitorEntryEventFilter = "expected"
+	VisitorEntryEventActivity   VisitorEntryEventFilter = "activity"
+)
+
+func (e VisitorEntryEventFilter) IsValid() bool {
+	switch e {
+	case VisitorEntryEventCreated, VisitorEntryEventCheckedIn, VisitorEntryEventCheckedOut,
+		VisitorEntryEventExpected, VisitorEntryEventActivity:
+		return true
+	default:
+		return false
+	}
+}
+
 type VisitorVehicleType string
 
 const (
@@ -110,6 +130,24 @@ type PublicVisitorInviteView struct {
 	FlatNumber  string              `json:"flat_number"`
 	Block       *string             `json:"block,omitempty"`
 	Floor       *string             `json:"floor,omitempty"`
+}
+
+type PublicVisitorInviteViewKind string
+
+const (
+	PublicVisitorInviteViewForm       PublicVisitorInviteViewKind = "form"
+	PublicVisitorInviteViewQR         PublicVisitorInviteViewKind = "qr"
+	PublicVisitorInviteViewCheckedIn  PublicVisitorInviteViewKind = "checked_in"
+	PublicVisitorInviteViewCheckedOut PublicVisitorInviteViewKind = "checked_out"
+	PublicVisitorInviteViewClosed     PublicVisitorInviteViewKind = "closed"
+)
+
+// PublicVisitorInvitePageResponse is the public invite page payload for the visitor web app.
+type PublicVisitorInvitePageResponse struct {
+	Invite *PublicVisitorInviteView    `json:"invite"`
+	View   PublicVisitorInviteViewKind `json:"view"`
+	Entry  *VisitorEntry               `json:"entry,omitempty"`
+	QR     *QRTokenResponse            `json:"qr,omitempty"`
 }
 
 type VisitorEntry struct {
@@ -346,6 +384,9 @@ type VisitorEntryFilter struct {
 	Source      *VisitorEntrySource
 	Purpose     *VisitorPurpose
 	Block       *string
+	Event       *VisitorEntryEventFilter
+	EventFrom   *time.Time
+	EventTo     *time.Time
 	CreatedFrom *time.Time
 	CreatedTo   *time.Time
 	Search      *string
@@ -361,12 +402,13 @@ type VisitorEntryListResult struct {
 }
 
 type VisitorEntryStatsResponse struct {
-	TodayVisitors    int64 `json:"today_visitors"`
-	VisitorsInside   int64 `json:"visitors_inside"`
-	PendingApprovals int64 `json:"pending_approvals"`
-	CheckedOutToday  int64 `json:"checked_out_today"`
-	RejectedToday    int64 `json:"rejected_today"`
-	AutoClosedToday  int64 `json:"auto_closed_today"`
+	TodayVisitors     int64 `json:"today_visitors"`
+	VisitorsInside    int64 `json:"visitors_inside"`
+	PendingApprovals  int64 `json:"pending_approvals"`
+	CheckedOutToday   int64 `json:"checked_out_today"`
+	CheckedOutInRange int64 `json:"checked_out_in_range,omitempty"`
+	RejectedToday     int64 `json:"rejected_today"`
+	AutoClosedToday   int64 `json:"auto_closed_today"`
 }
 
 type VisitorPendingEntry struct {

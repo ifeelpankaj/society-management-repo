@@ -75,8 +75,7 @@ export function GuardCommandCenter() {
 
   const pendingCount = stats?.pending_approvals ?? 0;
   const insideCount = stats?.visitors_inside ?? 0;
-  const totalToday = stats?.today_visitors ?? 0;
-  const checkedOutCount = Math.max(0, totalToday - insideCount);
+  const checkedOutCount = stats?.checked_out_today ?? 0;
 
   const goPending = () => router.push(guardPendingRoute());
   const goLogs = () => router.push(guardEntriesRoute("today"));

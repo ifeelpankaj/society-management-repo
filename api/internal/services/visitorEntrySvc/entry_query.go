@@ -45,16 +45,48 @@ func (s *VisitorEntrySvc) GetEntryOptions(ctx context.Context, societyID int64) 
 	}, nil
 }
 
-func (s *VisitorEntrySvc) ValidateQR(ctx context.Context, rawToken string) (*models.VisitorEntry, error) {
+// GetEntryForQRScan resolves a scan token for guard preview (validate endpoint).
+// Returns the linked entry even when already checked in so repeat scans stay idempotent.
+func (s *VisitorEntrySvc) GetEntryForQRScan(ctx context.Context, rawToken string) (*models.VisitorEntry, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
-	entry, err := s.entryRepo.GetByQRHash(ctx, hashToken(rawToken))
+	entry, err := s.resolveEntryByScanToken(ctx, rawToken)
 	if err != nil {
 		return nil, err
 	}
 	if entry == nil {
 		return nil, ErrVisitorQRInvalid
+	}
+	switch entry.Status {
+	case models.VisitorStatusApproved:
+		if entry.QRExpiresAt == nil {
+			return nil, ErrVisitorQRUnavailable
+		}
+		if time.Now().After(*entry.QRExpiresAt) {
+			return nil, ErrVisitorQRExpired
+		}
+		return entry, nil
+	case models.VisitorStatusCheckedIn, models.VisitorStatusCheckedOut, models.VisitorStatusWaitingApproval:
+		return entry, nil
+	default:
+		return nil, ErrVisitorInvalidState
+	}
+}
+
+func (s *VisitorEntrySvc) ValidateQR(ctx context.Context, rawToken string) (*models.VisitorEntry, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	entry, err := s.resolveEntryByScanToken(ctx, rawToken)
+	if err != nil {
+		return nil, err
+	}
+	if entry == nil {
+		return nil, ErrVisitorQRInvalid
+	}
+	if entry.Status == models.VisitorStatusCheckedIn {
+		return nil, ErrVisitorAlreadyCheckedIn
 	}
 	if entry.Status != models.VisitorStatusApproved {
 		return nil, ErrVisitorInvalidState
@@ -66,6 +98,30 @@ func (s *VisitorEntrySvc) ValidateQR(ctx context.Context, rawToken string) (*mod
 		return nil, ErrVisitorQRExpired
 	}
 	return entry, nil
+}
+
+func (s *VisitorEntrySvc) resolveEntryByScanToken(ctx context.Context, rawToken string) (*models.VisitorEntry, error) {
+	tokenHash := hashToken(rawToken)
+
+	entry, err := s.entryRepo.GetByQRHash(ctx, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+	if entry != nil {
+		return entry, nil
+	}
+	return s.entryByInviteToken(ctx, tokenHash)
+}
+
+func (s *VisitorEntrySvc) entryByInviteToken(ctx context.Context, tokenHash string) (*models.VisitorEntry, error) {
+	invite, err := s.inviteRepo.GetByTokenHash(ctx, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+	if invite == nil || invite.Status != models.VisitorInviteStatusUsed {
+		return nil, nil
+	}
+	return s.entryRepo.GetByInviteID(ctx, invite.ID)
 }
 
 func (s *VisitorEntrySvc) GetEntry(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error) {
@@ -111,6 +167,12 @@ func (s *VisitorEntrySvc) GetEntryStats(ctx context.Context, societyID int64) (*
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 	return s.entryRepo.GetStats(ctx, societyID)
+}
+
+func (s *VisitorEntrySvc) GetEntryStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	return s.entryRepo.GetStatsInRange(ctx, societyID, from, to)
 }
 
 func (s *VisitorEntrySvc) GetFlatVisitorContext(ctx context.Context, societyID int64, flatID int64) (*models.FlatVisitorContextResponse, error) {

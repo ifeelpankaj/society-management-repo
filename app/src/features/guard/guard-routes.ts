@@ -4,7 +4,7 @@ import type { ModelsVisitorStatus } from "@/lib/api/generated-api";
 
 export type GuardEntriesPreset = "all" | "today" | "expected" | "waiting_at_gate" | "inside" | "checked_out";
 export type LogsPreset = GuardEntriesPreset;
-export type LogsSegment = "today" | "expected" | "inside";
+export type LogsSegment = "today" | "expected" | "inside" | "all";
 export type DateRangePreset =
   | "today"
   | "yesterday"
@@ -118,6 +118,186 @@ function startOfDay(date: Date) {
   return next;
 }
 
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const IST_DAY_MS = 24 * 60 * 60 * 1000;
+
+function getTodayPartsIST(now = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [year, month, day] = formatter.format(now).split("-").map(Number);
+  return { year, month, day };
+}
+
+function istDayStartUtc(year: number, month: number, day: number) {
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0) - IST_OFFSET_MS);
+}
+
+function addIstDays(year: number, month: number, day: number, delta: number) {
+  const start = istDayStartUtc(year, month, day);
+  return new Date(start.getTime() + delta * IST_DAY_MS);
+}
+
+export type HalfOpenRange = {
+  eventFrom: string;
+  eventTo: string;
+};
+
+export type VisitorEntryEvent = "activity" | "checked_in" | "checked_out" | "created" | "expected";
+
+/** Half-open [from, to) range aligned to Asia/Kolkata day boundaries. */
+export function getHalfOpenRangeIST(preset: DateRangePreset): HalfOpenRange | undefined {
+  if (preset === "all") {
+    return undefined;
+  }
+
+  const { year, month, day } = getTodayPartsIST();
+  const todayStart = istDayStartUtc(year, month, day);
+  const tomorrowStart = addIstDays(year, month, day, 1);
+
+  switch (preset) {
+    case "today":
+      return {
+        eventFrom: todayStart.toISOString(),
+        eventTo: tomorrowStart.toISOString(),
+      };
+    case "yesterday": {
+      const yesterdayStart = addIstDays(year, month, day, -1);
+      return {
+        eventFrom: yesterdayStart.toISOString(),
+        eventTo: todayStart.toISOString(),
+      };
+    }
+    case "last_7_days": {
+      const weekStart = addIstDays(year, month, day, -6);
+      return {
+        eventFrom: weekStart.toISOString(),
+        eventTo: tomorrowStart.toISOString(),
+      };
+    }
+    case "this_month": {
+      const monthStart = istDayStartUtc(year, month, 1);
+      return {
+        eventFrom: monthStart.toISOString(),
+        eventTo: tomorrowStart.toISOString(),
+      };
+    }
+    default:
+      return undefined;
+  }
+}
+
+export type VisitorEntryQueryFilters = {
+  event?: VisitorEntryEvent;
+  eventFrom?: string;
+  eventTo?: string;
+  purpose?: import("@/lib/api/generated-api").ModelsVisitorPurpose;
+  status?: import("@/lib/api/generated-api").ModelsVisitorStatus;
+};
+
+export function buildVisitorEntryQueryFilters(input: {
+  datePreset: DateRangePreset;
+  isSearchActive: boolean;
+  purpose?: import("@/lib/api/generated-api").ModelsVisitorPurpose;
+  segment: LogsSegment;
+  sheetStatus?: import("@/lib/api/generated-api").ModelsVisitorStatus;
+}): VisitorEntryQueryFilters {
+  const { datePreset, isSearchActive, purpose, segment, sheetStatus } = input;
+
+  if (isSearchActive) {
+    return {};
+  }
+
+  const range = getHalfOpenRangeIST(datePreset);
+  const todayRange = getHalfOpenRangeIST("today");
+
+  if (sheetStatus === "checked_out") {
+    const effectiveRange = range ?? todayRange;
+    return {
+      purpose,
+      status: "checked_out",
+      event: effectiveRange ? "checked_out" : undefined,
+      eventFrom: effectiveRange?.eventFrom,
+      eventTo: effectiveRange?.eventTo,
+    };
+  }
+
+  if (sheetStatus === "checked_in") {
+    if (!range) {
+      return { purpose };
+    }
+
+    return {
+      purpose,
+      event: "checked_in",
+      eventFrom: range.eventFrom,
+      eventTo: range.eventTo,
+    };
+  }
+
+  if (sheetStatus === "approved") {
+    const effectiveRange = range ?? todayRange;
+    return {
+      purpose,
+      status: "approved",
+      event: effectiveRange ? "expected" : undefined,
+      eventFrom: effectiveRange?.eventFrom,
+      eventTo: effectiveRange?.eventTo,
+    };
+  }
+
+  if (sheetStatus === "waiting_approval") {
+    const effectiveRange = range ?? todayRange;
+    return {
+      purpose,
+      status: "waiting_approval",
+      event: effectiveRange ? "created" : undefined,
+      eventFrom: effectiveRange?.eventFrom,
+      eventTo: effectiveRange?.eventTo,
+    };
+  }
+
+  if (sheetStatus === "rejected") {
+    if (!range) {
+      return { purpose, status: "rejected" };
+    }
+
+    return {
+      purpose,
+      status: "rejected",
+      event: "created",
+      eventFrom: range.eventFrom,
+      eventTo: range.eventTo,
+    };
+  }
+
+  switch (segment) {
+    case "today":
+      return {
+        purpose,
+        event: "activity",
+        eventFrom: todayRange?.eventFrom,
+        eventTo: todayRange?.eventTo,
+      };
+    case "expected":
+      return {
+        purpose,
+        status: "approved",
+        event: "expected",
+        eventFrom: todayRange?.eventFrom,
+        eventTo: todayRange?.eventTo,
+      };
+    case "inside":
+      return { purpose, status: "checked_in" };
+    case "all":
+    default:
+      return { purpose };
+  }
+}
+
 function endOfDay(date: Date) {
   const next = new Date(date);
   next.setHours(23, 59, 59, 999);
@@ -217,7 +397,7 @@ export const PRESET_CONFIG = {
     sheetStatus: "checked_out" as ModelsVisitorStatus,
   },
   all: {
-    segment: "today" as LogsSegment,
+    segment: "all" as LogsSegment,
     datePreset: "all" as DateRangePreset,
     sheetStatus: undefined,
   },
@@ -228,5 +408,5 @@ export function presetToInitialState(preset: GuardEntriesPreset): PresetState {
 }
 
 export function getTodayRange() {
-  return getDateRange("today");
+  return getHalfOpenRangeIST("today");
 }

@@ -73,6 +73,9 @@ export const residentApiExtensions = enhancedApi.injectEndpoints({
         purpose?: ModelsVisitorEntry["purpose"];
         createdFrom?: string;
         createdTo?: string;
+        event?: "activity" | "checked_in" | "checked_out" | "created" | "expected";
+        eventFrom?: string;
+        eventTo?: string;
         limit?: number;
         offset?: number;
         search?: string;
@@ -85,6 +88,9 @@ export const residentApiExtensions = enhancedApi.injectEndpoints({
         purpose,
         createdFrom,
         createdTo,
+        event,
+        eventFrom,
+        eventTo,
         limit,
         offset,
         search,
@@ -95,6 +101,9 @@ export const residentApiExtensions = enhancedApi.injectEndpoints({
           purpose,
           created_from: createdFrom,
           created_to: createdTo,
+          event,
+          event_from: eventFrom,
+          event_to: eventTo,
           limit,
           offset,
           search,

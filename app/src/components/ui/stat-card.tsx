@@ -16,7 +16,7 @@ type StatCardProps = {
 const toneColors: Record<NonNullable<StatCardProps["tone"]>, string> = {
   default: colors.text.primary,
   success: colors.status.success,
-  teal: colors.operational.primary,
+  teal: colors.guard.teal,
   warning: colors.status.warning,
 };
 

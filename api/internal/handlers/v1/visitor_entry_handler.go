@@ -90,22 +90,22 @@ func (h *VisitorEntryHandler) CreateInvite(c *gin.Context) {
 
 // GetInviteByToken godoc
 // @Summary Get visitor invite by token
-// @Description [Public] Fetches an active visitor invite from its public token before the visitor submits details.
+// @Description [Public] Fetches a visitor invite for the web form, or recovers entry/QR when the invite was already used.
 // @Tags Visitor Entries
 // @Produce json
 // @Param token path string true "Visitor invite token"
 // @Success 200 {object} models.VisitorInviteAPIResponse "Visitor invite fetched successfully"
 // @Failure 400 {object} models.ErrorResponseDoc "Invalid token"
 // @Failure 404 {object} models.ErrorResponseDoc "Visitor invite not found"
-// @Failure 409 {object} models.ErrorResponseDoc "Visitor invite is expired, used, or cancelled"
+// @Failure 409 {object} models.ErrorResponseDoc "Visitor invite is expired, used without entry, or cancelled"
 // @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
 // @Router /v1/public/visitor-invites/{token} [get]
 func (h *VisitorEntryHandler) GetInviteByToken(c *gin.Context) {
-	invite, err := h.inviteSvc.GetPublicInviteByToken(c.Request.Context(), c.Param("token"))
+	page, err := h.inviteSvc.GetPublicInviteByToken(c.Request.Context(), c.Param("token"))
 	if handleServiceError(c, err) {
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, "Visitor invite fetched successfully", gin.H{"invite": invite})
+	utils.SuccessResponse(c, http.StatusOK, "Visitor invite fetched successfully", page)
 }
 
 // CreateStaffInvite godoc
@@ -381,7 +381,7 @@ func (h *VisitorEntryHandler) ValidateQR(c *gin.Context) {
 		utils.BadRequestResponse(c, err.Error())
 		return
 	}
-	entry, err := h.entrySvc.ValidateQR(c.Request.Context(), req.Token)
+	entry, err := h.entrySvc.GetEntryForQRScan(c.Request.Context(), req.Token)
 	if handleServiceError(c, err) {
 		return
 	}
@@ -600,7 +600,26 @@ func (h *VisitorEntryHandler) GetEntryStats(c *gin.Context) {
 	if !ok {
 		return
 	}
-	stats, err := h.entrySvc.GetEntryStats(c.Request.Context(), societyID)
+
+	var rangeFrom, rangeTo *time.Time
+	if !queryTimePtr(c, "event_from", &rangeFrom) || !queryTimePtr(c, "event_to", &rangeTo) {
+		return
+	}
+
+	var stats *models.VisitorEntryStatsResponse
+	var err error
+	if rangeFrom != nil && rangeTo != nil {
+		if !rangeFrom.Before(*rangeTo) {
+			utils.BadRequestResponse(c, "event_from must be before event_to")
+			return
+		}
+		stats, err = h.entrySvc.GetEntryStatsInRange(c.Request.Context(), societyID, *rangeFrom, *rangeTo)
+	} else if rangeFrom != nil || rangeTo != nil {
+		utils.BadRequestResponse(c, "event_from and event_to must both be provided")
+		return
+	} else {
+		stats, err = h.entrySvc.GetEntryStats(c.Request.Context(), societyID)
+	}
 	if handleServiceError(c, err) {
 		return
 	}
@@ -1088,21 +1107,11 @@ func visitorEntryFilterFromFlatQuery(c *gin.Context, societyID int64, flatID int
 		}
 		filter.Offset = int32(value)
 	}
-	if raw := c.Query("created_from"); raw != "" {
-		value, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			utils.BadRequestResponse(c, "created_from must be RFC3339")
-			return filter, false
-		}
-		filter.CreatedFrom = &value
+	if !applyVisitorEntryDateFilters(c, &filter) {
+		return filter, false
 	}
-	if raw := c.Query("created_to"); raw != "" {
-		value, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			utils.BadRequestResponse(c, "created_to must be RFC3339")
-			return filter, false
-		}
-		filter.CreatedTo = &value
+	if raw := strings.TrimSpace(c.Query("search")); raw != "" {
+		filter.Search = &raw
 	}
 	return filter, true
 }
@@ -1160,21 +1169,8 @@ func visitorEntryFilterFromQuery(c *gin.Context, societyID int64) (models.Visito
 	if raw := c.Query("block"); raw != "" {
 		filter.Block = &raw
 	}
-	if raw := c.Query("created_from"); raw != "" {
-		value, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			utils.BadRequestResponse(c, "created_from must be RFC3339")
-			return filter, false
-		}
-		filter.CreatedFrom = &value
-	}
-	if raw := c.Query("created_to"); raw != "" {
-		value, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			utils.BadRequestResponse(c, "created_to must be RFC3339")
-			return filter, false
-		}
-		filter.CreatedTo = &value
+	if !applyVisitorEntryDateFilters(c, &filter) {
+		return filter, false
 	}
 	if raw := strings.TrimSpace(c.Query("search")); raw != "" {
 		filter.Search = &raw
@@ -1236,6 +1232,50 @@ func waitingAtGateFilterFromQuery(c *gin.Context, societyID int64) (models.Waiti
 		filter.Offset = int32(value)
 	}
 	return filter, true
+}
+
+func applyVisitorEntryDateFilters(c *gin.Context, filter *models.VisitorEntryFilter) bool {
+	eventRaw := strings.TrimSpace(c.Query("event"))
+	hasLegacy := strings.TrimSpace(c.Query("created_from")) != "" || strings.TrimSpace(c.Query("created_to")) != ""
+
+	if eventRaw != "" && hasLegacy {
+		utils.BadRequestResponse(c, "use either event with event_from/event_to or created_from/created_to, not both")
+		return false
+	}
+
+	if eventRaw != "" {
+		event := models.VisitorEntryEventFilter(eventRaw)
+		if !event.IsValid() {
+			utils.BadRequestResponse(c, "invalid event")
+			return false
+		}
+		var from, to *time.Time
+		if !queryTimePtr(c, "event_from", &from) || !queryTimePtr(c, "event_to", &to) {
+			return false
+		}
+		if from == nil || to == nil {
+			utils.BadRequestResponse(c, "event_from and event_to are required when event is set")
+			return false
+		}
+		if !from.Before(*to) {
+			utils.BadRequestResponse(c, "event_from must be before event_to")
+			return false
+		}
+		filter.Event = &event
+		filter.EventFrom = from
+		filter.EventTo = to
+		return true
+	}
+
+	if hasLegacy {
+		var from, to *time.Time
+		if !queryTimePtr(c, "created_from", &from) || !queryTimePtr(c, "created_to", &to) {
+			return false
+		}
+		filter.CreatedFrom = from
+		filter.CreatedTo = to
+	}
+	return true
 }
 
 func guardApproveOptionsFromBody(c *gin.Context) visitorentrysvc.GuardApproveOptions {

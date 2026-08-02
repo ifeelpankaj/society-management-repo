@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
 
-import { Stack } from "@/components/layout";
+import { Stack } from "@/components/layout/stack";
 import { AppText } from "@/components/ui/app-text";
 import { colors } from "@/theme/colors";
 import { radius } from "@/theme/radius";

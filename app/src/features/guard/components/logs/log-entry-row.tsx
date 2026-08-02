@@ -10,9 +10,11 @@ import {
   titleize,
 } from "@/features/guard/guard-utils";
 import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
-import { theme } from "@/theme";
-
-const G = theme.guard;
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 type LogEntryRowProps = {
   entry: ModelsVisitorEntry;
@@ -21,72 +23,100 @@ type LogEntryRowProps = {
   onPress?: () => void;
 };
 
+function TimeBlock({
+  date,
+  label,
+  time,
+}: {
+  date?: string;
+  label: string;
+  time?: string;
+}) {
+  if (!date && !time) {
+    return null;
+  }
+
+  return (
+    <View style={styles.timeBlock}>
+      <Text style={styles.timeBlockLabel}>{label}</Text>
+      {date ? <Text style={styles.timeBlockDate}>{date}</Text> : null}
+      {time ? <Text style={styles.timeBlockTime}>{time}</Text> : null}
+    </View>
+  );
+}
+
 export function LogEntryRow({ entry, isCheckingOut, onCheckOut, onPress }: LogEntryRowProps) {
   const statusMeta = getVisitorStatusMeta(entry.status);
   const timestamp = formatActivityTimestamp(
     entry.checked_out_at ?? entry.checked_in_at ?? entry.updated_at ?? entry.created_at,
   );
   const purpose = entry.purpose ? titleize(entry.purpose) : "Visitor";
-  const checkedInDate = formatDateOnly(entry.checked_in_at);
-  const checkedInTime = formatTimeOfDay(entry.checked_in_at);
+  const hasTimeline = Boolean(entry.checked_in_at || entry.checked_out_at);
+  const hasCheckoutAction = entry.status === "checked_in" && Boolean(onCheckOut);
+
+  const timeline = hasTimeline ? (
+    <View style={styles.timelineRow}>
+      {entry.checked_in_at ? (
+        <TimeBlock
+          date={formatDateOnly(entry.checked_in_at)}
+          label="Check-in"
+          time={formatTimeOfDay(entry.checked_in_at)}
+        />
+      ) : null}
+      {entry.checked_in_at && entry.checked_out_at ? <View style={styles.timelineDivider} /> : null}
+      {entry.checked_out_at ? (
+        <TimeBlock
+          date={formatDateOnly(entry.checked_out_at)}
+          label="Checkout"
+          time={formatTimeOfDay(entry.checked_out_at)}
+        />
+      ) : null}
+    </View>
+  ) : (
+    <Text style={styles.fallbackTime}>{timestamp || "—"}</Text>
+  );
 
   const mainContent = (
-    <View style={styles.main}>
+    <>
       <View style={styles.titleRow}>
-        <Text style={styles.name}>{getVisitorName(entry)}</Text>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusMeta.bg, borderColor: statusMeta.border },
-          ]}
-        >
+        <View style={styles.titleCopy}>
+          <Text numberOfLines={1} style={styles.name}>
+            {getVisitorName(entry)}
+          </Text>
+          <Text numberOfLines={1} style={styles.meta}>
+            {purpose} · {getFlatLabel(entry)}
+          </Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg, borderColor: statusMeta.border }]}>
           <Text style={[styles.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
         </View>
       </View>
-
-      <Text style={styles.meta}>
-        {purpose} - {getFlatLabel(entry)}
-      </Text>
-
-      {entry.checked_in_at ? (
-        <View style={styles.checkInMeta}>
-          {checkedInDate ? (
-            <View style={styles.checkInPill}>
-              <Text style={styles.checkInLabel}>Check-in date</Text>
-              <Text style={styles.checkInValue}>{checkedInDate}</Text>
-            </View>
-          ) : null}
-          {checkedInTime ? (
-            <View style={styles.checkInPill}>
-              <Text style={styles.checkInLabel}>Time</Text>
-              <Text style={styles.checkInValue}>{checkedInTime}</Text>
-            </View>
-          ) : null}
-        </View>
-      ) : (
-        <Text style={styles.time}>{timestamp || "-"}</Text>
-      )}
-    </View>
+      {timeline}
+    </>
   );
 
   return (
-    <View style={styles.row}>
+    <View style={styles.card}>
       {onPress ? (
-        <Pressable accessibilityRole="button" style={styles.mainPressable} onPress={onPress}>
+        <Pressable
+          accessibilityRole="link"
+          style={({ pressed }) => [styles.detailPressable, pressed && styles.cardPressed]}
+          onPress={onPress}
+        >
           {mainContent}
         </Pressable>
       ) : (
         mainContent
       )}
-      {entry.status === "checked_in" && onCheckOut ? (
+
+      {hasCheckoutAction ? (
         <Pressable
           accessibilityRole="button"
           disabled={isCheckingOut}
-          hitSlop={8}
-          style={styles.checkoutButton}
+          style={({ pressed }) => [styles.checkoutButton, pressed && styles.checkoutButtonPressed]}
           onPress={onCheckOut}
         >
-          <Text style={styles.checkoutText}>{isCheckingOut ? "..." : "Check Out"}</Text>
+          <Text style={styles.checkoutText}>{isCheckingOut ? "Checking out..." : "Check out"}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -94,90 +124,113 @@ export function LogEntryRow({ entry, isCheckingOut, onCheckOut, onPress }: LogEn
 }
 
 export function LogEntryDivider() {
-  return <View style={{ backgroundColor: theme.border.default, height: 1 }} />;
+  return <View style={styles.divider} />;
 }
 
 const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...shadows.card,
+  },
+  cardPressed: {
+    opacity: 0.92,
+  },
   checkoutButton: {
-    alignSelf: "center",
-    borderColor: G.teal,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginLeft: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    alignItems: "center",
+    backgroundColor: colors.brand.orangeSoft,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+  },
+  checkoutButtonPressed: {
+    opacity: 0.88,
   },
   checkoutText: {
-    color: G.teal,
-    fontSize: 12,
+    ...typography.bodySmall,
+    color: colors.brand.orange,
     fontWeight: "700",
   },
-  checkInLabel: {
-    color: G.textMuted,
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
+  detailPressable: {
+    gap: spacing.md,
   },
-  checkInMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 4,
+  divider: {
+    height: spacing.sm,
   },
-  checkInPill: {
-    backgroundColor: theme.surface.secondary,
-    borderColor: theme.border.input,
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  checkInValue: {
-    color: G.text,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  main: {
-    flex: 1,
-    gap: 4,
-  },
-  mainPressable: {
-    flex: 1,
+  fallbackTime: {
+    ...typography.caption,
+    color: colors.text.muted,
   },
   meta: {
-    color: G.textMuted,
-    fontSize: 13,
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
   name: {
-    color: G.text,
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  row: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    paddingVertical: 14,
+    ...typography.subtitle,
+    color: colors.text.primary,
+    fontWeight: "700",
   },
   statusBadge: {
-    borderRadius: 999,
+    borderRadius: radius["2xl"],
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
   },
   statusText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
   },
-  time: {
-    color: G.textMuted,
-    fontSize: 12,
-    fontWeight: "500",
+  timeBlock: {
+    alignItems: "center",
+    backgroundColor: colors.dashboard.actionNeutralSoft,
+    borderRadius: radius.lg,
+    flex: 1,
+    gap: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  timeBlockDate: {
+    ...typography.bodySmall,
+    color: colors.text.primary,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  timeBlockLabel: {
+    ...typography.caption,
+    color: colors.text.muted,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textAlign: "center",
+    textTransform: "uppercase",
+  },
+  timeBlockTime: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  timelineDivider: {
+    alignSelf: "stretch",
+    backgroundColor: colors.border.default,
+    marginVertical: spacing.sm,
+    width: StyleSheet.hairlineWidth,
+  },
+  timelineRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  titleCopy: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
   },
   titleRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
   },
 });
