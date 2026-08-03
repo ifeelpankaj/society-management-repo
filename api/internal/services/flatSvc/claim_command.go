@@ -56,7 +56,7 @@ func (s *FlatSvc) ApproveFlatClaim(ctx context.Context, societyID int64, claimID
 			return err
 		}
 		if s.subscriptionSvc != nil {
-			if err := s.subscriptionSvc.CanAddResident(txCtx, societyID, 1); err != nil {
+			if err := s.subscriptionSvc.CanAddResidentWithLock(txCtx, societyID, 1); err != nil {
 				return err
 			}
 		}

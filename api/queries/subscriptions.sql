@@ -293,3 +293,13 @@ WHERE society_id = $1 AND status = 'active' AND role = 'staff';
 SELECT COUNT(*)
 FROM society_members
 WHERE society_id = $1 AND status = 'active' AND role = 'resident';
+
+-- name: GetActiveSubscriptionForUpdate :one
+SELECT *
+FROM society_subscriptions
+WHERE society_id = sqlc.arg('society_id')::bigint
+  AND status IN ('trial', 'active')
+  AND (ends_at IS NULL OR ends_at > NOW())
+ORDER BY id DESC
+LIMIT 1
+FOR UPDATE;

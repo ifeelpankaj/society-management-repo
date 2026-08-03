@@ -124,6 +124,13 @@ JOIN flats f ON f.id = ve.flat_id
 WHERE ve.id = $1
   AND ve.society_id = $2;
 
+-- name: GetVisitorEntryForUpdate :one
+SELECT ve.*
+FROM visitor_entries ve
+WHERE ve.id = $1
+  AND ve.society_id = $2
+FOR UPDATE;
+
 -- name: GetVisitorEntryByQRHash :one
 SELECT
     ve.*,
@@ -546,7 +553,8 @@ JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.flat_id = $2
   AND ve.status = 'waiting_approval'
-ORDER BY ve.created_at DESC;
+ORDER BY ve.created_at DESC
+LIMIT $3;
 
 -- name: ApproveVisitorEntry :one
 UPDATE visitor_entries

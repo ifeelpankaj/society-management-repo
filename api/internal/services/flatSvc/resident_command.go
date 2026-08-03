@@ -23,14 +23,14 @@ func (s *FlatSvc) AddResidentToFlat(ctx context.Context, societyID int64, flatID
 	if err := s.ensureFlatOperational(ctx, societyID); err != nil {
 		return nil, err
 	}
-	if s.subscriptionSvc != nil {
-		if err := s.subscriptionSvc.CanAddResident(ctx, societyID, 1); err != nil {
-			return nil, err
-		}
-	}
 
 	var resident *models.FlatResident
 	err := s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		if s.subscriptionSvc != nil {
+			if err := s.subscriptionSvc.CanAddResidentWithLock(txCtx, societyID, 1); err != nil {
+				return err
+			}
+		}
 		if err := s.ensureFlatAssignable(txCtx, societyID, flatID); err != nil {
 			return err
 		}

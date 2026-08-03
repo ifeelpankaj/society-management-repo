@@ -32,6 +32,7 @@ type VisitorInviteRepository interface {
 type VisitorEntryRepository interface {
 	Create(ctx context.Context, req models.VisitorFormRequest, societyID int64, flatID int64, visitorID int64, inviteID *int64, source models.VisitorEntrySource, purpose models.VisitorPurpose, status models.VisitorStatus, actorUserID *int64, guardUserID *int64, qrHash *string, qrExpiresAt *time.Time) (*models.VisitorEntry, error)
 	Get(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error)
+	GetForUpdate(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error)
 	GetByQRHash(ctx context.Context, qrHash string) (*models.VisitorEntry, error)
 	GetByInviteID(ctx context.Context, inviteID int64) (*models.VisitorEntry, error)
 	List(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
@@ -177,6 +178,11 @@ func (r *visitorEntryRepository) Create(ctx context.Context, req models.VisitorF
 func (r *visitorEntryRepository) Get(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error) {
 	row, err := GetQueries(ctx, r.db).GetVisitorEntry(ctx, db.GetVisitorEntryParams{ID: entryID, SocietyID: societyID})
 	return visitorEntryFromGetNoRows(row, err)
+}
+
+func (r *visitorEntryRepository) GetForUpdate(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error) {
+	row, err := GetQueries(ctx, r.db).GetVisitorEntryForUpdate(ctx, db.GetVisitorEntryForUpdateParams{ID: entryID, SocietyID: societyID})
+	return visitorEntryFromDBNoRows(row, err)
 }
 
 func (r *visitorEntryRepository) GetByQRHash(ctx context.Context, qrHash string) (*models.VisitorEntry, error) {
@@ -379,7 +385,11 @@ func (r *visitorEntryRepository) CountMemberApprovals(ctx context.Context, socie
 }
 
 func (r *visitorEntryRepository) ListPending(ctx context.Context, societyID int64, flatID int64) ([]*models.VisitorEntry, error) {
-	rows, err := GetQueries(ctx, r.db).ListPendingVisitorApprovals(ctx, db.ListPendingVisitorApprovalsParams{SocietyID: societyID, FlatID: flatID})
+	rows, err := GetQueries(ctx, r.db).ListPendingVisitorApprovals(ctx, db.ListPendingVisitorApprovalsParams{
+		SocietyID: societyID,
+		FlatID:    flatID,
+		Limit:     100,
+	})
 	if err != nil {
 		return nil, err
 	}

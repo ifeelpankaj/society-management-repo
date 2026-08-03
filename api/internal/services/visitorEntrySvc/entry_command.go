@@ -123,6 +123,9 @@ func (s *VisitorEntrySvc) ApproveEntry(ctx context.Context, societyID int64, ent
 	}
 	var approved *models.VisitorEntry
 	err = s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.lockEntryForApproval(txCtx, societyID, entryID); err != nil {
+			return err
+		}
 		var err error
 		approved, err = s.entryRepo.Approve(txCtx, societyID, entryID, actorUserID, qr.hash, qr.expiresAt)
 		if err != nil {

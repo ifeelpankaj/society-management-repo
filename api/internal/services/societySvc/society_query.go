@@ -140,23 +140,7 @@ func (s *SocietySvc) ListMySocieties(ctx context.Context, userID int64) ([]*mode
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
-	members, err := s.memberRepo.ListByUser(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*models.MySocietyResponse, 0, len(members))
-	for _, member := range members {
-		society, err := s.societyRepo.Get(ctx, models.GetSocietyFilter{ID: &member.SocietyID})
-		if err != nil || society == nil {
-			continue
-		}
-		result = append(result, &models.MySocietyResponse{
-			Society: society.ToResponse(),
-			Member:  member.ToResponse(),
-		})
-	}
-	return result, nil
+	return s.memberRepo.ListMySocietiesByUser(ctx, userID)
 }
 
 func normalizeResponseLimit(limit int32) int32 {

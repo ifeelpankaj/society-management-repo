@@ -75,38 +75,8 @@ func (r *flatRepository) List(ctx context.Context, filter *models.FlatFilter) ([
 }
 
 func (r *flatRepository) Count(ctx context.Context, filter *models.FlatFilter) (int64, error) {
-	const query = `
-SELECT COUNT(*)
-FROM flats f
-JOIN societies s ON s.id = f.society_id
-WHERE ($1::bigint IS NULL OR f.id = $1::bigint)
-  AND ($2::bigint IS NULL OR f.society_id = $2::bigint)
-  AND ($3::text IS NULL OR f.block = $3::text)
-  AND ($4::text IS NULL OR f.floor = $4::text)
-  AND ($5::text IS NULL OR f.flat_number = $5::text)
-  AND ($6::flat_status IS NULL OR f.status = $6::flat_status)
-  AND ($7::bool IS NULL OR f.is_active = $7::bool)
-  AND (
-      $8::text = ''
-      OR f.flat_number ILIKE '%' || $8::text || '%'
-      OR COALESCE(f.block, '') ILIKE '%' || $8::text || '%'
-      OR COALESCE(f.floor, '') ILIKE '%' || $8::text || '%'
-      OR f.status::text ILIKE '%' || $8::text || '%'
-      OR s.name ILIKE '%' || $8::text || '%'
-      OR s.society_code ILIKE '%' || $8::text || '%'
-  )`
-	var total int64
-	err := r.db.Pool.QueryRow(ctx, query,
-		idFromFlatFilter(filter),
-		societyIDFromFlatFilter(filter),
-		stringPtrFromFlatFilter(filter, "block"),
-		stringPtrFromFlatFilter(filter, "floor"),
-		stringPtrFromFlatFilter(filter, "flat_number"),
-		filterStatus(filter),
-		isActiveFromFlatFilter(filter),
-		searchFromFlatFilter(filter),
-	).Scan(&total)
-	return total, err
+	params := flatCountParams(filter)
+	return GetQueries(ctx, r.db).CountFlats(ctx, params)
 }
 
 func (r *flatRepository) Stats(ctx context.Context, societyID int64) (*models.FlatStatsResponse, error) {
@@ -221,6 +191,15 @@ func flatListParams(filter *models.FlatFilter) db.ListFlatsParams {
 		FlatNumber: stringPtrFromFlatFilter(filter, "flat_number"), Status: dbFlatStatusPtr(filterStatus(filter)),
 		IsActive: isActiveFromFlatFilter(filter), Search: searchFromFlatFilter(filter),
 		Limit: normalizeLimit(limitFromFlatFilter(filter)), Offset: normalizeOffset(offsetFromFlatFilter(filter)),
+	}
+}
+
+func flatCountParams(filter *models.FlatFilter) db.CountFlatsParams {
+	return db.CountFlatsParams{
+		ID: idFromFlatFilter(filter), SocietyID: societyIDFromFlatFilter(filter),
+		Block: stringPtrFromFlatFilter(filter, "block"), Floor: stringPtrFromFlatFilter(filter, "floor"),
+		FlatNumber: stringPtrFromFlatFilter(filter, "flat_number"), Status: dbFlatStatusPtr(filterStatus(filter)),
+		IsActive: isActiveFromFlatFilter(filter), Search: searchFromFlatFilter(filter),
 	}
 }
 

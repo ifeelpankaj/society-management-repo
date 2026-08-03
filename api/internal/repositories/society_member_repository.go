@@ -17,6 +17,7 @@ type SocietyMemberRepository interface {
 	Get(ctx context.Context, filter models.GetSocietyMemberFilter) (*models.SocietyMember, error)
 	List(ctx context.Context, filter models.ListSocietyMembersFilter) ([]*models.SocietyMember, error)
 	ListByUser(ctx context.Context, userID int64) ([]*models.SocietyMember, error)
+	ListMySocietiesByUser(ctx context.Context, userID int64) ([]*models.MySocietyResponse, error)
 	Count(ctx context.Context, filter models.ListSocietyMembersFilter) (int64, error)
 	ChangeRole(ctx context.Context, societyID int64, userID int64, role models.SocietyMemberRole) (*models.SocietyMember, error)
 	Suspend(ctx context.Context, societyID int64, userID int64) (*models.SocietyMember, error)
@@ -91,6 +92,23 @@ func (r *societyMemberRepository) ListByUser(ctx context.Context, userID int64) 
 	result := make([]*models.SocietyMember, 0, len(rows))
 	for _, row := range rows {
 		result = append(result, societyMemberFromListMyRow(row))
+	}
+	return result, nil
+}
+
+func (r *societyMemberRepository) ListMySocietiesByUser(ctx context.Context, userID int64) ([]*models.MySocietyResponse, error) {
+	rows, err := GetQueries(ctx, r.db).ListMySocietiesByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*models.MySocietyResponse, 0, len(rows))
+	for _, row := range rows {
+		member := societyMemberFromListMySocietiesRow(row)
+		society := societyFromListMySocietiesRow(row)
+		result = append(result, &models.MySocietyResponse{
+			Society: society.ToResponse(),
+			Member:  member.ToResponse(),
+		})
 	}
 	return result, nil
 }
@@ -192,6 +210,34 @@ func societyMemberFromListMyRow(row db.ListSocietyMembershipsByUserRow) *models.
 	member.UserEmail = row.UserEmail
 	member.UserPhone = row.UserPhone
 	return member
+}
+
+func societyMemberFromListMySocietiesRow(row db.ListMySocietiesByUserRow) *models.SocietyMember {
+	member := societyMemberFromParts(row.ID, row.SocietyID, row.UserID, string(row.Role), string(row.Status), row.InvitedBy, row.JoinedAt, row.RemovedBy, row.RemovedAt, row.RemoveReason, row.Metadata, row.CreatedAt, row.UpdatedAt)
+	member.UserFullName = &row.UserFullName
+	member.UserEmail = row.UserEmail
+	member.UserPhone = row.UserPhone
+	return member
+}
+
+func societyFromListMySocietiesRow(row db.ListMySocietiesByUserRow) *models.Society {
+	metadata := map[string]any{}
+	if len(row.SocietyMetadata) > 0 {
+		_ = json.Unmarshal(row.SocietyMetadata, &metadata)
+	}
+	return &models.Society{
+		ID: row.SocietyRowID, Name: row.SocietyName, SocietyCode: row.SocietyCode, Email: row.SocietyEmail,
+		PhoneNumber: row.SocietyPhoneNumber, AddressLine1: row.SocietyAddressLine1, AddressLine2: row.SocietyAddressLine2,
+		Landmark: row.SocietyLandmark, City: row.SocietyCity, State: row.SocietyState, Pincode: row.SocietyPincode,
+		Country: row.SocietyCountry, TotalFlats: row.SocietyTotalFlats, TotalBlocks: row.SocietyTotalBlocks,
+		Status: models.SocietyStatus(row.SocietyStatus), CreatedBy: row.SocietyCreatedBy, ApprovedBy: row.SocietyApprovedBy,
+		ApprovedAt: pgTimestamptzToTimePtr(row.SocietyApprovedAt), RejectedBy: row.SocietyRejectedBy,
+		RejectedAt: pgTimestamptzToTimePtr(row.SocietyRejectedAt), RejectionReason: row.SocietyRejectionReason,
+		SuspendedBy: row.SocietySuspendedBy, SuspendedAt: pgTimestamptzToTimePtr(row.SocietySuspendedAt),
+		SuspensionReason: row.SocietySuspensionReason, Metadata: metadata,
+		CreatedAt: pgTimestamptzToTime(row.SocietyCreatedAt), UpdatedAt: pgTimestamptzToTime(row.SocietyUpdatedAt),
+		DeletedAt: pgTimestamptzToTimePtr(row.SocietyDeletedAt),
+	}
 }
 
 func societyMemberFromParts(id, societyID, userID int64, role, status string, invitedBy *int64, joinedAt pgtype.Timestamptz, removedBy *int64, removedAt pgtype.Timestamptz, removeReason *string, rawMetadata []byte, createdAt, updatedAt pgtype.Timestamptz) *models.SocietyMember {

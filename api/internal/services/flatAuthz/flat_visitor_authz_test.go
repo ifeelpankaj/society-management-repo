@@ -22,6 +22,9 @@ func (f *fakeMemberRepo) List(context.Context, models.ListSocietyMembersFilter) 
 func (f *fakeMemberRepo) ListByUser(context.Context, int64) ([]*models.SocietyMember, error) {
 	return nil, nil
 }
+func (f *fakeMemberRepo) ListMySocietiesByUser(context.Context, int64) ([]*models.MySocietyResponse, error) {
+	return nil, nil
+}
 func (f *fakeMemberRepo) Count(context.Context, models.ListSocietyMembersFilter) (int64, error) {
 	return 0, nil
 }

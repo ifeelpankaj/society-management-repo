@@ -7,6 +7,7 @@ DEV_HOST ?= 127.0.0.1
 ENV_DEV   := .env.development
 ENV_PROD  := .env.production
 ENV_STAGE := .env.staging
+MIGRATE_ENV ?= development
 
 .PHONY: dev prod stage build build-prod install test test-coverage clean watch fmt lint help run sqlc sqlc-vet check kill-port
 
@@ -28,7 +29,7 @@ help:
 	@echo "  sqlc             - Generate sqlc database code"
 	@echo "  sqlc-vet         - Vet sqlc queries"
 	@echo "  check            - Generate sqlc, format and test"
-	@echo "  migrate-up       - Run migrations up"
+	@echo "  migrate-up       - Run migrations up (MIGRATE_ENV=development by default)"
 	@echo "  migrate-down     - Rollback last migration"
 	@echo "  migrate-create   - Create new migration file"
 	@echo "  migrate-status   - Show migration status"
@@ -127,12 +128,12 @@ sqlc-vet:
 check: sqlc fmt test
 
 migrate-up:
-	@echo "Running migrations..."
-	sql-migrate up -env="$(GO_ENV)"
+	@echo "Running migrations (env=$(MIGRATE_ENV))..."
+	sql-migrate up -env="$(MIGRATE_ENV)"
 
 migrate-down:
-	@echo "Rolling back last migration..."
-	sql-migrate down -env="$(GO_ENV)" -limit=1
+	@echo "Rolling back last migration (env=$(MIGRATE_ENV))..."
+	sql-migrate down -env="$(MIGRATE_ENV)" -limit=1
 
 migrate-create:
 	@read -p "Enter migration name: " name; \
@@ -144,5 +145,5 @@ migrate-create:
 	echo "Created migration: $$filename"
 
 migrate-status:
-	@echo "Checking migration status..."
-	sql-migrate status -env="$(GO_ENV)"
+	@echo "Checking migration status (env=$(MIGRATE_ENV))..."
+	sql-migrate status -env="$(MIGRATE_ENV)"

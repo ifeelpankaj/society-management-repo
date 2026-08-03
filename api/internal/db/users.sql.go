@@ -225,6 +225,74 @@ func (q *Queries) GetUserByEmail(ctx context.Context, lower string) (User, error
 	return i, err
 }
 
+const getUserByID = `-- name: GetUserByID :one
+SELECT
+    id,
+    first_name,
+    last_name,
+    full_name,
+    email,
+    phone_number,
+    password_hash,
+    auth_provider,
+    provider_id,
+    global_role,
+    email_verified,
+    phone_verified,
+    is_active,
+    is_blocked,
+    blocked_reason,
+    avatar_url,
+    date_of_birth,
+    gender,
+    timezone,
+    language,
+    last_login_at,
+    password_changed_at,
+    deleted_at,
+    metadata,
+    created_at,
+    updated_at
+FROM users
+WHERE id = $1
+  AND deleted_at IS NULL
+LIMIT 1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.FullName,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.PasswordHash,
+		&i.AuthProvider,
+		&i.ProviderID,
+		&i.GlobalRole,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.IsActive,
+		&i.IsBlocked,
+		&i.BlockedReason,
+		&i.AvatarUrl,
+		&i.DateOfBirth,
+		&i.Gender,
+		&i.Timezone,
+		&i.Language,
+		&i.LastLoginAt,
+		&i.PasswordChangedAt,
+		&i.DeletedAt,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserByPhoneNumber = `-- name: GetUserByPhoneNumber :one
 SELECT
     id,

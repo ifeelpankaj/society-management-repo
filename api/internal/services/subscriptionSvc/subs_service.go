@@ -42,6 +42,7 @@ type SubscriptionQuotaService interface {
 	CanAddAdmin(ctx context.Context, societyID int64, adding int64) error
 	CanAddStaff(ctx context.Context, societyID int64, adding int64) error
 	CanAddResident(ctx context.Context, societyID int64, adding int64) error
+	CanAddResidentWithLock(ctx context.Context, societyID int64, adding int64) error
 }
 
 type SubscriptionSvc struct {

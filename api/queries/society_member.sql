@@ -143,6 +143,48 @@ WHERE sm.user_id = $1
   AND sm.status != 'removed'
 ORDER BY sm.joined_at DESC;
 
+-- name: ListMySocietiesByUser :many
+SELECT
+    sm.id, sm.society_id, sm.user_id, sm.role, sm.status, sm.invited_by, sm.joined_at, sm.removed_by, sm.removed_at, sm.remove_reason, sm.metadata, sm.created_at, sm.updated_at,
+    u.full_name AS user_full_name,
+    u.email AS user_email,
+    u.phone_number AS user_phone,
+    s.id AS society_row_id,
+    s.name AS society_name,
+    s.society_code AS society_code,
+    s.email AS society_email,
+    s.phone_number AS society_phone_number,
+    s.address_line1 AS society_address_line1,
+    s.address_line2 AS society_address_line2,
+    s.landmark AS society_landmark,
+    s.city AS society_city,
+    s.state AS society_state,
+    s.pincode AS society_pincode,
+    s.country AS society_country,
+    s.total_flats AS society_total_flats,
+    s.total_blocks AS society_total_blocks,
+    s.status AS society_status,
+    s.created_by AS society_created_by,
+    s.approved_by AS society_approved_by,
+    s.approved_at AS society_approved_at,
+    s.rejected_by AS society_rejected_by,
+    s.rejected_at AS society_rejected_at,
+    s.rejection_reason AS society_rejection_reason,
+    s.suspended_by AS society_suspended_by,
+    s.suspended_at AS society_suspended_at,
+    s.suspension_reason AS society_suspension_reason,
+    s.metadata AS society_metadata,
+    s.created_at AS society_created_at,
+    s.updated_at AS society_updated_at,
+    s.deleted_at AS society_deleted_at
+FROM society_members sm
+JOIN users u ON u.id = sm.user_id
+JOIN societies s ON s.id = sm.society_id
+WHERE sm.user_id = $1
+  AND sm.status != 'removed'
+  AND s.deleted_at IS NULL
+ORDER BY sm.joined_at DESC;
+
 -- name: ChangeSocietyMemberRole :one
 UPDATE society_members
 SET role = $3, updated_at = NOW()

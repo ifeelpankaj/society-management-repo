@@ -257,6 +257,9 @@ func (r *dashboardMemberRepo) List(ctx context.Context, filter models.ListSociet
 func (r *dashboardMemberRepo) ListByUser(ctx context.Context, userID int64) ([]*models.SocietyMember, error) {
 	panic("unused")
 }
+func (r *dashboardMemberRepo) ListMySocietiesByUser(ctx context.Context, userID int64) ([]*models.MySocietyResponse, error) {
+	panic("unused")
+}
 func (r *dashboardMemberRepo) Count(ctx context.Context, filter models.ListSocietyMembersFilter) (int64, error) {
 	if filter.Role == nil && filter.Status != nil {
 		return r.counts[*filter.Status], nil

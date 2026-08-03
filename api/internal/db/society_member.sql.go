@@ -276,6 +276,161 @@ func (q *Queries) GetSocietyMember(ctx context.Context, arg GetSocietyMemberPara
 	return i, err
 }
 
+const listMySocietiesByUser = `-- name: ListMySocietiesByUser :many
+SELECT
+    sm.id, sm.society_id, sm.user_id, sm.role, sm.status, sm.invited_by, sm.joined_at, sm.removed_by, sm.removed_at, sm.remove_reason, sm.metadata, sm.created_at, sm.updated_at,
+    u.full_name AS user_full_name,
+    u.email AS user_email,
+    u.phone_number AS user_phone,
+    s.id AS society_row_id,
+    s.name AS society_name,
+    s.society_code AS society_code,
+    s.email AS society_email,
+    s.phone_number AS society_phone_number,
+    s.address_line1 AS society_address_line1,
+    s.address_line2 AS society_address_line2,
+    s.landmark AS society_landmark,
+    s.city AS society_city,
+    s.state AS society_state,
+    s.pincode AS society_pincode,
+    s.country AS society_country,
+    s.total_flats AS society_total_flats,
+    s.total_blocks AS society_total_blocks,
+    s.status AS society_status,
+    s.created_by AS society_created_by,
+    s.approved_by AS society_approved_by,
+    s.approved_at AS society_approved_at,
+    s.rejected_by AS society_rejected_by,
+    s.rejected_at AS society_rejected_at,
+    s.rejection_reason AS society_rejection_reason,
+    s.suspended_by AS society_suspended_by,
+    s.suspended_at AS society_suspended_at,
+    s.suspension_reason AS society_suspension_reason,
+    s.metadata AS society_metadata,
+    s.created_at AS society_created_at,
+    s.updated_at AS society_updated_at,
+    s.deleted_at AS society_deleted_at
+FROM society_members sm
+JOIN users u ON u.id = sm.user_id
+JOIN societies s ON s.id = sm.society_id
+WHERE sm.user_id = $1
+  AND sm.status != 'removed'
+  AND s.deleted_at IS NULL
+ORDER BY sm.joined_at DESC
+`
+
+type ListMySocietiesByUserRow struct {
+	ID                      int64               `db:"id" json:"id"`
+	SocietyID               int64               `db:"society_id" json:"society_id"`
+	UserID                  int64               `db:"user_id" json:"user_id"`
+	Role                    SocietyMemberRole   `db:"role" json:"role"`
+	Status                  SocietyMemberStatus `db:"status" json:"status"`
+	InvitedBy               *int64              `db:"invited_by" json:"invited_by"`
+	JoinedAt                pgtype.Timestamptz  `db:"joined_at" json:"joined_at"`
+	RemovedBy               *int64              `db:"removed_by" json:"removed_by"`
+	RemovedAt               pgtype.Timestamptz  `db:"removed_at" json:"removed_at"`
+	RemoveReason            *string             `db:"remove_reason" json:"remove_reason"`
+	Metadata                []byte              `db:"metadata" json:"metadata"`
+	CreatedAt               pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	UserFullName            string              `db:"user_full_name" json:"user_full_name"`
+	UserEmail               *string             `db:"user_email" json:"user_email"`
+	UserPhone               *string             `db:"user_phone" json:"user_phone"`
+	SocietyRowID            int64               `db:"society_row_id" json:"society_row_id"`
+	SocietyName             string              `db:"society_name" json:"society_name"`
+	SocietyCode             string              `db:"society_code" json:"society_code"`
+	SocietyEmail            *string             `db:"society_email" json:"society_email"`
+	SocietyPhoneNumber      *string             `db:"society_phone_number" json:"society_phone_number"`
+	SocietyAddressLine1     *string             `db:"society_address_line1" json:"society_address_line1"`
+	SocietyAddressLine2     *string             `db:"society_address_line2" json:"society_address_line2"`
+	SocietyLandmark         *string             `db:"society_landmark" json:"society_landmark"`
+	SocietyCity             *string             `db:"society_city" json:"society_city"`
+	SocietyState            *string             `db:"society_state" json:"society_state"`
+	SocietyPincode          *string             `db:"society_pincode" json:"society_pincode"`
+	SocietyCountry          string              `db:"society_country" json:"society_country"`
+	SocietyTotalFlats       int32               `db:"society_total_flats" json:"society_total_flats"`
+	SocietyTotalBlocks      int32               `db:"society_total_blocks" json:"society_total_blocks"`
+	SocietyStatus           SocietyStatus       `db:"society_status" json:"society_status"`
+	SocietyCreatedBy        int64               `db:"society_created_by" json:"society_created_by"`
+	SocietyApprovedBy       *int64              `db:"society_approved_by" json:"society_approved_by"`
+	SocietyApprovedAt       pgtype.Timestamptz  `db:"society_approved_at" json:"society_approved_at"`
+	SocietyRejectedBy       *int64              `db:"society_rejected_by" json:"society_rejected_by"`
+	SocietyRejectedAt       pgtype.Timestamptz  `db:"society_rejected_at" json:"society_rejected_at"`
+	SocietyRejectionReason  *string             `db:"society_rejection_reason" json:"society_rejection_reason"`
+	SocietySuspendedBy      *int64              `db:"society_suspended_by" json:"society_suspended_by"`
+	SocietySuspendedAt      pgtype.Timestamptz  `db:"society_suspended_at" json:"society_suspended_at"`
+	SocietySuspensionReason *string             `db:"society_suspension_reason" json:"society_suspension_reason"`
+	SocietyMetadata         []byte              `db:"society_metadata" json:"society_metadata"`
+	SocietyCreatedAt        pgtype.Timestamptz  `db:"society_created_at" json:"society_created_at"`
+	SocietyUpdatedAt        pgtype.Timestamptz  `db:"society_updated_at" json:"society_updated_at"`
+	SocietyDeletedAt        pgtype.Timestamptz  `db:"society_deleted_at" json:"society_deleted_at"`
+}
+
+func (q *Queries) ListMySocietiesByUser(ctx context.Context, userID int64) ([]ListMySocietiesByUserRow, error) {
+	rows, err := q.db.Query(ctx, listMySocietiesByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMySocietiesByUserRow{}
+	for rows.Next() {
+		var i ListMySocietiesByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SocietyID,
+			&i.UserID,
+			&i.Role,
+			&i.Status,
+			&i.InvitedBy,
+			&i.JoinedAt,
+			&i.RemovedBy,
+			&i.RemovedAt,
+			&i.RemoveReason,
+			&i.Metadata,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UserFullName,
+			&i.UserEmail,
+			&i.UserPhone,
+			&i.SocietyRowID,
+			&i.SocietyName,
+			&i.SocietyCode,
+			&i.SocietyEmail,
+			&i.SocietyPhoneNumber,
+			&i.SocietyAddressLine1,
+			&i.SocietyAddressLine2,
+			&i.SocietyLandmark,
+			&i.SocietyCity,
+			&i.SocietyState,
+			&i.SocietyPincode,
+			&i.SocietyCountry,
+			&i.SocietyTotalFlats,
+			&i.SocietyTotalBlocks,
+			&i.SocietyStatus,
+			&i.SocietyCreatedBy,
+			&i.SocietyApprovedBy,
+			&i.SocietyApprovedAt,
+			&i.SocietyRejectedBy,
+			&i.SocietyRejectedAt,
+			&i.SocietyRejectionReason,
+			&i.SocietySuspendedBy,
+			&i.SocietySuspendedAt,
+			&i.SocietySuspensionReason,
+			&i.SocietyMetadata,
+			&i.SocietyCreatedAt,
+			&i.SocietyUpdatedAt,
+			&i.SocietyDeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSocietyMembers = `-- name: ListSocietyMembers :many
 SELECT
     sm.id, sm.society_id, sm.user_id, sm.role, sm.status, sm.invited_by, sm.joined_at, sm.removed_by, sm.removed_at, sm.remove_reason, sm.metadata, sm.created_at, sm.updated_at,

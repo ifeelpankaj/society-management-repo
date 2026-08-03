@@ -44,6 +44,55 @@ func (q *Queries) BlockFlat(ctx context.Context, arg BlockFlatParams) (Flat, err
 	return i, err
 }
 
+const countFlats = `-- name: CountFlats :one
+SELECT COUNT(*)
+FROM flats f
+JOIN societies s ON s.id = f.society_id
+WHERE ($1::bigint IS NULL OR f.id = $1::bigint)
+  AND ($2::bigint IS NULL OR f.society_id = $2::bigint)
+  AND ($3::text IS NULL OR f.block = $3::text)
+  AND ($4::text IS NULL OR f.floor = $4::text)
+  AND ($5::text IS NULL OR f.flat_number = $5::text)
+  AND ($6::flat_status IS NULL OR f.status = $6::flat_status)
+  AND ($7::bool IS NULL OR f.is_active = $7::bool)
+  AND (
+      $8::text = ''
+      OR f.flat_number ILIKE '%' || $8::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || $8::text || '%'
+      OR COALESCE(f.floor, '') ILIKE '%' || $8::text || '%'
+      OR f.status::text ILIKE '%' || $8::text || '%'
+      OR s.name ILIKE '%' || $8::text || '%'
+      OR s.society_code ILIKE '%' || $8::text || '%'
+  )
+`
+
+type CountFlatsParams struct {
+	ID         *int64      `db:"id" json:"id"`
+	SocietyID  *int64      `db:"society_id" json:"society_id"`
+	Block      *string     `db:"block" json:"block"`
+	Floor      *string     `db:"floor" json:"floor"`
+	FlatNumber *string     `db:"flat_number" json:"flat_number"`
+	Status     *FlatStatus `db:"status" json:"status"`
+	IsActive   *bool       `db:"is_active" json:"is_active"`
+	Search     string      `db:"search" json:"search"`
+}
+
+func (q *Queries) CountFlats(ctx context.Context, arg CountFlatsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countFlats,
+		arg.ID,
+		arg.SocietyID,
+		arg.Block,
+		arg.Floor,
+		arg.FlatNumber,
+		arg.Status,
+		arg.IsActive,
+		arg.Search,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createFlat = `-- name: CreateFlat :one
 INSERT INTO flats (society_id, block, floor, flat_number, status, is_active, metadata, created_by)
 VALUES ($1, $2, $3, $4, 'vacant', TRUE, COALESCE($6, '{}'::jsonb), $5)

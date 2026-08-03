@@ -61,6 +61,39 @@ RETURNING
     created_at,
     updated_at;
 
+-- name: GetUserByID :one
+SELECT
+    id,
+    first_name,
+    last_name,
+    full_name,
+    email,
+    phone_number,
+    password_hash,
+    auth_provider,
+    provider_id,
+    global_role,
+    email_verified,
+    phone_verified,
+    is_active,
+    is_blocked,
+    blocked_reason,
+    avatar_url,
+    date_of_birth,
+    gender,
+    timezone,
+    language,
+    last_login_at,
+    password_changed_at,
+    deleted_at,
+    metadata,
+    created_at,
+    updated_at
+FROM users
+WHERE id = $1
+  AND deleted_at IS NULL
+LIMIT 1;
+
 -- name: GetUserByEmail :one
 SELECT
     id,

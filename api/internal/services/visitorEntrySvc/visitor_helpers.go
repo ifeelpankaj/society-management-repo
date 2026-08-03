@@ -217,3 +217,14 @@ func (s *VisitorEntrySvc) idempotentInviteSubmitResponse(ctx context.Context, in
 	}
 	return &models.VisitorEntryMutationResponse{Entry: existing, QR: qr, IdempotentReplay: true}, nil
 }
+
+func (s *VisitorEntrySvc) lockEntryForApproval(ctx context.Context, societyID int64, entryID int64) error {
+	locked, err := s.entryRepo.GetForUpdate(ctx, societyID, entryID)
+	if err != nil {
+		return err
+	}
+	if locked == nil || locked.Status != models.VisitorStatusWaitingApproval {
+		return ErrVisitorInvalidState
+	}
+	return nil
+}

@@ -68,7 +68,7 @@ func (r *userRepository) Create(ctx context.Context, user *models.User) error {
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*models.User, error) {
-	row, err := getUserByID(ctx, r.db, id)
+	row, err := GetQueries(ctx, r.db).GetUserByID(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -179,70 +179,4 @@ func (r *userRepository) UpdatePasswordHash(ctx context.Context, userID int64, p
 
 func (r *userRepository) UpdateLastLogin(ctx context.Context, userID int64) error {
 	return GetQueries(ctx, r.db).UpdateUserLastLogin(ctx, userID)
-}
-
-func getUserByID(ctx context.Context, database *database.Database, id int64) (db.User, error) {
-	const query = `
-SELECT
-    id,
-    first_name,
-    last_name,
-    full_name,
-    email,
-    phone_number,
-    password_hash,
-    auth_provider,
-    provider_id,
-    global_role,
-    email_verified,
-    phone_verified,
-    is_active,
-    is_blocked,
-    blocked_reason,
-    avatar_url,
-    date_of_birth,
-    gender,
-    timezone,
-    language,
-    last_login_at,
-    password_changed_at,
-    deleted_at,
-    metadata,
-    created_at,
-    updated_at
-FROM users
-WHERE id = $1
-  AND deleted_at IS NULL
-LIMIT 1`
-
-	var user db.User
-	err := GetExecutor(ctx, database).QueryRow(ctx, query, id).Scan(
-		&user.ID,
-		&user.FirstName,
-		&user.LastName,
-		&user.FullName,
-		&user.Email,
-		&user.PhoneNumber,
-		&user.PasswordHash,
-		&user.AuthProvider,
-		&user.ProviderID,
-		&user.GlobalRole,
-		&user.EmailVerified,
-		&user.PhoneVerified,
-		&user.IsActive,
-		&user.IsBlocked,
-		&user.BlockedReason,
-		&user.AvatarUrl,
-		&user.DateOfBirth,
-		&user.Gender,
-		&user.Timezone,
-		&user.Language,
-		&user.LastLoginAt,
-		&user.PasswordChangedAt,
-		&user.DeletedAt,
-		&user.Metadata,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-	return user, err
 }

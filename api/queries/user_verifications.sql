@@ -58,7 +58,8 @@ LIMIT 1;
 UPDATE user_verifications
 SET is_used = true,
     used_at = NOW()
-WHERE id = $1;
+WHERE id = $1
+  AND is_used = false;
 
 -- name: IncrementUserVerificationAttempts :exec
 UPDATE user_verifications

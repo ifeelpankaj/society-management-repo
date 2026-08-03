@@ -107,6 +107,9 @@ func (r *inviteQueryEntryRepo) Create(context.Context, models.VisitorFormRequest
 func (r *inviteQueryEntryRepo) Get(context.Context, int64, int64) (*models.VisitorEntry, error) {
 	return nil, nil
 }
+func (r *inviteQueryEntryRepo) GetForUpdate(context.Context, int64, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
 func (r *inviteQueryEntryRepo) GetByQRHash(context.Context, string) (*models.VisitorEntry, error) {
 	return nil, nil
 }

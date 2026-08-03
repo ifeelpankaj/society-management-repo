@@ -194,6 +194,7 @@ UPDATE user_verifications
 SET is_used = true,
     used_at = NOW()
 WHERE id = $1
+  AND is_used = false
 `
 
 func (q *Queries) MarkUserVerificationUsed(ctx context.Context, id int64) error {

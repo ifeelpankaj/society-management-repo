@@ -28,6 +28,7 @@ type SubscriptionRepository interface {
 	CountActiveAdmins(ctx context.Context, societyID int64) (int64, error)
 	CountActiveStaff(ctx context.Context, societyID int64) (int64, error)
 	CountActiveResidents(ctx context.Context, societyID int64) (int64, error)
+	GetActiveForUpdate(ctx context.Context, societyID int64) (*models.SocietySubscription, error)
 }
 
 type subscriptionRepository struct {
@@ -155,6 +156,11 @@ func (r *subscriptionRepository) CountActiveStaff(ctx context.Context, societyID
 
 func (r *subscriptionRepository) CountActiveResidents(ctx context.Context, societyID int64) (int64, error) {
 	return GetQueries(ctx, r.db).CountActiveResidentsForQuota(ctx, societyID)
+}
+
+func (r *subscriptionRepository) GetActiveForUpdate(ctx context.Context, societyID int64) (*models.SocietySubscription, error) {
+	row, err := GetQueries(ctx, r.db).GetActiveSubscriptionForUpdate(ctx, societyID)
+	return subscriptionFromDBNoRows(row, err)
 }
 
 func subscriptionFromDBNoRows(row db.SocietySubscription, err error) (*models.SocietySubscription, error) {

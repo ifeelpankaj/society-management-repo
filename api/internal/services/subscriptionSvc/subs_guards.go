@@ -71,6 +71,21 @@ func (s *SubscriptionSvc) CanAddResident(ctx context.Context, societyID int64, a
 	}, s.subRepo.CountActiveResidents)
 }
 
+// CanAddResidentWithLock serializes quota checks by locking the active subscription row in the current transaction.
+func (s *SubscriptionSvc) CanAddResidentWithLock(ctx context.Context, societyID int64, adding int64) error {
+	if adding <= 0 {
+		return nil
+	}
+	sub, err := s.subRepo.GetActiveForUpdate(ctx, societyID)
+	if err != nil {
+		return err
+	}
+	if sub == nil {
+		return ErrSubscriptionRequired
+	}
+	return s.CanAddResident(ctx, societyID, adding)
+}
+
 // Private guards.
 
 // checkQuota checks current usage plus the requested addition against a subscription limit.

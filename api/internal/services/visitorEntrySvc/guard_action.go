@@ -67,6 +67,9 @@ func (s *VisitorEntrySvc) GuardApproveEntry(ctx context.Context, societyID int64
 
 	var approved *models.VisitorEntry
 	err = s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.lockEntryForApproval(txCtx, societyID, entryID); err != nil {
+			return err
+		}
 		if opts.OnBehalf {
 			audit, auditErr := s.buildOnBehalfAudit(txCtx, entry, guardUserID, opts.Reason)
 			if auditErr != nil {
@@ -131,6 +134,9 @@ func (s *VisitorEntrySvc) GuardApproveAndCheckIn(ctx context.Context, societyID 
 
 	var checkedIn *models.VisitorEntry
 	err = s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.lockEntryForApproval(txCtx, societyID, entryID); err != nil {
+			return err
+		}
 		if opts.OnBehalf {
 			audit, auditErr := s.buildOnBehalfAudit(txCtx, entry, guardUserID, opts.Reason)
 			if auditErr != nil {

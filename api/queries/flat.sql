@@ -94,6 +94,27 @@ SET status = 'vacant', updated_at = NOW()
 WHERE id = $1 AND society_id = $2 AND is_active = TRUE AND status != 'blocked'
 RETURNING *;
 
+-- name: CountFlats :one
+SELECT COUNT(*)
+FROM flats f
+JOIN societies s ON s.id = f.society_id
+WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
+  AND (sqlc.narg('society_id')::bigint IS NULL OR f.society_id = sqlc.narg('society_id')::bigint)
+  AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
+  AND (sqlc.narg('floor')::text IS NULL OR f.floor = sqlc.narg('floor')::text)
+  AND (sqlc.narg('flat_number')::text IS NULL OR f.flat_number = sqlc.narg('flat_number')::text)
+  AND (sqlc.narg('status')::flat_status IS NULL OR f.status = sqlc.narg('status')::flat_status)
+  AND (sqlc.narg('is_active')::bool IS NULL OR f.is_active = sqlc.narg('is_active')::bool)
+  AND (
+      sqlc.arg('search')::text = ''
+      OR f.flat_number ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR COALESCE(f.block, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR COALESCE(f.floor, '') ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR f.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR s.name ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR s.society_code ILIKE '%' || sqlc.arg('search')::text || '%'
+  );
+
 -- name: GetFlatStats :one
 SELECT
     sqlc.arg('society_id')::bigint AS society_id,

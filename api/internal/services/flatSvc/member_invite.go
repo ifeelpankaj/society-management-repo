@@ -175,7 +175,7 @@ func (s *FlatSvc) AcceptMemberInvite(ctx context.Context, rawToken string, userI
 			return err
 		}
 		if s.subscriptionSvc != nil {
-			if err := s.subscriptionSvc.CanAddResident(txCtx, invite.SocietyID, 1); err != nil {
+			if err := s.subscriptionSvc.CanAddResidentWithLock(txCtx, invite.SocietyID, 1); err != nil {
 				return err
 			}
 		}

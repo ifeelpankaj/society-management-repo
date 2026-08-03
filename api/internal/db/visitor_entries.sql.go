@@ -1231,6 +1231,59 @@ func (q *Queries) GetVisitorEntryByQRHash(ctx context.Context, qrTokenHash *stri
 	return i, err
 }
 
+const getVisitorEntryForUpdate = `-- name: GetVisitorEntryForUpdate :one
+SELECT ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider
+FROM visitor_entries ve
+WHERE ve.id = $1
+  AND ve.society_id = $2
+FOR UPDATE
+`
+
+type GetVisitorEntryForUpdateParams struct {
+	ID        int64 `db:"id" json:"id"`
+	SocietyID int64 `db:"society_id" json:"society_id"`
+}
+
+func (q *Queries) GetVisitorEntryForUpdate(ctx context.Context, arg GetVisitorEntryForUpdateParams) (VisitorEntry, error) {
+	row := q.db.QueryRow(ctx, getVisitorEntryForUpdate, arg.ID, arg.SocietyID)
+	var i VisitorEntry
+	err := row.Scan(
+		&i.ID,
+		&i.SocietyID,
+		&i.FlatID,
+		&i.VisitorID,
+		&i.InviteID,
+		&i.Source,
+		&i.Purpose,
+		&i.Status,
+		&i.VehicleNumber,
+		&i.VehicleType,
+		&i.CompanionsCount,
+		&i.CompanionDetails,
+		&i.ExpectedAt,
+		&i.ExpectedCheckoutAt,
+		&i.CheckedInAt,
+		&i.CheckedOutAt,
+		&i.AutoClosedAt,
+		&i.ApprovedBy,
+		&i.RejectedBy,
+		&i.HandledByGuardID,
+		&i.CreatedBy,
+		&i.QrTokenHash,
+		&i.QrExpiresAt,
+		&i.QrUsedAt,
+		&i.Notes,
+		&i.RejectionReason,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
+	)
+	return i, err
+}
+
 const getVisitorEntryStats = `-- name: GetVisitorEntryStats :one
 SELECT
     COUNT(*) FILTER (
@@ -1567,11 +1620,13 @@ WHERE ve.society_id = $1
   AND ve.flat_id = $2
   AND ve.status = 'waiting_approval'
 ORDER BY ve.created_at DESC
+LIMIT $3
 `
 
 type ListPendingVisitorApprovalsParams struct {
 	SocietyID int64 `db:"society_id" json:"society_id"`
 	FlatID    int64 `db:"flat_id" json:"flat_id"`
+	Limit     int32 `db:"limit" json:"limit"`
 }
 
 type ListPendingVisitorApprovalsRow struct {
@@ -1617,7 +1672,7 @@ type ListPendingVisitorApprovalsRow struct {
 }
 
 func (q *Queries) ListPendingVisitorApprovals(ctx context.Context, arg ListPendingVisitorApprovalsParams) ([]ListPendingVisitorApprovalsRow, error) {
-	rows, err := q.db.Query(ctx, listPendingVisitorApprovals, arg.SocietyID, arg.FlatID)
+	rows, err := q.db.Query(ctx, listPendingVisitorApprovals, arg.SocietyID, arg.FlatID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

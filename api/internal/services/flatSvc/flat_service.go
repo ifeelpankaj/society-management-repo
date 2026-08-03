@@ -93,6 +93,7 @@ type flatSubscriptionGuard interface {
 	EnsureSocietyOperational(ctx context.Context, societyID int64) error
 	CanAddFlat(ctx context.Context, societyID int64, adding int64) error
 	CanAddResident(ctx context.Context, societyID int64, adding int64) error
+	CanAddResidentWithLock(ctx context.Context, societyID int64, adding int64) error
 }
 
 func NewFlatService(

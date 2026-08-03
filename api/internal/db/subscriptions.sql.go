@@ -420,6 +420,52 @@ func (q *Queries) ExpireSubscription(ctx context.Context, id int64) (SocietySubs
 	return i, err
 }
 
+const getActiveSubscriptionForUpdate = `-- name: GetActiveSubscriptionForUpdate :one
+SELECT id, society_id, plan_id, status, starts_at, ends_at, trial_ends_at, plan_name, plan_code, price_amount_paise, currency, billing_cycle, max_flats, max_admins, max_staff, max_residents, features, activated_at, activated_by, expired_at, cancelled_at, cancelled_by, cancellation_reason, metadata, created_by, created_at, updated_at
+FROM society_subscriptions
+WHERE society_id = $1::bigint
+  AND status IN ('trial', 'active')
+  AND (ends_at IS NULL OR ends_at > NOW())
+ORDER BY id DESC
+LIMIT 1
+FOR UPDATE
+`
+
+func (q *Queries) GetActiveSubscriptionForUpdate(ctx context.Context, societyID int64) (SocietySubscription, error) {
+	row := q.db.QueryRow(ctx, getActiveSubscriptionForUpdate, societyID)
+	var i SocietySubscription
+	err := row.Scan(
+		&i.ID,
+		&i.SocietyID,
+		&i.PlanID,
+		&i.Status,
+		&i.StartsAt,
+		&i.EndsAt,
+		&i.TrialEndsAt,
+		&i.PlanName,
+		&i.PlanCode,
+		&i.PriceAmountPaise,
+		&i.Currency,
+		&i.BillingCycle,
+		&i.MaxFlats,
+		&i.MaxAdmins,
+		&i.MaxStaff,
+		&i.MaxResidents,
+		&i.Features,
+		&i.ActivatedAt,
+		&i.ActivatedBy,
+		&i.ExpiredAt,
+		&i.CancelledAt,
+		&i.CancelledBy,
+		&i.CancellationReason,
+		&i.Metadata,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getSubscription = `-- name: GetSubscription :one
 SELECT
     ss.id, ss.society_id, ss.plan_id, ss.status, ss.starts_at, ss.ends_at, ss.trial_ends_at, ss.plan_name, ss.plan_code, ss.price_amount_paise, ss.currency, ss.billing_cycle, ss.max_flats, ss.max_admins, ss.max_staff, ss.max_residents, ss.features, ss.activated_at, ss.activated_by, ss.expired_at, ss.cancelled_at, ss.cancelled_by, ss.cancellation_reason, ss.metadata, ss.created_by, ss.created_at, ss.updated_at,

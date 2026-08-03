@@ -60,6 +60,9 @@ func (r *guardDeskEntryRepo) Create(context.Context, models.VisitorFormRequest, 
 func (r *guardDeskEntryRepo) Get(context.Context, int64, int64) (*models.VisitorEntry, error) {
 	return nil, nil
 }
+func (r *guardDeskEntryRepo) GetForUpdate(context.Context, int64, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
 func (r *guardDeskEntryRepo) GetByQRHash(context.Context, string) (*models.VisitorEntry, error) {
 	return nil, nil
 }
