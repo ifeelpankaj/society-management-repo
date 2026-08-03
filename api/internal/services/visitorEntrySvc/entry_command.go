@@ -33,6 +33,12 @@ func (s *VisitorEntrySvc) createEntryFromForm(ctx context.Context, societyID int
 	if err := req.ValidateForPurpose(); err != nil {
 		return nil, ErrInvalidVisitorRequest.WithCause(err)
 	}
+	if err := s.ensureEntryFlat(ctx, societyID, req.FlatID); err != nil {
+		return nil, err
+	}
+	if err := s.ensureSocietyActive(ctx, societyID); err != nil {
+		return nil, err
+	}
 	approvalRequired, err := s.settingSvc.ResolveApprovalRequirement(ctx, societyID, req.FlatID, req.Purpose, source)
 	if err != nil {
 		return nil, err
@@ -71,6 +77,12 @@ func (s *VisitorEntrySvc) createEntryFromForm(ctx context.Context, societyID int
 		}
 		if err := s.recordEvents(txCtx, entry, actorUserID, events...); err != nil {
 			return err
+		}
+		if qr != nil {
+			entry, err = s.attachQRDisplayToken(txCtx, societyID, entry.ID, qr)
+			if err != nil {
+				return err
+			}
 		}
 		response = &models.VisitorEntryMutationResponse{Entry: entry}
 		if qr != nil {
@@ -191,4 +203,10 @@ func (s *VisitorEntrySvc) AutoCloseExpiredEntries(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 	return s.entryRepo.AutoCloseExpired(ctx)
+}
+
+func (s *VisitorEntrySvc) ExpireStaleEntries(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	return s.entryRepo.ExpireStaleEntries(ctx)
 }

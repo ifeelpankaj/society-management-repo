@@ -10,7 +10,12 @@ import (
 	"time"
 
 	"go-server/internal/models"
+	societysvc "go-server/internal/services/societySvc"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+const qrDisplayTokenMetadataKey = "qr_display_token"
 
 func (s *VisitorEntrySvc) makeQR(ctx context.Context, societyID int64) (*qrToken, error) {
 	settings, err := s.settingSvc.GetSocietySettings(ctx, societyID)
@@ -112,4 +117,103 @@ func ParsePositiveInt64(raw string) (*int64, error) {
 
 func IsInvalidStateNoRows(err error) bool {
 	return errors.Is(err, ErrVisitorInvalidState)
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
+func qrDisplayTokenFromMetadata(metadata map[string]any) (string, bool) {
+	if metadata == nil {
+		return "", false
+	}
+	value, ok := metadata[qrDisplayTokenMetadataKey].(string)
+	return value, ok && value != ""
+}
+
+func (s *VisitorEntrySvc) ensureSocietyActive(ctx context.Context, societyID int64) error {
+	active := string(models.SocietyStatusActive)
+	id := societyID
+	society, err := s.societyRepo.Get(ctx, models.GetSocietyFilter{ID: &id, Status: &active})
+	if err != nil {
+		return err
+	}
+	if society == nil {
+		return societysvc.ErrSocietyInactive
+	}
+	return nil
+}
+
+func (s *VisitorEntrySvc) ensureEntryFlat(ctx context.Context, societyID int64, flatID int64) error {
+	if flatID <= 0 {
+		return ErrInvalidVisitorRequest
+	}
+	active := true
+	occupied := string(models.FlatStatusOccupied)
+	flat, err := s.flatRepo.Get(ctx, &models.FlatFilter{ID: &flatID, SocietyID: &societyID, Status: &occupied, IsActive: &active})
+	if err != nil {
+		return err
+	}
+	if flat == nil {
+		return ErrVisitorFlatNotFound
+	}
+	return nil
+}
+
+func (s *VisitorEntrySvc) attachQRDisplayToken(ctx context.Context, societyID int64, entryID int64, qr *qrToken) (*models.VisitorEntry, error) {
+	return s.entryRepo.MergeMetadata(ctx, societyID, entryID, map[string]any{qrDisplayTokenMetadataKey: qr.token})
+}
+
+func (s *VisitorEntrySvc) resolveExistingQR(ctx context.Context, societyID int64, entry *models.VisitorEntry) (*models.QRTokenResponse, error) {
+	if entry == nil || entry.QRExpiresAt == nil {
+		return nil, ErrVisitorQRUnavailable
+	}
+	if time.Now().After(*entry.QRExpiresAt) {
+		result, err := s.GenerateQR(ctx, societyID, entry.ID)
+		if err != nil {
+			return nil, err
+		}
+		if result != nil && result.QR != nil {
+			if _, err := s.attachQRDisplayToken(ctx, societyID, entry.ID, &qrToken{
+				token: result.QR.Token, hash: hashToken(result.QR.Token), expiresAt: result.QR.ExpiresAt,
+			}); err != nil {
+				return nil, err
+			}
+		}
+		return result.QR, nil
+	}
+	if token, ok := qrDisplayTokenFromMetadata(entry.Metadata); ok {
+		return &models.QRTokenResponse{Token: token, ExpiresAt: *entry.QRExpiresAt}, nil
+	}
+	qr, err := s.makeQR(ctx, societyID)
+	if err != nil {
+		return nil, err
+	}
+	updated, err := s.entryRepo.GenerateQR(ctx, societyID, entry.ID, qr.hash, qr.expiresAt)
+	if err != nil {
+		return nil, err
+	}
+	if updated == nil {
+		return nil, ErrVisitorQRUnavailable
+	}
+	if _, err := s.attachQRDisplayToken(ctx, societyID, entry.ID, qr); err != nil {
+		return nil, err
+	}
+	return qr.response(), nil
+}
+
+func (s *VisitorEntrySvc) idempotentInviteSubmitResponse(ctx context.Context, invite *models.VisitorInvite) (*models.VisitorEntryMutationResponse, error) {
+	existing, err := s.entryRepo.GetByInviteID(ctx, invite.ID)
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		return nil, ErrVisitorInviteUnavailable
+	}
+	qr, err := s.resolveExistingQR(ctx, invite.SocietyID, existing)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VisitorEntryMutationResponse{Entry: existing, QR: qr, IdempotentReplay: true}, nil
 }

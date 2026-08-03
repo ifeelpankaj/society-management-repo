@@ -35,6 +35,9 @@ func (s *VisitorEntrySvc) GetPublicInviteByToken(ctx context.Context, rawToken s
 	if invite == nil {
 		return nil, ErrVisitorInviteNotFound
 	}
+	if err := s.ensureSocietyActive(ctx, invite.SocietyID); err != nil {
+		return nil, err
+	}
 
 	inviteView, err := s.buildPublicInviteView(ctx, invite)
 	if err != nil {
@@ -99,7 +102,7 @@ func (s *VisitorEntrySvc) publicInvitePageForUsed(ctx context.Context, inviteVie
 	switch entry.Status {
 	case models.VisitorStatusApproved:
 		page.View = models.PublicVisitorInviteViewQR
-		qrResult, err := s.GenerateQR(ctx, invite.SocietyID, entry.ID)
+		qrResult, err := s.resolveExistingQR(ctx, invite.SocietyID, entry)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +111,7 @@ func (s *VisitorEntrySvc) publicInvitePageForUsed(ctx context.Context, inviteVie
 			return nil, err
 		}
 		page.Entry = enriched
-		page.QR = qrResult.QR
+		page.QR = qrResult
 		return page, nil
 	case models.VisitorStatusCheckedIn:
 		page.View = models.PublicVisitorInviteViewCheckedIn

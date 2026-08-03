@@ -15,7 +15,13 @@ func (s *VisitorEntrySvc) GetEntryOptions(ctx context.Context, societyID int64) 
 
 	active := true
 	occupied := string(models.FlatStatusOccupied)
-	flats, err := s.flatRepo.List(ctx, &models.FlatFilter{SocietyID: &societyID, Status: &occupied, IsActive: &active, Limit: 500})
+	const entryOptionsFlatLimit int32 = 500
+	filter := &models.FlatFilter{SocietyID: &societyID, Status: &occupied, IsActive: &active, Limit: entryOptionsFlatLimit}
+	flats, err := s.flatRepo.List(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	total, err := s.flatRepo.Count(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +48,7 @@ func (s *VisitorEntrySvc) GetEntryOptions(ctx context.Context, societyID int64) 
 		Purposes: []models.VisitorPurpose{models.VisitorPurposeGuest, models.VisitorPurposeDelivery, models.VisitorPurposeCab, models.VisitorPurposeService, models.VisitorPurposeMaintenance, models.VisitorPurposeStaff, models.VisitorPurposeOther},
 		Blocks:   blocks,
 		Flats:    items,
+		HasMore:  total > int64(len(flats)),
 	}, nil
 }
 
@@ -72,6 +79,19 @@ func (s *VisitorEntrySvc) GetEntryForQRScan(ctx context.Context, rawToken string
 	default:
 		return nil, ErrVisitorInvalidState
 	}
+}
+
+func (s *VisitorEntrySvc) GetEntryForQRScanForViewer(ctx context.Context, rawToken string, viewerUserID *int64) (*models.VisitorEntry, error) {
+	entry, err := s.GetEntryForQRScan(ctx, rawToken)
+	if err != nil {
+		return nil, err
+	}
+	if viewerUserID != nil && *viewerUserID > 0 {
+		if err := s.ensureStaffActor(ctx, entry.SocietyID, *viewerUserID); err == nil {
+			return entry, nil
+		}
+	}
+	return entry.ToScanPreview(), nil
 }
 
 func (s *VisitorEntrySvc) ValidateQR(ctx context.Context, rawToken string) (*models.VisitorEntry, error) {

@@ -24,6 +24,7 @@ type VisitorInviteRepository interface {
 	GetByID(ctx context.Context, societyID int64, inviteID int64) (*models.VisitorInvite, error)
 	GetByTokenHash(ctx context.Context, tokenHash string) (*models.VisitorInvite, error)
 	MarkUsed(ctx context.Context, inviteID int64) (*models.VisitorInvite, error)
+	GetForUpdate(ctx context.Context, inviteID int64) (*models.VisitorInvite, error)
 	Cancel(ctx context.Context, societyID int64, inviteID int64) (*models.VisitorInvite, error)
 	ExpireOld(ctx context.Context) error
 }
@@ -55,6 +56,7 @@ type VisitorEntryRepository interface {
 	CheckIn(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
 	CheckOut(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
 	AutoCloseExpired(ctx context.Context) error
+	ExpireStaleEntries(ctx context.Context) error
 }
 
 type VisitorEntryEventRepository interface {
@@ -130,6 +132,11 @@ func (r *visitorInviteRepository) GetByTokenHash(ctx context.Context, tokenHash 
 
 func (r *visitorInviteRepository) MarkUsed(ctx context.Context, inviteID int64) (*models.VisitorInvite, error) {
 	row, err := GetQueries(ctx, r.db).MarkVisitorInviteUsed(ctx, inviteID)
+	return visitorInviteFromDBNoRows(row, err)
+}
+
+func (r *visitorInviteRepository) GetForUpdate(ctx context.Context, inviteID int64) (*models.VisitorInvite, error) {
+	row, err := GetQueries(ctx, r.db).GetVisitorInviteForUpdate(ctx, inviteID)
 	return visitorInviteFromDBNoRows(row, err)
 }
 
@@ -416,6 +423,14 @@ func (r *visitorEntryRepository) CheckOut(ctx context.Context, societyID int64, 
 
 func (r *visitorEntryRepository) AutoCloseExpired(ctx context.Context) error {
 	return GetQueries(ctx, r.db).AutoCloseExpiredVisitorEntries(ctx)
+}
+
+func (r *visitorEntryRepository) ExpireStaleEntries(ctx context.Context) error {
+	queries := GetQueries(ctx, r.db)
+	if err := queries.ExpireStaleWaitingApprovalEntries(ctx); err != nil {
+		return err
+	}
+	return queries.ExpireStaleApprovedEntries(ctx)
 }
 
 func (r *visitorEntryEventRepository) Create(ctx context.Context, entryID int64, societyID int64, actorUserID *int64, eventType models.VisitorEventType, message *string, metadata map[string]any) (*models.VisitorEntryEvent, error) {

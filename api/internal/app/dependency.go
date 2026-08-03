@@ -193,6 +193,15 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 	verificationCleanupJob := jobs.NewVerificationCleanupJob(verificationRepo)
 	go verificationCleanupJob.Start(cleanupCtx, time.Hour)
 
+	visitorEntryMaintenanceJob := jobs.NewVisitorEntryMaintenanceJob(visitorEntrySvc)
+	go visitorEntryMaintenanceJob.Start(cleanupCtx, 15*time.Minute)
+
+	visitorInviteExpiryJob := jobs.NewVisitorInviteExpiryJob(visitorInviteSvc)
+	go visitorInviteExpiryJob.Start(cleanupCtx, 30*time.Minute)
+
+	flatMemberInviteExpiryJob := jobs.NewFlatMemberInviteExpiryJob(flatSvc)
+	go flatMemberInviteExpiryJob.Start(cleanupCtx, 30*time.Minute)
+
 	v1Handlers := &V1Handlers{
 		Auth: handlers.NewAuthHandler(
 			registrationSvc,
@@ -207,7 +216,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		MemberInvite:   handlers.NewMemberInviteHandler(flatSvc),
 		Plan:           handlers.NewPlanHandler(planSvc),
 		Subscription:   handlers.NewSubscriptionHandler(subscriptionSvc),
-		VisitorEntry:   handlers.NewVisitorEntryHandler(visitorInviteSvc, visitorEntrySvc),
+		VisitorEntry:   handlers.NewVisitorEntryHandler(societySvc, visitorInviteSvc, visitorEntrySvc),
 		VisitorSetting: handlers.NewVisitorSettingHandler(visitorSettingSvc),
 		Notification:   handlers.NewNotificationHandler(notificationSvc),
 	}

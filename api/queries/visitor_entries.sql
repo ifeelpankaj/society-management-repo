@@ -33,6 +33,12 @@ WHERE id = $1
   AND status = 'active'
 RETURNING *;
 
+-- name: GetVisitorInviteForUpdate :one
+SELECT *
+FROM visitor_invites
+WHERE id = $1
+FOR UPDATE;
+
 -- name: CancelVisitorInvite :one
 UPDATE visitor_invites
 SET status = 'cancelled',
@@ -615,6 +621,21 @@ SET status = 'auto_closed',
 WHERE status = 'checked_in'
   AND expected_checkout_at IS NOT NULL
   AND expected_checkout_at < NOW();
+
+-- name: ExpireStaleWaitingApprovalEntries :exec
+UPDATE visitor_entries
+SET status = 'expired',
+    updated_at = NOW()
+WHERE status = 'waiting_approval'
+  AND created_at < NOW() - INTERVAL '48 hours';
+
+-- name: ExpireStaleApprovedEntries :exec
+UPDATE visitor_entries
+SET status = 'expired',
+    updated_at = NOW()
+WHERE status = 'approved'
+  AND qr_expires_at IS NOT NULL
+  AND qr_expires_at < NOW();
 
 -- name: CreateVisitorEntryEvent :one
 INSERT INTO visitor_entry_events (visitor_entry_id, society_id, actor_user_id, event_type, message, metadata)

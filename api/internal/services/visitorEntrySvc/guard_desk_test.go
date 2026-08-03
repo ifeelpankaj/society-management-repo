@@ -130,6 +130,7 @@ func (r *guardDeskEntryRepo) CheckOut(context.Context, int64, int64, int64) (*mo
 	return nil, nil
 }
 func (r *guardDeskEntryRepo) AutoCloseExpired(context.Context) error { return nil }
+func (r *guardDeskEntryRepo) ExpireStaleEntries(context.Context) error { return nil }
 
 type noopTxManager struct{}
 

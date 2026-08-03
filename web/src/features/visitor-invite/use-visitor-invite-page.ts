@@ -13,6 +13,12 @@ import { getApiErrorMessage, getApiMessage } from "@/lib/api-message";
 import { isIndianPhone } from "@/lib/validations";
 
 import type { VisitorInviteStatusView } from "./visitor-invite-status";
+import {
+  buildCompanionDetails,
+  MAX_VISITOR_COMPANIONS,
+  normalizeCompanionNames,
+  parseCompanionsCount,
+} from "./visitor-invite-utils";
 
 type VisitorInviteFormValues = {
   fullName: string;
@@ -20,6 +26,8 @@ type VisitorInviteFormValues = {
   email: string;
   vehicleNumber: string;
   notes: string;
+  companionsCount: string;
+  companionNames: string[];
 };
 
 type SubmitResult = {
@@ -27,10 +35,7 @@ type SubmitResult = {
   qr?: ModelsQrTokenResponse;
 };
 
-export type VisitorInvitePageView =
-  | "form"
-  | "qr"
-  | VisitorInviteStatusView;
+export type VisitorInvitePageView = "form" | "qr" | VisitorInviteStatusView;
 
 export function useVisitorInvitePage(token: string) {
   const normalizedToken = decodeURIComponent(token).trim();
@@ -41,6 +46,8 @@ export function useVisitorInvitePage(token: string) {
     email: "",
     vehicleNumber: "",
     notes: "",
+    companionsCount: "",
+    companionNames: [],
   });
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
 
@@ -69,6 +76,11 @@ export function useVisitorInvitePage(token: string) {
 
   const displayResult = submitResult ?? recoveredResult;
 
+  const parsedCompanionsCount = useMemo(
+    () => parseCompanionsCount(form.companionsCount),
+    [form.companionsCount],
+  );
+
   const validationError = useMemo(() => {
     if (!form.fullName.trim()) {
       return "Enter your full name";
@@ -85,8 +97,12 @@ export function useVisitorInvitePage(token: string) {
       return "Enter a valid 10-digit phone number";
     }
 
+    if (parsedCompanionsCount === null) {
+      return `Enter companion count (0–${MAX_VISITOR_COMPANIONS})`;
+    }
+
     return null;
-  }, [form.email, form.fullName, form.phoneNumber]);
+  }, [form.email, form.fullName, form.phoneNumber, parsedCompanionsCount]);
 
   const updateField = <K extends keyof VisitorInviteFormValues>(
     key: K,
@@ -95,13 +111,36 @@ export function useVisitorInvitePage(token: string) {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const updateCompanionsCount = (value: string) => {
+    const sanitized = value.replace(/\D/g, "").slice(0, 2);
+    const count = parseCompanionsCount(sanitized) ?? 0;
+
+    setForm((current) => ({
+      ...current,
+      companionsCount: sanitized,
+      companionNames: normalizeCompanionNames(current.companionNames, count),
+    }));
+  };
+
+  const updateCompanionName = (index: number, value: string) => {
+    setForm((current) => {
+      const next = [...current.companionNames];
+      next[index] = value;
+      return { ...current, companionNames: next };
+    });
+  };
+
   const handleSubmit = async () => {
-    if (validationError) {
-      toast.error(validationError);
+    if (validationError || parsedCompanionsCount === null) {
+      toast.error(validationError ?? "Enter companion count");
       return;
     }
 
     const toastId = toast.loading("Submitting visitor details...");
+    const companionDetails = buildCompanionDetails(
+      form.companionNames,
+      parsedCompanionsCount,
+    );
 
     try {
       const response = await submitInvite({
@@ -112,6 +151,9 @@ export function useVisitorInvitePage(token: string) {
           email: form.email.trim() || undefined,
           vehicle_number: form.vehicleNumber.trim() || undefined,
           notes: form.notes.trim() || undefined,
+          companions_count: parsedCompanionsCount,
+          companion_details:
+            companionDetails.length > 0 ? companionDetails : undefined,
         },
       }).unwrap();
 
@@ -139,10 +181,13 @@ export function useVisitorInvitePage(token: string) {
     inviteQuery,
     pageData,
     pageView,
+    parsedCompanionsCount,
     showOptional,
     setShowOptional,
     submitResult,
     submitState,
+    updateCompanionName,
+    updateCompanionsCount,
     updateField,
     validationError,
   };

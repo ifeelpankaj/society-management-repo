@@ -798,6 +798,33 @@ func (q *Queries) ExpireOldVisitorInvites(ctx context.Context) error {
 	return err
 }
 
+const expireStaleApprovedEntries = `-- name: ExpireStaleApprovedEntries :exec
+UPDATE visitor_entries
+SET status = 'expired',
+    updated_at = NOW()
+WHERE status = 'approved'
+  AND qr_expires_at IS NOT NULL
+  AND qr_expires_at < NOW()
+`
+
+func (q *Queries) ExpireStaleApprovedEntries(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, expireStaleApprovedEntries)
+	return err
+}
+
+const expireStaleWaitingApprovalEntries = `-- name: ExpireStaleWaitingApprovalEntries :exec
+UPDATE visitor_entries
+SET status = 'expired',
+    updated_at = NOW()
+WHERE status = 'waiting_approval'
+  AND created_at < NOW() - INTERVAL '48 hours'
+`
+
+func (q *Queries) ExpireStaleWaitingApprovalEntries(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, expireStaleWaitingApprovalEntries)
+	return err
+}
+
 const generateVisitorEntryQR = `-- name: GenerateVisitorEntryQR :one
 UPDATE visitor_entries
 SET qr_token_hash = $3,
@@ -1328,6 +1355,33 @@ WHERE token_hash = $1
 
 func (q *Queries) GetVisitorInviteByTokenHash(ctx context.Context, tokenHash string) (VisitorInvite, error) {
 	row := q.db.QueryRow(ctx, getVisitorInviteByTokenHash, tokenHash)
+	var i VisitorInvite
+	err := row.Scan(
+		&i.ID,
+		&i.SocietyID,
+		&i.FlatID,
+		&i.CreatedBy,
+		&i.Purpose,
+		&i.TokenHash,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getVisitorInviteForUpdate = `-- name: GetVisitorInviteForUpdate :one
+SELECT id, society_id, flat_id, created_by, purpose, token_hash, status, expires_at, used_at, metadata, created_at, updated_at
+FROM visitor_invites
+WHERE id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetVisitorInviteForUpdate(ctx context.Context, id int64) (VisitorInvite, error) {
+	row := q.db.QueryRow(ctx, getVisitorInviteForUpdate, id)
 	var i VisitorInvite
 	err := row.Scan(
 		&i.ID,

@@ -55,6 +55,9 @@ func (r *inviteQueryInviteRepo) GetByTokenHash(_ context.Context, tokenHash stri
 func (r *inviteQueryInviteRepo) MarkUsed(context.Context, int64) (*models.VisitorInvite, error) {
 	return nil, nil
 }
+func (r *inviteQueryInviteRepo) GetForUpdate(context.Context, int64) (*models.VisitorInvite, error) {
+	return nil, nil
+}
 func (r *inviteQueryInviteRepo) Cancel(context.Context, int64, int64) (*models.VisitorInvite, error) {
 	return nil, nil
 }
@@ -152,9 +155,6 @@ func (r *inviteQueryEntryRepo) ListExpectedGuests(context.Context, models.Expect
 func (r *inviteQueryEntryRepo) CountExpectedGuestsFiltered(context.Context, models.ExpectedGuestFilter) (int64, error) {
 	return 0, nil
 }
-func (r *inviteQueryEntryRepo) MergeMetadata(context.Context, int64, int64, map[string]any) (*models.VisitorEntry, error) {
-	return nil, nil
-}
 func (r *inviteQueryEntryRepo) CountMemberApprovals(context.Context, int64, int64) (*models.MemberVisitorApprovalStatsResponse, error) {
 	return nil, nil
 }
@@ -164,6 +164,21 @@ func (r *inviteQueryEntryRepo) Approve(context.Context, int64, int64, int64, str
 func (r *inviteQueryEntryRepo) Reject(context.Context, int64, int64, int64, string) (*models.VisitorEntry, error) {
 	return nil, nil
 }
+func (r *inviteQueryEntryRepo) MergeMetadata(_ context.Context, _ int64, _ int64, metadata map[string]any) (*models.VisitorEntry, error) {
+	if r.entry == nil {
+		return nil, nil
+	}
+	entry := *r.entry
+	if entry.Metadata == nil {
+		entry.Metadata = map[string]any{}
+	}
+	for key, value := range metadata {
+		entry.Metadata[key] = value
+	}
+	r.entry = &entry
+	return &entry, nil
+}
+
 func (r *inviteQueryEntryRepo) GenerateQR(_ context.Context, societyID int64, entryID int64, qrHash string, qrExpiresAt time.Time) (*models.VisitorEntry, error) {
 	entry := *r.entry
 	entry.QRExpiresAt = &qrExpiresAt
@@ -176,6 +191,7 @@ func (r *inviteQueryEntryRepo) CheckOut(context.Context, int64, int64, int64) (*
 	return nil, nil
 }
 func (r *inviteQueryEntryRepo) AutoCloseExpired(context.Context) error { return nil }
+func (r *inviteQueryEntryRepo) ExpireStaleEntries(context.Context) error { return nil }
 
 type inviteQueryEventRepo struct{}
 

@@ -144,6 +144,10 @@ func (s *sessionSvc) Refresh(ctx context.Context, userID int64) (*RefreshResult,
 		return nil, ErrUserBlocked
 	}
 
+	if !user.EmailVerified {
+		return nil, ErrEmailNotVerified
+	}
+
 	accessToken, err := GenerateToken(
 		user.ID,
 		user.EmailValue(),

@@ -18,6 +18,7 @@ SET
     allow_resident_pre_approval = COALESCE(sqlc.narg('allow_resident_pre_approval')::boolean, allow_resident_pre_approval),
     allow_public_qr_entry = COALESCE(sqlc.narg('allow_public_qr_entry')::boolean, allow_public_qr_entry),
     allow_guard_entry = COALESCE(sqlc.narg('allow_guard_entry')::boolean, allow_guard_entry),
+    allow_guard_on_behalf_approval = COALESCE(sqlc.narg('allow_guard_on_behalf_approval')::boolean, allow_guard_on_behalf_approval),
     is_active = COALESCE(sqlc.narg('is_active')::boolean, is_active),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()

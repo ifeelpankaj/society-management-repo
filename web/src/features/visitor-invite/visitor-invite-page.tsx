@@ -47,6 +47,8 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
     setShowOptional,
     submitResult,
     submitState,
+    updateCompanionName,
+    updateCompanionsCount,
     updateField,
   } = useVisitorInvitePage(token);
 
@@ -119,13 +121,9 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
               {formatInviteFlatLabel(invite)}
             </span>
             <span className="block">
-              Visiting as{" "}
-              <strong>{titleizePurpose(invite?.purpose)}</strong>
+              Visiting as <strong>{titleizePurpose(invite?.purpose)}</strong>
               {invite?.expires_at ? (
-                <>
-                  {" "}
-                  · invite expires {formatInviteExpiry(invite.expires_at)}
-                </>
+                <> · invite expires {formatInviteExpiry(invite.expires_at)}</>
               ) : null}
             </span>
           </CardDescription>
@@ -136,11 +134,14 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
         <CardHeader>
           <CardTitle>Your details</CardTitle>
           <CardDescription>
-            Phone number is required unless you provide an email address.
+            Phone or email is required. Companion count is required (use 0 if
+            visiting alone). Vehicle and companion names are optional.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <VisitorInviteForm
+            companionNames={form.companionNames}
+            companionsCount={form.companionsCount}
             email={form.email}
             fullName={form.fullName}
             isSubmitting={submitState.isLoading}
@@ -148,13 +149,17 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
             phoneNumber={form.phoneNumber}
             showOptional={showOptional}
             vehicleNumber={form.vehicleNumber}
+            onCompanionNameChange={updateCompanionName}
+            onCompanionsCountChange={updateCompanionsCount}
             onEmailChange={(value) => updateField("email", value)}
             onFullNameChange={(value) => updateField("fullName", value)}
             onNotesChange={(value) => updateField("notes", value)}
             onPhoneNumberChange={(value) => updateField("phoneNumber", value)}
             onSubmit={handleSubmit}
             onToggleOptional={() => setShowOptional((current) => !current)}
-            onVehicleNumberChange={(value) => updateField("vehicleNumber", value)}
+            onVehicleNumberChange={(value) =>
+              updateField("vehicleNumber", value)
+            }
           />
         </CardContent>
       </Card>

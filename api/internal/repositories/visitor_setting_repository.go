@@ -59,6 +59,7 @@ func (r *visitorSettingRepository) UpdateSociety(ctx context.Context, societyID 
 		AllowResidentPreApproval:    req.AllowResidentPreApproval,
 		AllowPublicQrEntry:          req.AllowPublicQREntry,
 		AllowGuardEntry:             req.AllowGuardEntry,
+		AllowGuardOnBehalfApproval:  req.AllowGuardOnBehalfApproval,
 		IsActive:                    req.IsActive,
 		UpdatedBy:                   &actorUserID,
 		SocietyID:                   societyID,
@@ -163,7 +164,8 @@ func societyVisitorSettingsFromDB(row db.SocietyVisitorSetting) *models.SocietyV
 		ID: row.ID, SocietyID: row.SocietyID, ApprovalMode: models.VisitorApprovalMode(row.ApprovalMode),
 		DefaultVisitDurationMinutes: row.DefaultVisitDurationMinutes, GracePeriodMinutes: row.GracePeriodMinutes,
 		QRExpiryMinutes: row.QrExpiryMinutes, AllowResidentPreApproval: row.AllowResidentPreApproval,
-		AllowPublicQREntry: row.AllowPublicQrEntry, AllowGuardEntry: row.AllowGuardEntry, IsActive: row.IsActive,
+		AllowPublicQREntry: row.AllowPublicQrEntry, AllowGuardEntry: row.AllowGuardEntry,
+		AllowGuardOnBehalfApproval: row.AllowGuardOnBehalfApproval, IsActive: row.IsActive,
 		UpdatedBy: row.UpdatedBy, CreatedAt: pgTimestamptzToTime(row.CreatedAt), UpdatedAt: pgTimestamptzToTime(row.UpdatedAt),
 	}
 }

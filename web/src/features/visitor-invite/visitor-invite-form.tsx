@@ -1,16 +1,33 @@
 "use client";
 
-import { Car, ChevronDown, ChevronUp, Mail, Phone, User } from "lucide-react";
+import {
+  Car,
+  ChevronDown,
+  ChevronUp,
+  Mail,
+  Phone,
+  User,
+  Users,
+} from "lucide-react";
 
 import { FormField } from "@/components/forms/form-field";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import {
+  MAX_VISITOR_COMPANIONS,
+  parseCompanionsCount,
+} from "./visitor-invite-utils";
+
 type VisitorInviteFormProps = {
+  companionNames: string[];
+  companionsCount: string;
   email: string;
   fullName: string;
   isSubmitting: boolean;
   notes: string;
+  onCompanionNameChange: (index: number, value: string) => void;
+  onCompanionsCountChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onFullNameChange: (value: string) => void;
   onNotesChange: (value: string) => void;
@@ -24,10 +41,14 @@ type VisitorInviteFormProps = {
 };
 
 export function VisitorInviteForm({
+  companionNames,
+  companionsCount,
   email,
   fullName,
   isSubmitting,
   notes,
+  onCompanionNameChange,
+  onCompanionsCountChange,
   onEmailChange,
   onFullNameChange,
   onNotesChange,
@@ -39,6 +60,12 @@ export function VisitorInviteForm({
   showOptional,
   vehicleNumber,
 }: VisitorInviteFormProps) {
+  const parsedCompanionsCount = parseCompanionsCount(companionsCount);
+  const companionSlots =
+    parsedCompanionsCount !== null && parsedCompanionsCount > 0
+      ? parsedCompanionsCount
+      : 0;
+
   return (
     <form
       className="space-y-4"
@@ -69,13 +96,51 @@ export function VisitorInviteForm({
         onChange={(event) => onPhoneNumberChange(event.target.value)}
       />
 
+      <FormField
+        hint={`People accompanying you, not including yourself. Enter 0 if none. Max ${MAX_VISITOR_COMPANIONS}.`}
+        icon={<Users className="size-4" />}
+        id="visitor-companions-count"
+        inputMode="numeric"
+        label="Companion count"
+        placeholder="0"
+        required
+        value={companionsCount}
+        onChange={(event) => onCompanionsCountChange(event.target.value)}
+      />
+
+      {companionSlots > 0 ? (
+        <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+          <div>
+            <p className="font-medium text-sm">Companion details</p>
+            <p className="text-muted-foreground text-xs">
+              Optional — helps security identify everyone in your group.
+            </p>
+          </div>
+          {companionNames.slice(0, companionSlots).map((name, index) => (
+            <FormField
+              key={`companion-${index + 1}`}
+              autoComplete="name"
+              id={`visitor-companion-${index + 1}`}
+              label={`Companion ${index + 1} name`}
+              placeholder="Optional"
+              value={name}
+              onChange={(event) =>
+                onCompanionNameChange(index, event.target.value)
+              }
+            />
+          ))}
+        </div>
+      ) : null}
+
       <Button
         className="w-full justify-between"
         type="button"
         variant="ghost"
         onClick={onToggleOptional}
       >
-        <span>{showOptional ? "Hide optional details" : "Add optional details"}</span>
+        <span>
+          {showOptional ? "Hide optional details" : "Add optional details"}
+        </span>
         {showOptional ? (
           <ChevronUp className="size-4" />
         ) : (
@@ -124,7 +189,12 @@ export function VisitorInviteForm({
         </div>
       ) : null}
 
-      <Button className="w-full" disabled={isSubmitting} size="lg" type="submit">
+      <Button
+        className="w-full"
+        disabled={isSubmitting}
+        size="lg"
+        type="submit"
+      >
         {isSubmitting ? "Submitting..." : "Submit and get entry QR"}
       </Button>
     </form>

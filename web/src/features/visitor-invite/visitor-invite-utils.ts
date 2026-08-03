@@ -51,3 +51,38 @@ export function formatInviteExpiry(value?: string | null) {
     month: "short",
   }).format(date);
 }
+
+export const MAX_VISITOR_COMPANIONS = 10;
+
+export function parseCompanionsCount(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return null;
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+
+  const value = Number(trimmed);
+  if (!Number.isInteger(value) || value < 0 || value > MAX_VISITOR_COMPANIONS) {
+    return null;
+  }
+
+  return value;
+}
+
+export function normalizeCompanionNames(names: string[], count: number) {
+  const next = names.slice(0, count);
+  while (next.length < count) {
+    next.push("");
+  }
+  return next;
+}
+
+export function buildCompanionDetails(names: string[], count: number) {
+  return normalizeCompanionNames(names, count)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((full_name) => ({ full_name }));
+}

@@ -88,8 +88,8 @@ func LoggerWithConfig(cfg LoggerConfig) gin.HandlerFunc {
 		}
 
 		// Add user ID if exists (for authenticated requests)
-		if userID := c.GetString("user_id"); userID != "" {
-			fields = append(fields, zap.String("user_id", userID))
+		if userID, ok := GetUserIDFromContext(c); ok {
+			fields = append(fields, zap.Int64("user_id", userID))
 		}
 
 		// Add content length

@@ -59,3 +59,24 @@ func (s *VisitorEntrySvc) ensureStaffActor(ctx context.Context, societyID int64,
 		return ErrVisitorForbidden
 	}
 }
+
+func (s *VisitorEntrySvc) ensureGuardOnBehalfAllowed(ctx context.Context, societyID int64, entry *models.VisitorEntry) error {
+	approvalRequired, err := s.settingSvc.ResolveApprovalRequirement(ctx, societyID, entry.FlatID, entry.Purpose, entry.Source)
+	if err != nil {
+		return err
+	}
+	if !approvalRequired {
+		return nil
+	}
+	settings, err := s.settingSvc.GetSocietySettings(ctx, societyID)
+	if err != nil {
+		return err
+	}
+	if settings == nil {
+		return ErrVisitorSettingsNotFound
+	}
+	if !settings.AllowGuardOnBehalfApproval {
+		return ErrVisitorGuardOnBehalfNotAllowed
+	}
+	return nil
+}

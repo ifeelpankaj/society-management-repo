@@ -1185,6 +1185,7 @@ type SocietyVisitorSetting struct {
 	UpdatedBy                   *int64              `db:"updated_by" json:"updated_by"`
 	CreatedAt                   pgtype.Timestamptz  `db:"created_at" json:"created_at"`
 	UpdatedAt                   pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+	AllowGuardOnBehalfApproval  bool                `db:"allow_guard_on_behalf_approval" json:"allow_guard_on_behalf_approval"`
 }
 
 type User struct {

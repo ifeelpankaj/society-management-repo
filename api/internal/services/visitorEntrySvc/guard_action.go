@@ -54,6 +54,11 @@ func (s *VisitorEntrySvc) GuardApproveEntry(ctx context.Context, societyID int64
 	if entry.Status != models.VisitorStatusWaitingApproval {
 		return nil, ErrVisitorInvalidState
 	}
+	if opts.OnBehalf {
+		if err := s.ensureGuardOnBehalfAllowed(ctx, societyID, entry); err != nil {
+			return nil, err
+		}
+	}
 
 	qr, err := s.makeQR(ctx, societyID)
 	if err != nil {
@@ -112,6 +117,11 @@ func (s *VisitorEntrySvc) GuardApproveAndCheckIn(ctx context.Context, societyID 
 	}
 	if entry.Status != models.VisitorStatusWaitingApproval {
 		return nil, ErrVisitorInvalidState
+	}
+	if opts.OnBehalf {
+		if err := s.ensureGuardOnBehalfAllowed(ctx, societyID, entry); err != nil {
+			return nil, err
+		}
 	}
 
 	qr, err := s.makeQR(ctx, societyID)

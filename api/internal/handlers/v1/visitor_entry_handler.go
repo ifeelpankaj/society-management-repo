@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	middleware "go-server/internal/middlewares"
 	"go-server/internal/models"
+	societysvc "go-server/internal/services/societySvc"
 	visitorentrysvc "go-server/internal/services/visitorEntrySvc"
 	"go-server/pkg/utils"
 
@@ -15,12 +17,13 @@ import (
 )
 
 type VisitorEntryHandler struct {
-	inviteSvc visitorentrysvc.VisitorInviteService
-	entrySvc  visitorentrysvc.VisitorEntryService
+	societySvc societysvc.SocietyService
+	inviteSvc  visitorentrysvc.VisitorInviteService
+	entrySvc   visitorentrysvc.VisitorEntryService
 }
 
-func NewVisitorEntryHandler(inviteSvc visitorentrysvc.VisitorInviteService, entrySvc visitorentrysvc.VisitorEntryService) *VisitorEntryHandler {
-	return &VisitorEntryHandler{inviteSvc: inviteSvc, entrySvc: entrySvc}
+func NewVisitorEntryHandler(societySvc societysvc.SocietyService, inviteSvc visitorentrysvc.VisitorInviteService, entrySvc visitorentrysvc.VisitorEntryService) *VisitorEntryHandler {
+	return &VisitorEntryHandler{societySvc: societySvc, inviteSvc: inviteSvc, entrySvc: entrySvc}
 }
 
 // GetEntryOptions godoc
@@ -35,7 +38,7 @@ func NewVisitorEntryHandler(inviteSvc visitorentrysvc.VisitorInviteService, entr
 // @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
 // @Router /v1/public/societies/{societyCode}/visitor-entry-options [get]
 func (h *VisitorEntryHandler) GetEntryOptions(c *gin.Context) {
-	societyID, ok := parsePublicSocietyID(c)
+	societyID, ok := h.resolvePublicSocietyID(c)
 	if !ok {
 		return
 	}
@@ -173,7 +176,13 @@ func (h *VisitorEntryHandler) SubmitInviteForm(c *gin.Context) {
 	if handleServiceError(c, err) {
 		return
 	}
-	utils.SuccessResponse(c, http.StatusCreated, "Visitor entry created successfully", result)
+	status := http.StatusCreated
+	message := "Visitor entry created successfully"
+	if result != nil && result.IdempotentReplay {
+		status = http.StatusOK
+		message = "Visitor entry retrieved successfully"
+	}
+	utils.SuccessResponse(c, status, message, result)
 }
 
 // CancelInvite godoc
@@ -381,7 +390,7 @@ func (h *VisitorEntryHandler) ValidateQR(c *gin.Context) {
 		utils.BadRequestResponse(c, err.Error())
 		return
 	}
-	entry, err := h.entrySvc.GetEntryForQRScan(c.Request.Context(), req.Token)
+	entry, err := h.entrySvc.GetEntryForQRScanForViewer(c.Request.Context(), req.Token, viewerUserID(c))
 	if handleServiceError(c, err) {
 		return
 	}
@@ -406,6 +415,10 @@ func (h *VisitorEntryHandler) ValidateQR(c *gin.Context) {
 // @Security AccessToken
 // @Router /v1/societies/{societyId}/visitor-entries/check-in [post]
 func (h *VisitorEntryHandler) CheckIn(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
 	var req models.QRTokenRequest
 	if !bindJSON(c, &req) {
 		return
@@ -416,6 +429,14 @@ func (h *VisitorEntryHandler) CheckIn(c *gin.Context) {
 	}
 	userID, ok := currentUserID(c)
 	if !ok {
+		return
+	}
+	preview, err := h.entrySvc.ValidateQR(c.Request.Context(), req.Token)
+	if handleServiceError(c, err) {
+		return
+	}
+	if preview.SocietyID != societyID {
+		utils.ErrorResponse(c, http.StatusForbidden, models.ErrCodeForbidden, "Visitor entry does not belong to this society", nil)
 		return
 	}
 	entry, err := h.entrySvc.CheckIn(c.Request.Context(), req.Token, userID)
@@ -1066,7 +1087,7 @@ func (h *VisitorEntryHandler) GetMemberVisitorApprovalStats(c *gin.Context) {
 }
 
 func (h *VisitorEntryHandler) createPublicEntry(c *gin.Context, create func(context.Context, int64, models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error)) {
-	societyID, ok := parsePublicSocietyID(c)
+	societyID, ok := h.resolvePublicSocietyID(c)
 	if !ok {
 		return
 	}
@@ -1081,11 +1102,28 @@ func (h *VisitorEntryHandler) createPublicEntry(c *gin.Context, create func(cont
 	utils.SuccessResponse(c, http.StatusCreated, "Visitor entry created successfully", result)
 }
 
-func parsePublicSocietyID(c *gin.Context) (int64, bool) {
-	if raw := c.Param("societyId"); raw != "" {
+func (h *VisitorEntryHandler) resolvePublicSocietyID(c *gin.Context) (int64, bool) {
+	if raw := strings.TrimSpace(c.Param("societyId")); raw != "" {
 		return parsePathInt64(c, "societyId")
 	}
-	return parsePathInt64(c, "societyCode")
+	societyCode := strings.TrimSpace(c.Param("societyCode"))
+	if societyCode == "" {
+		utils.BadRequestResponse(c, "societyCode is required")
+		return 0, false
+	}
+	societyID, err := h.societySvc.ResolveActiveSocietyIDByCode(c.Request.Context(), societyCode)
+	if handleServiceError(c, err) {
+		return 0, false
+	}
+	return societyID, true
+}
+
+func viewerUserID(c *gin.Context) *int64 {
+	userID, ok := middleware.GetUserIDFromContext(c)
+	if !ok || userID <= 0 {
+		return nil
+	}
+	return &userID
 }
 
 func visitorEntryPath(c *gin.Context) (int64, int64, bool) {

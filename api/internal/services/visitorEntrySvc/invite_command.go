@@ -60,8 +60,7 @@ func (s *VisitorEntrySvc) createInvite(ctx context.Context, societyID int64, fla
 	return &models.VisitorEntryMutationResponse{QR: &models.QRTokenResponse{Token: token, ExpiresAt: expiry}}, invite, nil
 }
 
-func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error) {	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
 	if err := req.Validate(false); err != nil {
@@ -71,6 +70,9 @@ func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string,
 	if err != nil {
 		return nil, err
 	}
+	if err := s.ensureSocietyActive(ctx, invite.SocietyID); err != nil {
+		return nil, err
+	}
 	settings, err := s.settingSvc.GetSocietySettings(ctx, invite.SocietyID)
 	if err != nil {
 		return nil, err
@@ -78,29 +80,71 @@ func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string,
 	if settings == nil || !settings.AllowResidentPreApproval || !settings.IsActive {
 		return nil, ErrVisitorInviteUnavailable
 	}
+
 	var response *models.VisitorEntryMutationResponse
 	err = s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
-		qr, err := s.makeQR(ctx, invite.SocietyID)
-		if err != nil {
-			return err
+		locked, lockErr := s.inviteRepo.GetForUpdate(txCtx, invite.ID)
+		if lockErr != nil {
+			return lockErr
 		}
-		visitor, err := s.visitorRepo.Create(txCtx, req)
-		if err != nil {
-			return err
+		if locked == nil {
+			return ErrVisitorInviteNotFound
+		}
+
+		if locked.Status == models.VisitorInviteStatusUsed {
+			replay, replayErr := s.idempotentInviteSubmitResponse(txCtx, locked)
+			if replayErr != nil {
+				return replayErr
+			}
+			response = replay
+			return nil
+		}
+		if !inviteUsable(locked) {
+			return ErrVisitorInviteUnavailable
+		}
+
+		qr, qrErr := s.makeQR(txCtx, locked.SocietyID)
+		if qrErr != nil {
+			return qrErr
+		}
+		visitor, visitorErr := s.visitorRepo.Create(txCtx, req)
+		if visitorErr != nil {
+			return visitorErr
 		}
 		entryReq := req
 		if entryReq.ExpectedAt == nil {
 			now := time.Now()
 			entryReq.ExpectedAt = &now
 		}
-		entry, err := s.entryRepo.Create(txCtx, entryReq, invite.SocietyID, invite.FlatID, visitor.ID, &invite.ID, models.VisitorEntrySourceResidentLink, invite.Purpose, models.VisitorStatusApproved, &invite.CreatedBy, nil, &qr.hash, &qr.expiresAt)
+		entry, createErr := s.entryRepo.Create(txCtx, entryReq, locked.SocietyID, locked.FlatID, visitor.ID, &locked.ID, models.VisitorEntrySourceResidentLink, locked.Purpose, models.VisitorStatusApproved, &locked.CreatedBy, nil, &qr.hash, &qr.expiresAt)
+		if createErr != nil {
+			if isUniqueViolation(createErr) {
+				replay, replayErr := s.idempotentInviteSubmitResponse(txCtx, locked)
+				if replayErr != nil {
+					return replayErr
+				}
+				response = replay
+				return nil
+			}
+			return createErr
+		}
+		marked, markErr := s.inviteRepo.MarkUsed(txCtx, locked.ID)
+		if markErr != nil {
+			return markErr
+		}
+		if marked == nil {
+			replay, replayErr := s.idempotentInviteSubmitResponse(txCtx, locked)
+			if replayErr != nil {
+				return replayErr
+			}
+			response = replay
+			return nil
+		}
+		if err := s.recordEvents(txCtx, entry, &locked.CreatedBy, models.VisitorEventTypeCreated, models.VisitorEventTypeApproved, models.VisitorEventTypeQRGenerated); err != nil {
+			return err
+		}
+		entry, err = s.attachQRDisplayToken(txCtx, locked.SocietyID, entry.ID, qr)
 		if err != nil {
-			return err
-		}
-		if _, err := s.inviteRepo.MarkUsed(txCtx, invite.ID); err != nil {
-			return err
-		}
-		if err := s.recordEvents(txCtx, entry, &invite.CreatedBy, models.VisitorEventTypeCreated, models.VisitorEventTypeApproved, models.VisitorEventTypeQRGenerated); err != nil {
 			return err
 		}
 		response = &models.VisitorEntryMutationResponse{Entry: entry, QR: qr.response()}
@@ -109,7 +153,7 @@ func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string,
 	if err != nil {
 		return response, err
 	}
-	if response != nil && response.Entry != nil {
+	if response != nil && response.Entry != nil && !response.IdempotentReplay {
 		s.notifyVisitorApproved(response.Entry)
 	}
 	return response, err

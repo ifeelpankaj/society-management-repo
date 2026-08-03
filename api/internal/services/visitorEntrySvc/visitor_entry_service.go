@@ -31,10 +31,12 @@ type VisitorEntryService interface {
 	RejectEntry(ctx context.Context, societyID int64, entryID int64, reason string, actorUserID int64) error
 	GenerateQR(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntryMutationResponse, error)
 	GetEntryForQRScan(ctx context.Context, rawToken string) (*models.VisitorEntry, error)
+	GetEntryForQRScanForViewer(ctx context.Context, rawToken string, viewerUserID *int64) (*models.VisitorEntry, error)
 	ValidateQR(ctx context.Context, rawToken string) (*models.VisitorEntry, error)
 	CheckIn(ctx context.Context, rawToken string, guardUserID int64) (*models.VisitorEntry, error)
 	CheckOut(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
 	AutoCloseExpiredEntries(ctx context.Context) error
+	ExpireStaleEntries(ctx context.Context) error
 	GetEntry(ctx context.Context, societyID int64, entryID int64) (*models.VisitorEntry, error)
 	ListEntries(ctx context.Context, filter models.VisitorEntryFilter) ([]*models.VisitorEntry, error)
 	ListEntriesPaginated(ctx context.Context, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)

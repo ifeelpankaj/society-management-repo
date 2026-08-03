@@ -18,6 +18,7 @@ type SocietyService interface {
 	DeleteSociety(ctx context.Context, societyID int64, deletedBy int64) error
 	GetSociety(ctx context.Context, filter models.GetSocietyFilter) (*models.SocietyDetailResponse, error)
 	GetPublicClaimOptions(ctx context.Context, societyCode string) (*models.PublicClaimOptionsResponse, error)
+	ResolveActiveSocietyIDByCode(ctx context.Context, societyCode string) (int64, error)
 	ListSocieties(ctx context.Context, filter models.ListSocietiesFilter) (*models.PaginatedSocietiesResponse, error)
 	ListMySocieties(ctx context.Context, userID int64) ([]*models.MySocietyResponse, error)
 	ListMyMemberships(ctx context.Context, userID int64) ([]*models.SocietyMemberResponse, error)

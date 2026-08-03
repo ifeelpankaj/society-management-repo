@@ -72,6 +72,7 @@ type SocietyVisitorSettings struct {
 	AllowResidentPreApproval    bool                `json:"allow_resident_pre_approval"`
 	AllowPublicQREntry          bool                `json:"allow_public_qr_entry"`
 	AllowGuardEntry             bool                `json:"allow_guard_entry"`
+	AllowGuardOnBehalfApproval  bool                `json:"allow_guard_on_behalf_approval"`
 	IsActive                    bool                `json:"is_active"`
 	UpdatedBy                   *int64              `json:"updated_by,omitempty"`
 	CreatedAt                   time.Time           `json:"created_at"`
@@ -86,7 +87,8 @@ func (s *SocietyVisitorSettings) ToResponse() *SocietyVisitorSettingsResponse {
 		ID: s.ID, SocietyID: s.SocietyID, ApprovalMode: s.ApprovalMode,
 		DefaultVisitDurationMinutes: s.DefaultVisitDurationMinutes, GracePeriodMinutes: s.GracePeriodMinutes,
 		QRExpiryMinutes: s.QRExpiryMinutes, AllowResidentPreApproval: s.AllowResidentPreApproval,
-		AllowPublicQREntry: s.AllowPublicQREntry, AllowGuardEntry: s.AllowGuardEntry, IsActive: s.IsActive,
+		AllowPublicQREntry: s.AllowPublicQREntry, AllowGuardEntry: s.AllowGuardEntry,
+		AllowGuardOnBehalfApproval: s.AllowGuardOnBehalfApproval, IsActive: s.IsActive,
 		UpdatedBy: s.UpdatedBy, CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt,
 	}
 }
@@ -125,6 +127,7 @@ type SocietyVisitorSettingsResponse struct {
 	AllowResidentPreApproval    bool                `json:"allow_resident_pre_approval"`
 	AllowPublicQREntry          bool                `json:"allow_public_qr_entry"`
 	AllowGuardEntry             bool                `json:"allow_guard_entry"`
+	AllowGuardOnBehalfApproval  bool                `json:"allow_guard_on_behalf_approval"`
 	IsActive                    bool                `json:"is_active"`
 	UpdatedBy                   *int64              `json:"updated_by,omitempty"`
 	CreatedAt                   time.Time           `json:"created_at"`
@@ -152,6 +155,7 @@ type UpdateSocietyVisitorSettingsRequest struct {
 	AllowResidentPreApproval    *bool                `json:"allow_resident_pre_approval,omitempty"`
 	AllowPublicQREntry          *bool                `json:"allow_public_qr_entry,omitempty"`
 	AllowGuardEntry             *bool                `json:"allow_guard_entry,omitempty"`
+	AllowGuardOnBehalfApproval  *bool                `json:"allow_guard_on_behalf_approval,omitempty"`
 	IsActive                    *bool                `json:"is_active,omitempty"`
 }
 
@@ -161,7 +165,7 @@ func (r *UpdateSocietyVisitorSettingsRequest) Validate() error {
 	}
 	if r.ApprovalMode == nil && r.DefaultVisitDurationMinutes == nil && r.GracePeriodMinutes == nil &&
 		r.QRExpiryMinutes == nil && r.AllowResidentPreApproval == nil && r.AllowPublicQREntry == nil &&
-		r.AllowGuardEntry == nil && r.IsActive == nil {
+		r.AllowGuardEntry == nil && r.AllowGuardOnBehalfApproval == nil && r.IsActive == nil {
 		return errors.New("at least one field must be provided")
 	}
 	if r.ApprovalMode != nil && !r.ApprovalMode.IsValid() {

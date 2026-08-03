@@ -308,6 +308,12 @@ func (c *Config) Validate() error {
 				return fmt.Errorf("wildcard CORS origins not allowed in production")
 			}
 		}
+		if !c.FCMEnabled {
+			return fmt.Errorf("FCM_ENABLED must be true in production")
+		}
+		if strings.TrimSpace(c.FCMCredentialsPath) == "" {
+			return fmt.Errorf("FCM_CREDENTIALS_PATH is required in production")
+		}
 	}
 
 	// General validations

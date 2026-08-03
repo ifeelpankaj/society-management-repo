@@ -27,6 +27,7 @@ func SetupAdminRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guards
 
 	admin := rg.Group("/societies/:societyId")
 	admin.Use(g.SocietyRolesForParam("societyId", ownerAdminRoles...)...)
+	admin.Use(g.OperationalSocietyForParam("societyId")...)
 	{
 		admin.PATCH("", h.Society.UpdateSociety)
 		admin.GET("/visitor-settings", h.VisitorSetting.GetSocietySettings)
@@ -50,6 +51,7 @@ func SetupAdminRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guards
 
 	staffRead := rg.Group("/societies/:societyId")
 	staffRead.Use(g.SocietyRolesForParam("societyId", ownerAdminStaffRoles...)...)
+	staffRead.Use(g.OperationalSocietyForParam("societyId")...)
 	{
 		staffRead.GET("", h.Society.GetSociety)
 		staffRead.GET("/flats", h.Flat.ListSocietyFlats)

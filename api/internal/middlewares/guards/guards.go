@@ -108,6 +108,12 @@ func (g *Guards) SocietyOperationalForParam(societyIDParam string) []gin.Handler
 	}
 }
 
+func (g *Guards) OperationalSocietyForParam(societyIDParam string) []gin.HandlerFunc {
+	return []gin.HandlerFunc{
+		g.requireOperationalSociety(societyIDParam),
+	}
+}
+
 func (g *Guards) requireGlobalRole(roles ...models.GlobalRole) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, ok := middleware.GetUserRoleFromContext(c)

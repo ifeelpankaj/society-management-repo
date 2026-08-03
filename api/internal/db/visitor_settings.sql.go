@@ -136,7 +136,7 @@ func (q *Queries) GetFlatVisitorPurposeSetting(ctx context.Context, arg GetFlatV
 }
 
 const getSocietyVisitorSettings = `-- name: GetSocietyVisitorSettings :one
-SELECT id, society_id, approval_mode, default_visit_duration_minutes, grace_period_minutes, qr_expiry_minutes, allow_resident_pre_approval, allow_public_qr_entry, allow_guard_entry, is_active, metadata, updated_by, created_at, updated_at
+SELECT id, society_id, approval_mode, default_visit_duration_minutes, grace_period_minutes, qr_expiry_minutes, allow_resident_pre_approval, allow_public_qr_entry, allow_guard_entry, is_active, metadata, updated_by, created_at, updated_at, allow_guard_on_behalf_approval
 FROM society_visitor_settings
 WHERE society_id = $1
 `
@@ -159,6 +159,7 @@ func (q *Queries) GetSocietyVisitorSettings(ctx context.Context, societyID int64
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AllowGuardOnBehalfApproval,
 	)
 	return i, err
 }
@@ -366,11 +367,12 @@ SET
     allow_resident_pre_approval = COALESCE($5::boolean, allow_resident_pre_approval),
     allow_public_qr_entry = COALESCE($6::boolean, allow_public_qr_entry),
     allow_guard_entry = COALESCE($7::boolean, allow_guard_entry),
-    is_active = COALESCE($8::boolean, is_active),
-    updated_by = $9,
+    allow_guard_on_behalf_approval = COALESCE($8::boolean, allow_guard_on_behalf_approval),
+    is_active = COALESCE($9::boolean, is_active),
+    updated_by = $10,
     updated_at = NOW()
-WHERE society_id = $10
-RETURNING id, society_id, approval_mode, default_visit_duration_minutes, grace_period_minutes, qr_expiry_minutes, allow_resident_pre_approval, allow_public_qr_entry, allow_guard_entry, is_active, metadata, updated_by, created_at, updated_at
+WHERE society_id = $11
+RETURNING id, society_id, approval_mode, default_visit_duration_minutes, grace_period_minutes, qr_expiry_minutes, allow_resident_pre_approval, allow_public_qr_entry, allow_guard_entry, is_active, metadata, updated_by, created_at, updated_at, allow_guard_on_behalf_approval
 `
 
 type UpdateSocietyVisitorSettingsParams struct {
@@ -381,6 +383,7 @@ type UpdateSocietyVisitorSettingsParams struct {
 	AllowResidentPreApproval    *bool                `db:"allow_resident_pre_approval" json:"allow_resident_pre_approval"`
 	AllowPublicQrEntry          *bool                `db:"allow_public_qr_entry" json:"allow_public_qr_entry"`
 	AllowGuardEntry             *bool                `db:"allow_guard_entry" json:"allow_guard_entry"`
+	AllowGuardOnBehalfApproval  *bool                `db:"allow_guard_on_behalf_approval" json:"allow_guard_on_behalf_approval"`
 	IsActive                    *bool                `db:"is_active" json:"is_active"`
 	UpdatedBy                   *int64               `db:"updated_by" json:"updated_by"`
 	SocietyID                   int64                `db:"society_id" json:"society_id"`
@@ -395,6 +398,7 @@ func (q *Queries) UpdateSocietyVisitorSettings(ctx context.Context, arg UpdateSo
 		arg.AllowResidentPreApproval,
 		arg.AllowPublicQrEntry,
 		arg.AllowGuardEntry,
+		arg.AllowGuardOnBehalfApproval,
 		arg.IsActive,
 		arg.UpdatedBy,
 		arg.SocietyID,
@@ -415,6 +419,7 @@ func (q *Queries) UpdateSocietyVisitorSettings(ctx context.Context, arg UpdateSo
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AllowGuardOnBehalfApproval,
 	)
 	return i, err
 }

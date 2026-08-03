@@ -217,8 +217,9 @@ type QRTokenResponse struct {
 }
 
 type VisitorEntryMutationResponse struct {
-	Entry *VisitorEntry    `json:"entry"`
-	QR    *QRTokenResponse `json:"qr,omitempty"`
+	Entry            *VisitorEntry    `json:"entry"`
+	QR               *QRTokenResponse `json:"qr,omitempty"`
+	IdempotentReplay bool             `json:"-"`
 }
 
 type CreateVisitorInviteRequest struct {
@@ -235,6 +236,9 @@ func (r *CreateVisitorInviteRequest) Validate() error {
 	}
 	if r.ExpiresAt != nil && !r.ExpiresAt.After(time.Now()) {
 		return errors.New("expires_at must be in the future")
+	}
+	if r.ExpiresAt != nil && r.ExpiresAt.After(time.Now().Add(maxInviteDuration)) {
+		return errors.New("expires_at cannot be more than 7 days in the future")
 	}
 	return nil
 }
@@ -509,6 +513,35 @@ type VisitorEntryOptionsResponse struct {
 	Purposes []VisitorPurpose           `json:"purposes"`
 	Blocks   []VisitorEntryOptionsBlock `json:"blocks"`
 	Flats    []VisitorEntryOptionsFlat  `json:"flats"`
+	HasMore  bool                       `json:"has_more,omitempty"`
+}
+
+const maxInviteDuration = 7 * 24 * time.Hour
+
+func (e *VisitorEntry) ToScanPreview() *VisitorEntry {
+	if e == nil {
+		return nil
+	}
+	preview := &VisitorEntry{
+		ID:          e.ID,
+		SocietyID:   e.SocietyID,
+		FlatID:      e.FlatID,
+		Status:      e.Status,
+		Purpose:     e.Purpose,
+		QRExpiresAt: e.QRExpiresAt,
+	}
+	if e.Visitor != nil {
+		preview.Visitor = &VisitorSummary{FullName: e.Visitor.FullName}
+	}
+	if e.Flat != nil {
+		preview.Flat = &VisitorFlatSummary{
+			ID:         e.Flat.ID,
+			FlatNumber: e.Flat.FlatNumber,
+			Block:      e.Flat.Block,
+			Floor:      e.Flat.Floor,
+		}
+	}
+	return preview
 }
 
 type VisitorEntryOptionsBlock struct {

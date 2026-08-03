@@ -30,6 +30,25 @@ func (s *SocietySvc) GetSociety(ctx context.Context, filter models.GetSocietyFil
 	return resp, nil
 }
 
+func (s *SocietySvc) ResolveActiveSocietyIDByCode(ctx context.Context, societyCode string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	code := strings.ToUpper(strings.TrimSpace(societyCode))
+	if code == "" {
+		return 0, ErrSocietyNotFound
+	}
+	active := string(models.SocietyStatusActive)
+	society, err := s.societyRepo.Get(ctx, models.GetSocietyFilter{Code: &code, Status: &active})
+	if err != nil {
+		return 0, err
+	}
+	if society == nil {
+		return 0, ErrSocietyNotFound
+	}
+	return society.ID, nil
+}
+
 func (s *SocietySvc) GetPublicClaimOptions(ctx context.Context, societyCode string) (*models.PublicClaimOptionsResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
