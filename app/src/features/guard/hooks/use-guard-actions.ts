@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { getApiMessage } from "@/features/auth/api-error";
+import { getFriendlyApiMessage } from "@/features/auth/api-error";
 import type { ModelsGuardApproveEntryRequest } from "@/lib/api/generated-api";
 import {
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInMutation,
@@ -41,7 +41,7 @@ export function useGuardActions(societyId: number) {
         const response = await notify({ societyId, entryId }).unwrap();
         return { success: true as const, message: response.message ?? "Resident notified" };
       } catch (error) {
-        return { success: false as const, message: getApiMessage(error, "Could not notify resident") };
+        return { success: false as const, message: getFriendlyApiMessage(error, "Could not notify resident") };
       } finally {
         setActiveEntryId(undefined);
       }
@@ -64,7 +64,7 @@ export function useGuardActions(societyId: number) {
           entry: response.data?.entry,
         };
       } catch (error) {
-        return { success: false as const, message: getApiMessage(error, "Could not approve visitor") };
+        return { success: false as const, message: getFriendlyApiMessage(error, "Could not approve visitor") };
       } finally {
         setActiveEntryId(undefined);
       }
@@ -89,7 +89,7 @@ export function useGuardActions(societyId: number) {
       } catch (error) {
         return {
           success: false as const,
-          message: getApiMessage(error, "Could not approve and check in visitor"),
+          message: getFriendlyApiMessage(error, "Could not approve and check in visitor"),
         };
       } finally {
         setActiveEntryId(undefined);
@@ -109,7 +109,7 @@ export function useGuardActions(societyId: number) {
           entry: response.data?.entry,
         };
       } catch (error) {
-        return { success: false as const, message: getApiMessage(error, "Could not check in visitor") };
+        return { success: false as const, message: getFriendlyApiMessage(error, "Could not check in visitor") };
       } finally {
         setActiveEntryId(undefined);
       }
@@ -128,7 +128,7 @@ export function useGuardActions(societyId: number) {
           entry: response.data?.entry,
         };
       } catch (error) {
-        return { success: false as const, message: getApiMessage(error, "Could not check out visitor") };
+        return { success: false as const, message: getFriendlyApiMessage(error, "Could not check out visitor") };
       } finally {
         setActiveEntryId(undefined);
       }

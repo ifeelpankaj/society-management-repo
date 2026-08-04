@@ -3,6 +3,7 @@ import type {
   ModelsFlatClaimResponse,
   ModelsFlatClaimStatus,
 } from "@/lib/api/generated-api";
+import type { FlatClaimStatsResponse } from "@/lib/api/society-dashboard-api";
 
 export type SocietyFlatClaimsApiResponse = {
   success?: boolean;
@@ -36,9 +37,26 @@ export type SocietyFlatClaimApiResponse = {
   };
 };
 
+export type SocietyFlatClaimStatsApiResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    stats?: FlatClaimStatsResponse;
+  };
+};
+
 export const societyFlatClaimsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
+    getV1SocietyFlatClaimStats: build.query<
+      SocietyFlatClaimStatsApiResponse,
+      { societyId: number }
+    >({
+      query: ({ societyId }) => ({
+        url: `/v1/societies/${societyId}/flat-claims/stats`,
+      }),
+      providesTags: ["Flat Claims"],
+    }),
     getV1SocietyFlatClaims: build.query<
       SocietyFlatClaimsApiResponse,
       GetSocietyFlatClaimsArg
@@ -78,5 +96,8 @@ export const societyFlatClaimsApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetV1SocietyFlatClaimQuery, useGetV1SocietyFlatClaimsQuery } =
-  societyFlatClaimsApi;
+export const {
+  useGetV1SocietyFlatClaimQuery,
+  useGetV1SocietyFlatClaimStatsQuery,
+  useGetV1SocietyFlatClaimsQuery,
+} = societyFlatClaimsApi;

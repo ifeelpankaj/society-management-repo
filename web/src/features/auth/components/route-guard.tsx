@@ -10,7 +10,9 @@ import {
   AUTH_ROUTES,
   hasAdminSetupMembership,
   hasAdminWorkspaceMembership,
+  hasMobileOnlyAccess,
   isDeveloperRole,
+  isProfileRoute,
   resolveAuthenticatedRoute,
 } from "@/features/auth/auth-routing";
 import { clearAuth, setCredentials } from "@/features/auth/auth-slice";
@@ -26,6 +28,7 @@ type RouteGuardMode =
   | "authenticated"
   | "developerOnly"
   | "guestOrRedirect"
+  | "mobileOnly"
   | "publicOnly"
   | "resolveAuthenticated";
 
@@ -50,6 +53,7 @@ function isProtectedMode(mode: RouteGuardMode) {
     mode === "adminWorkspace" ||
     mode === "authenticated" ||
     mode === "developerOnly" ||
+    mode === "mobileOnly" ||
     mode === "resolveAuthenticated"
   );
 }
@@ -71,7 +75,9 @@ export function RouteGuard({ children, mode, societyId }: RouteGuardProps) {
     Boolean(user) &&
     (needsResolvedRoute(mode, user?.global_role) ||
       mode === "adminSetupWorkspace" ||
-      mode === "adminWorkspace");
+      mode === "adminWorkspace" ||
+      mode === "mobileOnly" ||
+      mode === "authenticated");
   const shouldLoadMemberships =
     shouldResolveRoute && !isDeveloperRole(user?.global_role);
   const {
@@ -121,6 +127,17 @@ export function RouteGuard({ children, mode, societyId }: RouteGuardProps) {
     }
 
     if (mode === "authenticated") {
+      if (isProfileRoute(pathname)) {
+        return;
+      }
+      const route = resolveAuthenticatedRoute(user, memberships);
+      if (route !== pathname) {
+        router.replace(route);
+      }
+      return;
+    }
+
+    if (mode === "mobileOnly" && hasMobileOnlyAccess(memberships)) {
       return;
     }
 
@@ -191,7 +208,26 @@ export function RouteGuard({ children, mode, societyId }: RouteGuardProps) {
   }
 
   if (mode === "authenticated") {
+    if (isProfileRoute(pathname)) {
+      return children;
+    }
+    const route = resolveAuthenticatedRoute(user, memberships);
+    const isAdminRoute =
+      route.startsWith("/dashboard") ||
+      route === AUTH_ROUTES.developer ||
+      route === AUTH_ROUTES.onboarding ||
+      route === AUTH_ROUTES.selectSociety;
+    if (isAdminRoute && route !== pathname) {
+      return null;
+    }
+    if (route === AUTH_ROUTES.downloadApp && pathname !== AUTH_ROUTES.downloadApp) {
+      return null;
+    }
     return children;
+  }
+
+  if (mode === "mobileOnly") {
+    return hasMobileOnlyAccess(memberships) ? children : null;
   }
 
   if (mode === "adminWorkspace") {

@@ -43,6 +43,7 @@ type VisitorEntryRepository interface {
 	ListRecentByFlat(ctx context.Context, societyID int64, flatID int64, limit int32) ([]*models.VisitorEntry, error)
 	GetStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
 	GetStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error)
+	GetDailyStatsCreated(ctx context.Context, societyID int64, days int32) ([]models.VisitorDailyCountResponse, error)
 	CountWaitingAtGate(ctx context.Context, societyID int64) (int64, error)
 	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) ([]*models.VisitorEntry, error)
 	CountWaitingAtGateFiltered(ctx context.Context, filter models.WaitingAtGateFilter) (int64, error)
@@ -277,6 +278,27 @@ func (r *visitorEntryRepository) GetStats(ctx context.Context, societyID int64) 
 		RejectedToday:    row.RejectedToday,
 		AutoClosedToday:  row.AutoClosedToday,
 	}, nil
+}
+
+func (r *visitorEntryRepository) GetDailyStatsCreated(ctx context.Context, societyID int64, days int32) ([]models.VisitorDailyCountResponse, error) {
+	if days <= 0 {
+		days = 7
+	}
+	rows, err := GetQueries(ctx, r.db).GetVisitorEntryDailyStatsCreated(ctx, db.GetVisitorEntryDailyStatsCreatedParams{
+		SocietyID: societyID,
+		Days:      days,
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]models.VisitorDailyCountResponse, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, models.VisitorDailyCountResponse{
+			Date:  row.StatDate,
+			Count: row.Count,
+		})
+	}
+	return items, nil
 }
 
 func (r *visitorEntryRepository) GetStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error) {

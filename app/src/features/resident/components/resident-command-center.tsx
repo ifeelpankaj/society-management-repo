@@ -12,6 +12,7 @@ import {
   DashboardOverviewGrid,
   DashboardSection,
   DashboardSkeleton,
+  SubscriptionExpiredBanner,
   type DashboardActionTileConfig,
   type DashboardOverviewStatConfig,
 } from "@/components/dashboard";
@@ -212,11 +213,19 @@ export function ResidentCommandCenter() {
                   },
                 ]}
                 greeting={getGreeting(dashboard.displayName)}
-                statusItems={[{ label: "Resident" }, { label: "Live", live: !dashboard.hasError }]}
+                statusItems={[
+                  { label: "Resident" },
+                  {
+                    label: dashboard.isSubscriptionBlocked ? "Limited" : "Live",
+                    live: !dashboard.hasError && !dashboard.isSubscriptionBlocked,
+                  },
+                ]}
                 title={dashboard.flatLabel}
               />
               <DashboardAnnouncement />
             </Stack>
+
+            {dashboard.isSubscriptionBlocked ? <SubscriptionExpiredBanner /> : null}
 
             {dashboard.hasError ? (
               <ErrorBanner
@@ -225,7 +234,7 @@ export function ResidentCommandCenter() {
               />
             ) : null}
 
-            {dashboard.pendingCount > 0 ? (
+            {dashboard.pendingCount > 0 && !dashboard.isSubscriptionBlocked ? (
               <DashboardAlertBar
                 count={dashboard.pendingCount}
                 message={`${dashboard.pendingCount} visitor${dashboard.pendingCount === 1 ? "" : "s"} awaiting approval`}
@@ -233,6 +242,8 @@ export function ResidentCommandCenter() {
               />
             ) : null}
 
+            {!dashboard.isSubscriptionBlocked ? (
+              <>
             <DashboardSection title="Quick Actions">
               <DashboardActionGrid actions={actions} />
             </DashboardSection>
@@ -278,6 +289,8 @@ export function ResidentCommandCenter() {
                   ))}
                 </Stack>
               </DashboardSection>
+            ) : null}
+              </>
             ) : null}
           </Stack>
         )}

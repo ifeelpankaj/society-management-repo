@@ -7,20 +7,20 @@ import {
   Layers3,
   UsersRound,
 } from "lucide-react";
+import Link from "next/link";
 
+import { ChartPanel } from "@/components/charts/chart-panel";
+import { DonutChart } from "@/components/charts/donut-chart";
+import { VerticalBarChart } from "@/components/charts/vertical-bar-chart";
 import { AsyncPanel } from "@/components/shared/async-panel";
-
 import { DashboardCard } from "@/components/shared/dashboard-card";
-
 import { EmptyState } from "@/components/shared/empty-state";
-
 import { PageHeader } from "@/components/shared/page-header";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { StatGrid } from "@/components/shared/stat-grid";
 import { WorkspacePage } from "@/components/shared/workspace-page";
-
 import { Badge } from "@/components/ui/badge";
-
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -28,14 +28,78 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { useDeveloperDashboard } from "@/features/developer/dashboard/hooks";
-
-import { formatNumberIN, titleCaseFromSnake } from "@/lib/format";
+import {
+  formatNumberIN,
+  formatShortDateIN,
+  titleCaseFromSnake,
+} from "@/lib/format";
+import { paths } from "@/lib/routes/paths";
 
 export function DeveloperDashboardClient() {
   const { dashboard, isError, isFetching, isLoading, refetch } =
     useDeveloperDashboard();
+
+  const subscriptionMix = [
+    {
+      key: "pending",
+      label: "Pending",
+      value: dashboard?.subscription_stats?.pending_subscriptions ?? 0,
+      color: "var(--chart-3)",
+    },
+    {
+      key: "trial",
+      label: "Trial",
+      value: dashboard?.subscription_stats?.trial_subscriptions ?? 0,
+      color: "var(--chart-2)",
+    },
+    {
+      key: "active",
+      label: "Active",
+      value: dashboard?.subscription_stats?.active_subscriptions ?? 0,
+      color: "var(--chart-1)",
+    },
+    {
+      key: "expired",
+      label: "Expired",
+      value: dashboard?.subscription_stats?.expired_subscriptions ?? 0,
+      color: "var(--chart-4)",
+    },
+    {
+      key: "cancelled",
+      label: "Cancelled",
+      value: dashboard?.subscription_stats?.cancelled_subscriptions ?? 0,
+      color: "var(--chart-5)",
+    },
+  ];
+
+  const societyStatusData = [
+    {
+      key: "pending",
+      label: "Pending",
+      value: dashboard?.society_stats?.pending ?? 0,
+    },
+    {
+      key: "active",
+      label: "Active",
+      value: dashboard?.society_stats?.active ?? 0,
+    },
+    {
+      key: "suspended",
+      label: "Suspended",
+      value: dashboard?.society_stats?.suspended ?? 0,
+    },
+    {
+      key: "rejected",
+      label: "Rejected",
+      value: dashboard?.society_stats?.rejected ?? 0,
+    },
+  ];
+
+  const subscriptionTotal = subscriptionMix.reduce(
+    (sum, item) => sum + item.value,
+    0,
+  );
 
   return (
     <WorkspacePage>
@@ -56,7 +120,7 @@ export function DeveloperDashboardClient() {
         onRetry={() => refetch()}
       >
         {dashboard ? (
-          <>
+          <div className="space-y-6">
             <StatGrid>
               <DashboardCard
                 description={`${formatNumberIN(dashboard.society_stats?.active)} active`}
@@ -92,10 +156,37 @@ export function DeveloperDashboardClient() {
               />
             </StatGrid>
 
+            <section className="grid gap-4 lg:grid-cols-2">
+              <ChartPanel
+                description="Distribution across subscription lifecycle states"
+                title="Subscription mix"
+              >
+                <DonutChart
+                  centerLabel="Total"
+                  centerValue={subscriptionTotal}
+                  data={subscriptionMix}
+                />
+                <div className="mt-4 flex justify-center">
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={paths.developerSubscriptionsExpiring()}>
+                      View expiring in 14 days
+                    </Link>
+                  </Button>
+                </div>
+              </ChartPanel>
+
+              <ChartPanel
+                description="Societies by approval and operational status"
+                title="Society status"
+              >
+                <VerticalBarChart data={societyStatusData} />
+              </ChartPanel>
+            </section>
+
             <section className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
               <Card>
                 <CardHeader>
-                  <CardTitle>Society Requests</CardTitle>
+                  <CardTitle>Society requests</CardTitle>
                   <CardDescription>
                     {formatNumberIN(dashboard.society_stats?.pending)} pending
                     approvals
@@ -139,54 +230,54 @@ export function DeveloperDashboardClient() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Subscription Status</CardTitle>
-                  <CardDescription>Current platform mix</CardDescription>
+                  <CardTitle>Recent subscriptions</CardTitle>
+                  <CardDescription>
+                    Latest subscription activity across the platform
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2">
-                  {[
-                    [
-                      "Pending",
-
-                      dashboard.subscription_stats?.pending_subscriptions,
-                    ],
-
-                    [
-                      "Trial",
-                      dashboard.subscription_stats?.trial_subscriptions,
-                    ],
-
-                    [
-                      "Active",
-
-                      dashboard.subscription_stats?.active_subscriptions,
-                    ],
-
-                    [
-                      "Expired",
-
-                      dashboard.subscription_stats?.expired_subscriptions,
-                    ],
-
-                    [
-                      "Cancelled",
-
-                      dashboard.subscription_stats?.cancelled_subscriptions,
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      className="rounded-lg border border-border p-3"
-                      key={label}
-                    >
-                      <div className="font-semibold text-lg">
-                        {formatNumberIN(Number(value ?? 0))}
-                      </div>
-                      <p className="text-muted-foreground text-xs">{label}</p>
+                <CardContent>
+                  {(dashboard.recent_subscriptions ?? []).length > 0 ? (
+                    <div className="divide-y divide-border">
+                      {(dashboard.recent_subscriptions ?? []).map((sub) => (
+                        <div
+                          className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                          key={sub.id}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-sm">
+                              {sub.society_name ?? sub.society_code ?? "Society"}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {sub.plan_name ?? "Plan"} -{" "}
+                              {formatShortDateIN(sub.ends_at, "No end date")}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">
+                            {titleCaseFromSnake(sub.status)}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <EmptyState
+                      className="border-0"
+                      description="Recent subscription changes will appear here."
+                      title="No recent subscriptions"
+                    />
+                  )}
+                  <Button
+                    asChild
+                    className="mt-4 w-full sm:w-auto"
+                    variant="outline"
+                  >
+                    <Link href={paths.developerSubscriptions()}>
+                      View all subscriptions
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             </section>
-          </>
+          </div>
         ) : null}
       </AsyncPanel>
     </WorkspacePage>

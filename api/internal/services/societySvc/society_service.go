@@ -53,10 +53,16 @@ type SocietySvc struct {
 	planSvc           societyPlanQuery
 	subscriptionSvc   societySubscriptionDashboard
 	visitorSettingSvc societyVisitorSettingDefaults
+	visitorEntrySvc   societyVisitorDashboard
 }
 
 type societyVisitorSettingDefaults interface {
 	CreateDefaultSocietySettings(ctx context.Context, societyID int64, actorUserID int64) error
+}
+
+type societyVisitorDashboard interface {
+	GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
+	GetDailyEntryStats(ctx context.Context, societyID int64, days int32) (*models.VisitorEntryDailyStatsResponse, error)
 }
 
 type societySubscriptionQuota interface {
@@ -96,6 +102,8 @@ func NewSocietyService(
 			svc.subscriptionSvc = value
 		case societyVisitorSettingDefaults:
 			svc.visitorSettingSvc = value
+		case societyVisitorDashboard:
+			svc.visitorEntrySvc = value
 		}
 	}
 	return svc

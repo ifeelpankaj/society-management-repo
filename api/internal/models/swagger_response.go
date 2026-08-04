@@ -374,6 +374,16 @@ type VisitorEntryStatsAPIResponse struct {
 	Data    VisitorEntryStatsData `json:"data"`
 }
 
+type VisitorEntryDailyStatsData struct {
+	Stats *VisitorEntryDailyStatsResponse `json:"stats"`
+}
+
+type VisitorEntryDailyStatsAPIResponse struct {
+	Success bool                       `json:"success" example:"true"`
+	Message string                     `json:"message" example:"Visitor entry daily stats fetched successfully"`
+	Data    VisitorEntryDailyStatsData `json:"data"`
+}
+
 type VisitorPendingEntriesData struct {
 	Entries []*VisitorPendingEntry `json:"entries"`
 	Total   int64                  `json:"total"`
@@ -462,6 +472,16 @@ type FlatStatsAPIResponse struct {
 	Success bool          `json:"success" example:"true"`
 	Message string        `json:"message" example:"Flat stats fetched successfully"`
 	Data    FlatStatsData `json:"data"`
+}
+
+type FlatClaimStatsData struct {
+	Stats *FlatClaimStatsResponse `json:"stats"`
+}
+
+type FlatClaimStatsAPIResponse struct {
+	Success bool               `json:"success" example:"true"`
+	Message string             `json:"message" example:"Flat claim stats fetched successfully"`
+	Data    FlatClaimStatsData `json:"data"`
 }
 
 type FlatClaimAPIResponse struct {

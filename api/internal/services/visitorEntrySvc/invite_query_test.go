@@ -140,6 +140,9 @@ func (r *inviteQueryEntryRepo) GetStats(context.Context, int64) (*models.Visitor
 func (r *inviteQueryEntryRepo) GetStatsInRange(context.Context, int64, time.Time, time.Time) (*models.VisitorEntryStatsResponse, error) {
 	return nil, nil
 }
+func (r *inviteQueryEntryRepo) GetDailyStatsCreated(context.Context, int64, int32) ([]models.VisitorDailyCountResponse, error) {
+	return nil, nil
+}
 func (r *inviteQueryEntryRepo) CountWaitingAtGate(context.Context, int64) (int64, error) {
 	return 0, nil
 }

@@ -424,6 +424,19 @@ type VisitorEntryStatsResponse struct {
 	AutoClosedToday   int64 `json:"auto_closed_today"`
 }
 
+type VisitorDailyCountResponse struct {
+	Date  string `json:"date"`
+	Count int64  `json:"count"`
+}
+
+type VisitorEntryDailyStatsResponse struct {
+	Days     int32                       `json:"days"`
+	Metric   string                      `json:"metric"`
+	Timezone string                      `json:"timezone"`
+	Daily    []VisitorDailyCountResponse `json:"daily"`
+	Total    int64                       `json:"total"`
+}
+
 type VisitorPendingEntry struct {
 	*VisitorEntry
 	WaitingSince        time.Time `json:"waiting_since"`

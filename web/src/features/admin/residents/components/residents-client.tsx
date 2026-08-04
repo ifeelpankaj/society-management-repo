@@ -165,7 +165,7 @@ export function ResidentsClient({
         title="Residents"
       />
 
-      <ResidentSummaryCards summary={summary} />
+      <ResidentSummaryCards loading={isLoading} summary={summary} />
 
       <Card>
         <CardHeader className="gap-4">

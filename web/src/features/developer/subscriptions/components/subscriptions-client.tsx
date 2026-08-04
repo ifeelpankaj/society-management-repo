@@ -2,6 +2,7 @@
 
 import { CheckCircle2, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { ComponentProps } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -85,11 +86,39 @@ function planLabel(plan: ModelsPlanResponse) {
     .join(" - ");
 }
 
+function daysUntil(endDate?: string) {
+  if (!endDate) return null;
+  const diff = new Date(endDate).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+function subscriptionLifecycleLabel(subscription: ModelsSocietySubscriptionResponse) {
+  const remaining = daysUntil(subscription.ends_at);
+  if (
+    subscription.status === "active" ||
+    subscription.status === "trial"
+  ) {
+    if (remaining != null && remaining <= 14) {
+      return `Expiring in ${formatNumberIN(remaining)} days`;
+    }
+    if (remaining != null) {
+      return `${formatNumberIN(remaining)} days left`;
+    }
+  }
+  return titleCaseFromSnake(subscription.status);
+}
+
 export function SubscriptionsClient() {
+  const searchParams = useSearchParams();
+  const initialExpiring =
+    searchParams.get("expiring") === "14" ? "expiring_14" : "all";
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 2000);
   const [searchMode, setSearchMode] = useState("all");
   const [status, setStatus] = useState<ModelsSubscriptionStatus | "all">("all");
+  const [expiringFilter, setExpiringFilter] = useState<"all" | "expiring_14">(
+    initialExpiring,
+  );
   const [activating, setActivating] =
     useState<ModelsSocietySubscriptionResponse | null>(null);
   const [assigningSociety, setAssigningSociety] =
@@ -108,6 +137,8 @@ export function SubscriptionsClient() {
     search: debouncedSearch.trim() || undefined,
     searchMode,
     status: status === "all" ? undefined : status,
+    isActiveOnly: expiringFilter === "expiring_14" ? true : undefined,
+    expiringDays: expiringFilter === "expiring_14" ? 14 : undefined,
   });
   const allSubscriptionsQuery = useGetV1SubscriptionsQuery({});
   const plansQuery = useGetV1PlansQuery({
@@ -313,7 +344,7 @@ export function SubscriptionsClient() {
         title="Subscription Ledger"
       >
         <div className="space-y-3">
-          <ListToolbar className="border-0 bg-transparent p-0 sm:grid sm:grid-cols-[minmax(220px,1fr)_170px_150px]">
+          <ListToolbar className="border-0 bg-transparent p-0 sm:grid sm:grid-cols-[minmax(220px,1fr)_170px_150px_170px]">
             <SearchInput
               placeholder="Search subscriptions"
               value={search}
@@ -348,6 +379,19 @@ export function SubscriptionsClient() {
                 { label: "Cancelled", value: "cancelled" },
               ]}
             />
+            <FilterSelect
+              aria-label="Filter by renewal window"
+              value={expiringFilter}
+              onChange={(event) =>
+                setExpiringFilter(
+                  event.target.value as "all" | "expiring_14",
+                )
+              }
+              options={[
+                { label: "All renewals", value: "all" },
+                { label: "Expiring in 14 days", value: "expiring_14" },
+              ]}
+            />
           </ListToolbar>
         </div>
 
@@ -368,11 +412,14 @@ export function SubscriptionsClient() {
                     <Badge variant="secondary">
                       {titleCaseFromSnake(subscription.status)}
                     </Badge>
+                    <Badge variant="outline">
+                      {subscriptionLifecycleLabel(subscription)}
+                    </Badge>
                   </div>
                   <p className="text-muted-foreground text-sm">
                     {subscription.plan_name} -{" "}
                     {subscription.society_code ?? "No society code"} - ends{" "}
-                    {formatShortDateIN(subscription.ends_at)}
+                    {formatShortDateIN(subscription.ends_at, "Not set")}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">

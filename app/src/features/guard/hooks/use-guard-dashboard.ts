@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { getApiMessage } from "@/features/auth/api-error";
+import { getApiMessage, isSubscriptionError } from "@/features/auth/api-error";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { useAppActivePollingInterval } from "@/features/shared/use-app-active-polling-interval";
@@ -65,14 +65,19 @@ export function useGuardDashboard() {
   const isInitialLoading =
     shouldSkip || (bootstrapQuery.isLoading && !bootstrapQuery.data);
 
+  const bootstrapError = bootstrapQuery.isError ? bootstrapQuery.error : null;
+  const isSubscriptionBlocked = isSubscriptionError(bootstrapError);
+  const hasError = bootstrapQuery.isError && !isSubscriptionBlocked;
+
   return {
     checkOutEntry,
     checkoutEntryId,
-    errorMessage: bootstrapQuery.isError
-      ? getApiMessage(bootstrapQuery.error, "Unable to load guard desk data.")
+    errorMessage: hasError
+      ? getApiMessage(bootstrapError, "Unable to load guard desk data.")
       : null,
     expectedGuestsCount: desk?.expected_guests_count ?? 0,
-    hasError: bootstrapQuery.isError,
+    hasError,
+    isSubscriptionBlocked,
     isInitialLoading,
     isRefreshing: bootstrapQuery.isFetching && !bootstrapQuery.isLoading,
     pendingEntries,

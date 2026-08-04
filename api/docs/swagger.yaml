@@ -1860,6 +1860,8 @@ definitions:
         type: array
       society:
         $ref: '#/definitions/models.SocietyResponse'
+      subscription_health:
+        $ref: '#/definitions/models.SocietyDashboardSubscriptionHealthResponse'
       subscription_usage:
         $ref: '#/definitions/models.SocietyDashboardSubscriptionUsageResponse'
     type: object
@@ -1886,6 +1888,17 @@ definitions:
         type: integer
       used:
         type: integer
+    type: object
+  models.SocietyDashboardSubscriptionHealthResponse:
+    properties:
+      days_until_expiry:
+        type: integer
+      is_active:
+        type: boolean
+      is_expiring_soon:
+        type: boolean
+      lifecycle_label:
+        type: string
     type: object
   models.SocietyDashboardSubscriptionUsageResponse:
     properties:
@@ -2323,6 +2336,8 @@ definitions:
     properties:
       allow_guard_entry:
         type: boolean
+      allow_guard_on_behalf_approval:
+        type: boolean
       allow_public_qr_entry:
         type: boolean
       allow_resident_pre_approval:
@@ -2575,6 +2590,8 @@ definitions:
   models.UpdateSocietyVisitorSettingsRequest:
     properties:
       allow_guard_entry:
+        type: boolean
+      allow_guard_on_behalf_approval:
         type: boolean
       allow_public_qr_entry:
         type: boolean
@@ -2899,6 +2916,8 @@ definitions:
         items:
           $ref: '#/definitions/models.VisitorEntryOptionsFlat'
         type: array
+      has_more:
+        type: boolean
       purposes:
         items:
           $ref: '#/definitions/models.VisitorPurpose'
@@ -3965,6 +3984,10 @@ paths:
         in: query
         name: search
         type: string
+      - description: Search mode
+        in: query
+        name: search_mode
+        type: string
       - default: 20
         description: Limit
         in: query
@@ -4807,6 +4830,10 @@ paths:
       - description: Search text
         in: query
         name: search
+        type: string
+      - description: Search mode
+        in: query
+        name: search_mode
         type: string
       - description: Society name
         in: query
@@ -8683,8 +8710,8 @@ paths:
       - Visitor Entries
   /v1/societies/{societyId}/visitor-entries/waiting-at-gate:
     get:
-      description: '[Owner/Admin/Staff] Lists approved visitor entries ready for gate
-        check-in, ordered by approval time.'
+      description: '[Owner/Admin/Staff] Lists approved non-invite visitor entries
+        awaiting manual check-in. Excludes resident-link QR guests (see Expected Guests).'
       parameters:
       - description: Society ID
         in: path
@@ -8986,6 +9013,34 @@ paths:
         in: query
         name: search
         type: string
+      - description: Search mode
+        in: query
+        name: search_mode
+        type: string
+      - description: Only active subscriptions
+        in: query
+        name: is_active_only
+        type: boolean
+      - description: Only expired subscriptions
+        in: query
+        name: expired_only
+        type: boolean
+      - description: Subscriptions ending before RFC3339 timestamp
+        in: query
+        name: expiring_before
+        type: string
+      - description: Subscriptions ending within N days
+        in: query
+        name: expiring_days
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:

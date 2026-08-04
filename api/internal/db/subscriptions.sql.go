@@ -378,6 +378,24 @@ func (q *Queries) CreateTrialSubscription(ctx context.Context, arg CreateTrialSu
 	return i, err
 }
 
+const expireDueSubscriptions = `-- name: ExpireDueSubscriptions :execrows
+UPDATE society_subscriptions
+SET status = 'expired', expired_at = NOW(), updated_at = NOW()
+WHERE status IN ('trial', 'active')
+  AND (
+      (ends_at IS NOT NULL AND ends_at <= NOW())
+      OR (status = 'trial' AND trial_ends_at IS NOT NULL AND trial_ends_at <= NOW())
+  )
+`
+
+func (q *Queries) ExpireDueSubscriptions(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, expireDueSubscriptions)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const expireSubscription = `-- name: ExpireSubscription :one
 UPDATE society_subscriptions
 SET status = 'expired', expired_at = NOW(), updated_at = NOW()

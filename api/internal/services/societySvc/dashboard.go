@@ -57,6 +57,13 @@ func (s *SocietySvc) GetDashboardBootstrap(ctx context.Context, societyID int64)
 		return nil, err
 	}
 
+	latestSubscription, err := s.dashboardLatestSubscription(ctx, societyID)
+	if err != nil {
+		return nil, err
+	}
+
+	subscriptionHealth := computeSubscriptionHealth(currentSubscription, latestSubscription)
+
 	var subscriptionUsage *models.SocietyDashboardSubscriptionUsageResponse
 	if currentSubscription != nil {
 		subscriptionUsage = &models.SocietyDashboardSubscriptionUsageResponse{
@@ -72,6 +79,22 @@ func (s *SocietySvc) GetDashboardBootstrap(ctx context.Context, societyID int64)
 		return nil, err
 	}
 
+	var visitorStats *models.VisitorEntryStatsResponse
+	var visitorDaily []models.VisitorDailyCountResponse
+	if s.visitorEntrySvc != nil {
+		visitorStats, err = s.visitorEntrySvc.GetEntryStats(ctx, societyID)
+		if err != nil {
+			return nil, err
+		}
+		dailyStats, dailyErr := s.visitorEntrySvc.GetDailyEntryStats(ctx, societyID, 7)
+		if dailyErr != nil {
+			return nil, dailyErr
+		}
+		if dailyStats != nil {
+			visitorDaily = dailyStats.Daily
+		}
+	}
+
 	return &models.SocietyDashboardBootstrapResponse{
 		Society:             society.ToResponse(),
 		FlatStats:           flatStats,
@@ -80,7 +103,10 @@ func (s *SocietySvc) GetDashboardBootstrap(ctx context.Context, societyID int64)
 		MemberStats:         memberStats,
 		CurrentSubscription: currentSubscription,
 		SubscriptionUsage:   subscriptionUsage,
+		SubscriptionHealth:  subscriptionHealth,
 		PlanAds:             planAds,
+		VisitorStats:        visitorStats,
+		VisitorDailyLast7:   visitorDaily,
 	}, nil
 }
 
@@ -130,6 +156,23 @@ func (s *SocietySvc) dashboardCurrentSubscription(ctx context.Context, societyID
 		SocietyID:    &societyID,
 		IsActiveOnly: &activeOnly,
 		Limit:        1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, nil
+	}
+	return items[0], nil
+}
+
+func (s *SocietySvc) dashboardLatestSubscription(ctx context.Context, societyID int64) (*models.SocietySubscriptionResponse, error) {
+	if s.subscriptionSvc == nil {
+		return nil, nil
+	}
+	items, err := s.subscriptionSvc.ListSubscriptions(ctx, &models.SubscriptionFilter{
+		SocietyID: &societyID,
+		Limit:     1,
 	})
 	if err != nil {
 		return nil, err

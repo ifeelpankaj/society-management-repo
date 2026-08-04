@@ -46,6 +46,7 @@ type FlatClaimQueryService interface {
 	GetFlatClaim(ctx context.Context, filter *models.FlatClaimFilter) (*models.FlatClaimResponse, error)
 	ListFlatClaims(ctx context.Context, filter *models.FlatClaimFilter) ([]*models.FlatClaimResponse, error)
 	ListMyFlatClaims(ctx context.Context, userID int64, filter *models.FlatClaimFilter) ([]*models.FlatClaimResponse, error)
+	GetFlatClaimStats(ctx context.Context, societyID int64) (*models.FlatClaimStatsResponse, error)
 }
 
 type FlatResidentCommandService interface {

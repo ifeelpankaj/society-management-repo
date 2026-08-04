@@ -354,6 +354,28 @@ func (h *FlatHandler) GetFlatStats(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Flat stats fetched successfully", gin.H{"stats": result})
 }
 
+// GetFlatClaimStats godoc
+// @Summary Get flat claim stats
+// @Description [Owner/Admin/Staff] Returns flat claim counts by status for a society.
+// @Tags Flat Claims
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Success 200 {object} models.FlatClaimStatsAPIResponse "Flat claim stats fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid society ID"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Router /v1/societies/{societyId}/flat-claims/stats [get]
+func (h *FlatHandler) GetFlatClaimStats(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+	result, err := h.flatSvc.GetFlatClaimStats(c.Request.Context(), societyID)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Flat claim stats fetched successfully", gin.H{"stats": result})
+}
+
 // SubmitFlatClaim godoc
 // @Summary Submit flat claim
 // @Description [User] Submits a pending claim for a flat.
@@ -858,6 +880,7 @@ func (h *FlatHandler) GetFlatResident(c *gin.Context) {
 // @Param status query string false "Resident status: active, inactive, moved_out"
 // @Param is_primary query bool false "Primary resident flag"
 // @Param search query string false "Search user, contact, flat, block, role, or status"
+// @Param search_mode query string false "Search mode"
 // @Param limit query int false "Limit" default(20)
 // @Param offset query int false "Offset" default(0)
 // @Success 200 {object} models.FlatResidentsAPIResponse "Residents fetched successfully"

@@ -20,4 +20,6 @@ export const appConfig = {
   supportPhoneDisplay:
     process.env.NEXT_PUBLIC_SUPPORT_PHONE_DISPLAY || "+91 98765 43210",
   supportPhoneTel: process.env.NEXT_PUBLIC_SUPPORT_PHONE_TEL || "+919876543210",
+  playStoreUrl: process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? "#",
+  appStoreUrl: process.env.NEXT_PUBLIC_APP_STORE_URL ?? "#",
 };

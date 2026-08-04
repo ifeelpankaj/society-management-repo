@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"go-server/internal/models"
 	subscriptionsvc "go-server/internal/services/subscriptionSvc"
@@ -235,6 +237,13 @@ func (h *SubscriptionHandler) GetSubscription(c *gin.Context) {
 // @Param plan_id query int false "Plan ID"
 // @Param status query string false "Subscription status"
 // @Param search query string false "Search text"
+// @Param search_mode query string false "Search mode"
+// @Param is_active_only query bool false "Only active subscriptions"
+// @Param expired_only query bool false "Only expired subscriptions"
+// @Param expiring_before query string false "Subscriptions ending before RFC3339 timestamp"
+// @Param expiring_days query int false "Subscriptions ending within N days"
+// @Param limit query int false "Page size"
+// @Param offset query int false "Page offset"
 // @Success 200 {object} models.SubscriptionsAPIResponse "Subscriptions fetched successfully"
 // @Router /v1/subscriptions [get]
 func (h *SubscriptionHandler) ListSubscriptions(c *gin.Context) {
@@ -288,6 +297,24 @@ func subscriptionFilterFromQuery(c *gin.Context) (*models.SubscriptionFilter, bo
 	if raw := strings.TrimSpace(c.Query("expired_only")); raw != "" {
 		value := raw == "true" || raw == "1"
 		filter.ExpiredOnly = &value
+	}
+	if !queryTimePtr(c, "expiring_before", &filter.ExpiringBefore) {
+		return nil, false
+	}
+	if raw := strings.TrimSpace(c.Query("expiring_days")); raw != "" {
+		days, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || days <= 0 {
+			utils.BadRequestResponse(c, "expiring_days must be a positive integer")
+			return nil, false
+		}
+		expiringBefore := time.Now().UTC().Add(time.Duration(days) * 24 * time.Hour)
+		filter.ExpiringBefore = &expiringBefore
+	}
+	if !queryTimePtr(c, "starts_after", &filter.StartsAfter) ||
+		!queryTimePtr(c, "starts_before", &filter.StartsBefore) ||
+		!queryTimePtr(c, "ends_after", &filter.EndsAfter) ||
+		!queryTimePtr(c, "ends_before", &filter.EndsBefore) {
+		return nil, false
 	}
 	limit, offset, ok := paginationQuery(c)
 	if !ok {

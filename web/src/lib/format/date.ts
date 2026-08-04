@@ -4,7 +4,10 @@ const shortDateFormatIN = new Intl.DateTimeFormat("en-IN", {
   year: "numeric",
 });
 
-export function formatShortDateIN(value?: string, fallback = "Not set") {
+export function formatShortDateIN(
+  value?: string | null,
+  fallback = "Not set",
+) {
   if (!value) return fallback;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return fallback;

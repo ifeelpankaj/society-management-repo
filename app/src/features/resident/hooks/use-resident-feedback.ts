@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
 import { useToast } from "@/components/ui";
-import { getApiMessage } from "@/features/auth/api-error";
+import { getFriendlyApiMessage, isSubscriptionError } from "@/features/auth/api-error";
 
 type ActionResult = {
   message: string;
@@ -15,8 +15,8 @@ export function useResidentFeedback() {
     (title: string, error: unknown, fallback: string) => {
       showToast({
         title,
-        message: getApiMessage(error, fallback),
-        variant: "error",
+        message: getFriendlyApiMessage(error, fallback),
+        variant: isSubscriptionError(error) ? "info" : "error",
       });
     },
     [showToast],

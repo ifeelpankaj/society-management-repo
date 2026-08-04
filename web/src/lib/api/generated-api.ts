@@ -229,6 +229,7 @@ const injectedRtkApi = api
             status: queryArg.status,
             is_primary: queryArg.isPrimary,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
             limit: queryArg.limit,
             offset: queryArg.offset,
           },
@@ -477,6 +478,7 @@ const injectedRtkApi = api
           params: {
             status: queryArg.status,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
             name: queryArg.name,
             code: queryArg.code,
             city: queryArg.city,
@@ -1199,6 +1201,22 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Visitor Entries"],
       }),
+      getV1SocietiesBySocietyIdVisitorEntriesExpectedGuests: build.query<
+        GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiResponse,
+        GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/expected-guests`,
+          params: {
+            search: queryArg.search,
+            event_from: queryArg.eventFrom,
+            event_to: queryArg.eventTo,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
+          },
+        }),
+        providesTags: ["Visitor Entries"],
+      }),
       postV1SocietiesBySocietyIdVisitorEntriesGuard: build.mutation<
         PostV1SocietiesBySocietyIdVisitorEntriesGuardApiResponse,
         PostV1SocietiesBySocietyIdVisitorEntriesGuardApiArg
@@ -1399,6 +1417,13 @@ const injectedRtkApi = api
             plan_id: queryArg.planId,
             status: queryArg.status,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
+            is_active_only: queryArg.isActiveOnly,
+            expired_only: queryArg.expiredOnly,
+            expiring_before: queryArg.expiringBefore,
+            expiring_days: queryArg.expiringDays,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
           },
         }),
         providesTags: ["Subscriptions"],
@@ -1612,6 +1637,8 @@ export type GetV1FlatResidentsApiArg = {
   isPrimary?: boolean;
   /** Search user, contact, flat, block, role, or status */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
   /** Limit */
   limit?: number;
   /** Offset */
@@ -1808,6 +1835,8 @@ export type GetV1SocietiesApiArg = {
   status?: string;
   /** Search text */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
   /** Society name */
   name?: string;
   /** Society code */
@@ -2514,6 +2543,22 @@ export type PostV1SocietiesBySocietyIdVisitorEntriesCheckInApiArg = {
   /** Visitor QR token */
   modelsQrTokenRequest: ModelsQrTokenRequest;
 };
+export type GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiResponse =
+  /** status 200 Expected guest entries fetched successfully */ ModelsVisitorEntriesApiResponse;
+export type GetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Search by name, phone, flat, vehicle, or purpose */
+  search?: string;
+  /** Expected window start (RFC3339, defaults to IST today start) */
+  eventFrom?: string;
+  /** Expected window end (RFC3339, defaults to IST tomorrow start) */
+  eventTo?: string;
+  /** Maximum records to return */
+  limit?: number;
+  /** Records to skip */
+  offset?: number;
+};
 export type PostV1SocietiesBySocietyIdVisitorEntriesGuardApiResponse =
   /** status 201 Visitor entry created successfully */ ModelsVisitorEntryMutationApiResponse;
 export type PostV1SocietiesBySocietyIdVisitorEntriesGuardApiArg = {
@@ -2690,6 +2735,20 @@ export type GetV1SubscriptionsApiArg = {
   status?: string;
   /** Search text */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
+  /** Only active subscriptions */
+  isActiveOnly?: boolean;
+  /** Only expired subscriptions */
+  expiredOnly?: boolean;
+  /** Subscriptions ending before RFC3339 timestamp */
+  expiringBefore?: string;
+  /** Subscriptions ending within N days */
+  expiringDays?: number;
+  /** Page size */
+  limit?: number;
+  /** Page offset */
+  offset?: number;
 };
 export type GetV1SubscriptionsLookupApiResponse =
   /** status 200 Subscription fetched successfully */ ModelsSubscriptionApiResponse;
@@ -3498,6 +3557,7 @@ export type ModelsVisitorEntryOptionsBlock = {
 export type ModelsVisitorEntryOptionsResponse = {
   blocks?: ModelsVisitorEntryOptionsBlock[];
   flats?: ModelsVisitorEntryOptionsFlat[];
+  has_more?: boolean;
   purposes?: ModelsVisitorPurpose[];
 };
 export type ModelsVisitorEntryOptionsData = {
@@ -3688,6 +3748,12 @@ export type ModelsSocietyDashboardMemberStatsResponse = {
   staff?: number;
   total_active_members?: number;
 };
+export type ModelsSocietyDashboardSubscriptionHealthResponse = {
+  days_until_expiry?: number;
+  is_active?: boolean;
+  is_expiring_soon?: boolean;
+  lifecycle_label?: string;
+};
 export type ModelsSocietyDashboardQuotaUsageResponse = {
   limit?: number;
   percent?: number;
@@ -3708,6 +3774,7 @@ export type ModelsSocietyDashboardBootstrapResponse = {
   plan_ads?: ModelsPlanResponse[];
   recent_pending_claims?: ModelsFlatClaimResponse[];
   society?: ModelsSocietyResponse;
+  subscription_health?: ModelsSocietyDashboardSubscriptionHealthResponse;
   subscription_usage?: ModelsSocietyDashboardSubscriptionUsageResponse;
 };
 export type ModelsSocietyDashboardBootstrapData = {
@@ -3996,6 +4063,7 @@ export type ModelsVisitorEntryStatsResponse = {
   visitors_inside?: number;
 };
 export type ModelsGuardDeskBootstrapResponse = {
+  expected_guests_count?: number;
   pending_preview?: ModelsVisitorPendingEntry[];
   society?: ModelsSocietyResponse;
   stats?: ModelsVisitorEntryStatsResponse;
@@ -4186,6 +4254,7 @@ export type ModelsRejectVisitorEntryRequest = {
 };
 export type ModelsSocietyVisitorSettingsResponse = {
   allow_guard_entry?: boolean;
+  allow_guard_on_behalf_approval?: boolean;
   allow_public_qr_entry?: boolean;
   allow_resident_pre_approval?: boolean;
   approval_mode?: ModelsVisitorApprovalMode;
@@ -4209,6 +4278,7 @@ export type ModelsSocietyVisitorSettingsApiResponse = {
 };
 export type ModelsUpdateSocietyVisitorSettingsRequest = {
   allow_guard_entry?: boolean;
+  allow_guard_on_behalf_approval?: boolean;
   allow_public_qr_entry?: boolean;
   allow_resident_pre_approval?: boolean;
   approval_mode?: ModelsVisitorApprovalMode;
@@ -4378,6 +4448,7 @@ export const {
   usePostV1SocietiesBySocietyIdTransferOwnershipMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation,
+  useGetV1SocietiesBySocietyIdVisitorEntriesExpectedGuestsQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesGuardMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesPendingQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,

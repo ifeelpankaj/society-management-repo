@@ -7,8 +7,8 @@ import {
   Users,
 } from "lucide-react";
 
-import { DashboardCard } from "@/components/shared/dashboard-card";
-import { StatGrid } from "@/components/shared/stat-grid";
+import { MetricTile } from "@/components/metrics/metric-tile";
+import { MetricTileGrid } from "@/components/metrics/metric-tile-grid";
 import type { VisitorEntryStats } from "@/lib/api/visitor-types";
 import { formatNumberIN } from "@/lib/format";
 
@@ -19,55 +19,46 @@ type VisitorStatsCardsProps = {
 
 export function VisitorStatsCards({ loading, stats }: VisitorStatsCardsProps) {
   return (
-    <StatGrid columns={6}>
-      <DashboardCard
-        description="Registered today"
-        icon={<Users className="size-4" />}
+    <MetricTileGrid columns={6}>
+      <MetricTile
+        icon={<Users className="size-3.5" />}
+        label="Today"
         loading={loading}
-        size="sm"
-        title="Today"
         value={formatNumberIN(stats?.today_visitors)}
       />
-      <DashboardCard
-        description="Currently on premises"
-        icon={<DoorOpen className="size-4" />}
+      <MetricTile
+        icon={<DoorOpen className="size-3.5" />}
+        label="Inside"
         loading={loading}
-        size="sm"
-        title="Inside"
+        tone="success"
         value={formatNumberIN(stats?.visitors_inside)}
       />
-      <DashboardCard
-        description="Awaiting resident decision"
-        icon={<Clock className="size-4" />}
+      <MetricTile
+        icon={<Clock className="size-3.5" />}
+        label="Pending"
         loading={loading}
-        size="sm"
-        title="Pending"
+        tone="warning"
         value={formatNumberIN(stats?.pending_approvals)}
       />
-      <DashboardCard
-        description="Departed today"
-        icon={<LogOut className="size-4" />}
+      <MetricTile
+        icon={<LogOut className="size-3.5" />}
+        label="Checked out"
         loading={loading}
-        size="sm"
-        title="Checked out"
         value={formatNumberIN(stats?.checked_out_today)}
       />
-      <DashboardCard
-        description="Declined today"
-        icon={<Ban className="size-4" />}
+      <MetricTile
+        icon={<Ban className="size-3.5" />}
+        label="Rejected"
         loading={loading}
-        size="sm"
-        title="Rejected"
+        tone="danger"
         value={formatNumberIN(stats?.rejected_today)}
       />
-      <DashboardCard
-        description="Closed without checkout"
-        icon={<UserCheck className="size-4" />}
+      <MetricTile
+        icon={<UserCheck className="size-3.5" />}
+        label="Auto closed"
         loading={loading}
-        size="sm"
-        title="Auto closed"
         value={formatNumberIN(stats?.auto_closed_today)}
       />
-    </StatGrid>
+    </MetricTileGrid>
   );
 }

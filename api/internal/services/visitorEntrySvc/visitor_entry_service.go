@@ -42,6 +42,7 @@ type VisitorEntryService interface {
 	ListEntriesPaginated(ctx context.Context, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)
 	GetEntryStats(ctx context.Context, societyID int64) (*models.VisitorEntryStatsResponse, error)
 	GetEntryStatsInRange(ctx context.Context, societyID int64, from, to time.Time) (*models.VisitorEntryStatsResponse, error)
+	GetDailyEntryStats(ctx context.Context, societyID int64, days int32) (*models.VisitorEntryDailyStatsResponse, error)
 	GetGuardDeskBootstrap(ctx context.Context, societyID int64) (*models.GuardDeskBootstrapResponse, error)
 	ListSocietyPendingApprovals(ctx context.Context, filter models.VisitorPendingFilter) (*models.VisitorPendingListResult, error)
 	ListWaitingAtGate(ctx context.Context, filter models.WaitingAtGateFilter) (*models.VisitorEntryListResult, error)

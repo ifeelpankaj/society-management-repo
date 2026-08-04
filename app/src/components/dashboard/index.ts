@@ -15,3 +15,4 @@ export { DashboardOverviewGrid } from "./dashboard-overview-grid";
 export { DashboardActivityRow } from "./dashboard-activity-row";
 export { DashboardActivityFeed } from "./dashboard-activity-feed";
 export { DashboardSkeleton } from "./dashboard-skeleton";
+export { SubscriptionExpiredBanner } from "./subscription-expired-banner";

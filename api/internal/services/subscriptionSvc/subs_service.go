@@ -21,6 +21,7 @@ type SubscriptionCommandService interface {
 	RenewSubscription(ctx context.Context, subscriptionID, renewedBy int64, req *models.RenewSubscriptionRequest) (*models.SocietySubscriptionResponse, error)
 	CancelSubscription(ctx context.Context, subscriptionID, cancelledBy int64, req *models.CancelSubscriptionRequest) (*models.SocietySubscriptionResponse, error)
 	ExpireSubscription(ctx context.Context, subscriptionID int64) (*models.SocietySubscriptionResponse, error)
+	ExpireDueSubscriptions(ctx context.Context) (int64, error)
 	ChangeSubscriptionPlan(ctx context.Context, subscriptionID, newPlanID, changedBy int64) (*models.SocietySubscriptionResponse, error)
 }
 

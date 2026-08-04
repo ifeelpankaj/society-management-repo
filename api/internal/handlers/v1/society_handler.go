@@ -363,6 +363,7 @@ func (h *SocietyHandler) GetPublicClaimOptions(c *gin.Context) {
 // @Produce json
 // @Param status query string false "Society status"
 // @Param search query string false "Search text"
+// @Param search_mode query string false "Search mode"
 // @Param name query string false "Society name"
 // @Param code query string false "Society code"
 // @Param city query string false "City"

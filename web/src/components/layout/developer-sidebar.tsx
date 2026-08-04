@@ -9,7 +9,6 @@ import {
   LogOut,
   Moon,
   Sun,
-  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -189,18 +188,23 @@ export function DeveloperSidebar() {
 
       <div className="shrink-0 space-y-3 border-border/80 border-t bg-sidebar/95 p-3 backdrop-blur">
         <SidebarThemeToggle />
-        <div className="flex items-center gap-3 rounded-md border border-border bg-background/80 p-2">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted font-semibold text-muted-foreground text-xs">
-            {getInitials(userName)}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-sm">{userName}</p>
-            <p className="flex items-center gap-1 text-muted-foreground text-xs">
-              <UsersRound className="size-3" />
-              Developer
-            </p>
-          </div>
-        </div>
+        <Button
+          asChild
+          variant="outline"
+          className="h-auto w-full justify-start gap-3 py-2"
+        >
+          <Link href="/profile">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-medium text-[0.68rem] text-primary">
+              {getInitials(userName)}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate">{userName}</span>
+              <span className="block truncate text-muted-foreground text-xs">
+                Developer
+              </span>
+            </span>
+          </Link>
+        </Button>
         <Button
           className="w-full justify-start"
           disabled={isLoading}

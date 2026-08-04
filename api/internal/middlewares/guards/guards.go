@@ -8,6 +8,7 @@ import (
 
 	middleware "go-server/internal/middlewares"
 	"go-server/internal/models"
+	"go-server/internal/requestctx"
 	societysvc "go-server/internal/services/societySvc"
 	subscriptionsvc "go-server/internal/services/subscriptionSvc"
 	"go-server/pkg/utils"
@@ -172,6 +173,10 @@ func (g *Guards) requireOperationalSociety(societyIDParam string) gin.HandlerFun
 		if !ok {
 			return
 		}
+		if applyDeveloperBypass(c, societyID) {
+			c.Next()
+			return
+		}
 		if err := g.subscriptionSvc.EnsureSocietyOperational(c.Request.Context(), societyID); err != nil {
 			writeGuardError(c, err)
 			c.Abort()
@@ -197,10 +202,7 @@ func (g *Guards) requireSocietyMembership(societyIDParam string, roles ...string
 			return
 		}
 
-		if isDeveloperRole(c) {
-			c.Set("society_id", societyID)
-			c.Set("societyId", societyID)
-			c.Set("global_guard_roles", []models.GlobalRole{models.GlobalRoleDeveloper, models.GlobalRoleSuperAdmin})
+		if applyDeveloperBypass(c, societyID) {
 			c.Next()
 			return
 		}
@@ -238,6 +240,18 @@ func isDeveloperRole(c *gin.Context) bool {
 	}
 
 	return role == string(models.GlobalRoleDeveloper) || role == string(models.GlobalRoleSuperAdmin)
+}
+
+func applyDeveloperBypass(c *gin.Context, societyID int64) bool {
+	if !isDeveloperRole(c) {
+		return false
+	}
+
+	c.Request = c.Request.WithContext(requestctx.WithDeveloperGuardBypass(c.Request.Context()))
+	c.Set("society_id", societyID)
+	c.Set("societyId", societyID)
+	c.Set("global_guard_roles", []models.GlobalRole{models.GlobalRoleDeveloper, models.GlobalRoleSuperAdmin})
+	return true
 }
 
 func societyIDFromParam(c *gin.Context, name string) (int64, bool) {

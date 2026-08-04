@@ -1290,6 +1290,14 @@
             }
           },
           {
+            "description": "Search mode",
+            "name": "search_mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "Limit",
             "name": "limit",
             "in": "query",
@@ -2871,6 +2879,14 @@
           {
             "description": "Search text",
             "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Search mode",
+            "name": "search_mode",
             "in": "query",
             "schema": {
               "type": "string"
@@ -9266,6 +9282,125 @@
         }
       }
     },
+    "/v1/societies/{societyId}/visitor-entries/expected-guests": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Lists pre-invited resident-link visitor entries expected today and ready for arrival.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "List expected guest entries",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search by name, phone, flat, vehicle, or purpose",
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected window start (RFC3339, defaults to IST today start)",
+            "name": "event_from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected window end (RFC3339, defaults to IST tomorrow start)",
+            "name": "event_to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum records to return",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "description": "Records to skip",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expected guest entries fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntriesAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or path parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/visitor-entries/guard": {
       "post": {
         "security": [
@@ -9561,7 +9696,7 @@
             "AccessToken": []
           }
         ],
-        "description": "[Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.",
+        "description": "[Owner/Admin/Staff] Lists approved non-invite visitor entries awaiting manual check-in. Excludes resident-link QR guests (see Expected Guests).",
         "tags": [
           "Visitor Entries"
         ],
@@ -11022,6 +11157,62 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "Search mode",
+            "name": "search_mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only active subscriptions",
+            "name": "is_active_only",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only expired subscriptions",
+            "name": "expired_only",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Subscriptions ending before RFC3339 timestamp",
+            "name": "expiring_before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Subscriptions ending within N days",
+            "name": "expiring_days",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page offset",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
             }
           }
         ],
@@ -13096,6 +13287,9 @@
       "models.GuardDeskBootstrapResponse": {
         "type": "object",
         "properties": {
+          "expected_guests_count": {
+            "type": "integer"
+          },
           "pending_preview": {
             "type": "array",
             "items": {
@@ -14097,6 +14291,9 @@
           "society": {
             "$ref": "#/components/schemas/models.SocietyResponse"
           },
+          "subscription_health": {
+            "$ref": "#/components/schemas/models.SocietyDashboardSubscriptionHealthResponse"
+          },
           "subscription_usage": {
             "$ref": "#/components/schemas/models.SocietyDashboardSubscriptionUsageResponse"
           }
@@ -14136,6 +14333,23 @@
           },
           "used": {
             "type": "integer"
+          }
+        }
+      },
+      "models.SocietyDashboardSubscriptionHealthResponse": {
+        "type": "object",
+        "properties": {
+          "days_until_expiry": {
+            "type": "integer"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "is_expiring_soon": {
+            "type": "boolean"
+          },
+          "lifecycle_label": {
+            "type": "string"
           }
         }
       },
@@ -14788,6 +15002,9 @@
           "allow_guard_entry": {
             "type": "boolean"
           },
+          "allow_guard_on_behalf_approval": {
+            "type": "boolean"
+          },
           "allow_public_qr_entry": {
             "type": "boolean"
           },
@@ -15152,6 +15369,9 @@
         "type": "object",
         "properties": {
           "allow_guard_entry": {
+            "type": "boolean"
+          },
+          "allow_guard_on_behalf_approval": {
             "type": "boolean"
           },
           "allow_public_qr_entry": {
@@ -15636,6 +15856,9 @@
             "items": {
               "$ref": "#/components/schemas/models.VisitorEntryOptionsFlat"
             }
+          },
+          "has_more": {
+            "type": "boolean"
           },
           "purposes": {
             "type": "array",

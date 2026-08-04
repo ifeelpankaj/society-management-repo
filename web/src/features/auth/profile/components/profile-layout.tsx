@@ -1,6 +1,6 @@
 "use client";
 
-import { PageShell } from "@/components/shared/page-shell";
+import { WorkspacePage } from "@/components/shared/workspace-page";
 
 import { useProfilePage } from "../hooks/use-profile-page";
 import { AccountDetailsCard } from "./account-details-card";
@@ -13,50 +13,43 @@ export function ProfileLayout() {
   const profile = useProfilePage();
 
   return (
-    <div className="min-h-screen bg-background">
-      <PageShell size="full" background="subtle">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-          <ProfileHeader
+    <WorkspacePage size="wide">
+      <ProfileHeader />
+
+      <section className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="space-y-4">
+          <ProfileSummaryCard
+            user={profile.user}
+            isLoading={profile.isLoading}
             dashboardRoute={profile.dashboardRoute}
             dashboardActionLabel={profile.dashboardActionLabel}
+            isLoggingOut={profile.isLoggingOut}
+            onLogout={profile.handleLogout}
           />
 
-          <section className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-            <div className="space-y-4">
-              <ProfileSummaryCard
-                user={profile.user}
-                isLoading={profile.isLoading}
-                dashboardRoute={profile.dashboardRoute}
-                dashboardActionLabel={profile.dashboardActionLabel}
-                isLoggingOut={profile.isLoggingOut}
-                onLogout={profile.handleLogout}
-              />
-
-              <ChangePasswordCard
-                isChangingPassword={profile.isChangingPassword}
-                onSubmit={profile.handleChangePassword}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <AccountDetailsCard
-                user={profile.user}
-                isLoading={profile.isLoading}
-                isFetching={profile.isFetching}
-              />
-
-              <SocietyDetailsCard
-                society={profile.society}
-                isFetchingSociety={profile.isFetchingSociety}
-                claimLink={profile.claimLink}
-                host={profile.host}
-                qrUrl={profile.qrUrl}
-                onCopyLink={profile.handleCopyLink}
-              />
-            </div>
-          </section>
+          <ChangePasswordCard
+            isChangingPassword={profile.isChangingPassword}
+            onSubmit={profile.handleChangePassword}
+          />
         </div>
-      </PageShell>
-    </div>
+
+        <div className="space-y-4">
+          <AccountDetailsCard
+            user={profile.user}
+            isLoading={profile.isLoading}
+            isFetching={profile.isFetching}
+          />
+
+          <SocietyDetailsCard
+            society={profile.society}
+            isFetchingSociety={profile.isFetchingSociety}
+            claimLink={profile.claimLink}
+            host={profile.host}
+            qrUrl={profile.qrUrl}
+            onCopyLink={profile.handleCopyLink}
+          />
+        </div>
+      </section>
+    </WorkspacePage>
   );
 }

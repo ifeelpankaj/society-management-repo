@@ -110,6 +110,13 @@ func (s *SubscriptionSvc) ExpireSubscription(ctx context.Context, subscriptionID
 	return sub.ToResponse(), nil
 }
 
+func (s *SubscriptionSvc) ExpireDueSubscriptions(ctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	return s.subRepo.ExpireDue(ctx)
+}
+
 func (s *SubscriptionSvc) ChangeSubscriptionPlan(ctx context.Context, subscriptionID, newPlanID, changedBy int64) (*models.SocietySubscriptionResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()

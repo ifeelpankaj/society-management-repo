@@ -15,10 +15,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ClaimsStatsTiles } from "@/features/admin/claims/components/claims-stats-tiles";
 import { ClaimsTable } from "@/features/admin/claims/components/claims-table";
 import { useClaimsTableColumns } from "@/features/admin/claims/components/claims-table-columns";
 import { useClaimsList } from "@/features/admin/claims/hooks";
 import type { ModelsFlatClaimStatus } from "@/lib/api/generated-api";
+import { useGetV1SocietyFlatClaimStatsQuery } from "@/lib/api/society-flat-claims-api";
 import { formatNumberIN } from "@/lib/format";
 import { paths } from "@/lib/routes/paths";
 
@@ -62,6 +64,8 @@ export function ClaimsClient({
   const columns = useClaimsTableColumns({
     onView: openClaim,
   });
+  const { data: claimStatsData, isLoading: isLoadingClaimStats } =
+    useGetV1SocietyFlatClaimStatsQuery({ societyId });
 
   return (
     <WorkspacePage>
@@ -70,6 +74,11 @@ export function ClaimsClient({
         description="Review resident requests, inspect flat details, and approve or reject pending claims."
         eyebrow="Community access"
         title="Flat Claims"
+      />
+
+      <ClaimsStatsTiles
+        loading={isLoadingClaimStats}
+        stats={claimStatsData?.data?.stats}
       />
 
       <Card>

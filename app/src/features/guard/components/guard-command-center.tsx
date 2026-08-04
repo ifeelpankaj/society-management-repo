@@ -12,6 +12,7 @@ import {
   DashboardOverviewGrid,
   DashboardSection,
   DashboardSkeleton,
+  SubscriptionExpiredBanner,
   type DashboardActionTileConfig,
   type DashboardOverviewStatConfig,
 } from "@/components/dashboard";
@@ -68,6 +69,7 @@ export function GuardCommandCenter() {
     hasError,
     isInitialLoading,
     isRefreshing,
+    isSubscriptionBlocked,
     refetchAll,
     societyName,
     stats,
@@ -235,12 +237,14 @@ export function GuardCommandCenter() {
                 greeting={getGreeting()}
                 statusItems={[
                   { label: "Guard Desk" },
-                  { label: "Live", live: !hasError },
+                  { label: isSubscriptionBlocked ? "Limited" : "Live", live: !hasError && !isSubscriptionBlocked },
                 ]}
                 title={societyName}
               />
               <DashboardAnnouncement />
             </Stack>
+
+            {isSubscriptionBlocked ? <SubscriptionExpiredBanner /> : null}
 
             {hasError ? (
               <ErrorBanner
@@ -249,10 +253,12 @@ export function GuardCommandCenter() {
               />
             ) : null}
 
-            {pendingCount > 0 ? (
+            {pendingCount > 0 && !isSubscriptionBlocked ? (
               <DashboardAlertBar count={pendingCount} onPress={goPending} />
             ) : null}
 
+            {!isSubscriptionBlocked ? (
+              <>
             <DashboardSection title="Quick Actions">
               <DashboardActionRow actions={actions} />
             </DashboardSection>
@@ -275,6 +281,8 @@ export function GuardCommandCenter() {
               }}
               onViewAll={goLogs}
             />
+              </>
+            ) : null}
           </Stack>
         )}
       </GuardScreenShell>

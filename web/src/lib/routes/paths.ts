@@ -11,6 +11,7 @@ export const paths = {
   home: () => AUTH_ROUTES.home,
   login: () => AUTH_ROUTES.login,
   profile: () => AUTH_ROUTES.profile,
+  downloadApp: () => AUTH_ROUTES.downloadApp,
   onboarding: () => AUTH_ROUTES.onboarding,
   onboardingSociety: (societyId: number) =>
     `${AUTH_ROUTES.onboarding}/${encodeSocietyId(societyId)}`,
@@ -22,6 +23,8 @@ export const paths = {
   developerPlans: () => `${AUTH_ROUTES.developer}/plans`,
   developerPlan: (planId: number) => `${AUTH_ROUTES.developer}/plans/${planId}`,
   developerSubscriptions: () => `${AUTH_ROUTES.developer}/subscriptions`,
+  developerSubscriptionsExpiring: () =>
+    `${AUTH_ROUTES.developer}/subscriptions?expiring=14`,
   developerSubscription: (subscriptionId: number) =>
     `${AUTH_ROUTES.developer}/subscriptions/${subscriptionId}`,
   developerResidences: () => `${AUTH_ROUTES.developer}/residences`,

@@ -1231,6 +1231,48 @@ func (q *Queries) GetVisitorEntryByQRHash(ctx context.Context, qrTokenHash *stri
 	return i, err
 }
 
+const getVisitorEntryDailyStatsCreated = `-- name: GetVisitorEntryDailyStatsCreated :many
+SELECT
+    to_char((ve.created_at AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS stat_date,
+    COUNT(*)::bigint AS count
+FROM visitor_entries ve
+WHERE ve.society_id = $1
+  AND ve.created_at >= ((CURRENT_DATE AT TIME ZONE 'Asia/Kolkata')::date - ($2::int - 1)) AT TIME ZONE 'Asia/Kolkata'
+  AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+GROUP BY (ve.created_at AT TIME ZONE 'Asia/Kolkata')::date
+ORDER BY stat_date ASC
+`
+
+type GetVisitorEntryDailyStatsCreatedParams struct {
+	SocietyID int64 `db:"society_id" json:"society_id"`
+	Days      int32 `db:"days" json:"days"`
+}
+
+type GetVisitorEntryDailyStatsCreatedRow struct {
+	StatDate string `db:"stat_date" json:"stat_date"`
+	Count    int64  `db:"count" json:"count"`
+}
+
+func (q *Queries) GetVisitorEntryDailyStatsCreated(ctx context.Context, arg GetVisitorEntryDailyStatsCreatedParams) ([]GetVisitorEntryDailyStatsCreatedRow, error) {
+	rows, err := q.db.Query(ctx, getVisitorEntryDailyStatsCreated, arg.SocietyID, arg.Days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetVisitorEntryDailyStatsCreatedRow{}
+	for rows.Next() {
+		var i GetVisitorEntryDailyStatsCreatedRow
+		if err := rows.Scan(&i.StatDate, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getVisitorEntryForUpdate = `-- name: GetVisitorEntryForUpdate :one
 SELECT ve.id, ve.society_id, ve.flat_id, ve.visitor_id, ve.invite_id, ve.source, ve.purpose, ve.status, ve.vehicle_number, ve.vehicle_type, ve.companions_count, ve.companion_details, ve.expected_at, ve.expected_checkout_at, ve.checked_in_at, ve.checked_out_at, ve.auto_closed_at, ve.approved_by, ve.rejected_by, ve.handled_by_guard_id, ve.created_by, ve.qr_token_hash, ve.qr_expires_at, ve.qr_used_at, ve.notes, ve.rejection_reason, ve.metadata, ve.created_at, ve.updated_at, ve.approved_at, ve.delivery_partner, ve.service_provider
 FROM visitor_entries ve

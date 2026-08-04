@@ -1055,6 +1055,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Search mode",
+                        "name": "search_mode",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "default": 20,
                         "description": "Limit",
@@ -2318,6 +2324,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Search text",
                         "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search mode",
+                        "name": "search_mode",
                         "in": "query"
                     },
                     {
@@ -7501,7 +7513,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "[Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.",
+                "description": "[Owner/Admin/Staff] Lists approved non-invite visitor entries awaiting manual check-in. Excludes resident-link QR guests (see Expected Guests).",
                 "produces": [
                     "application/json"
                 ],
@@ -8609,6 +8621,48 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Search text",
                         "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search mode",
+                        "name": "search_mode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Only active subscriptions",
+                        "name": "is_active_only",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Only expired subscriptions",
+                        "name": "expired_only",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subscriptions ending before RFC3339 timestamp",
+                        "name": "expiring_before",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Subscriptions ending within N days",
+                        "name": "expiring_days",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset",
+                        "name": "offset",
                         "in": "query"
                     }
                 ],
@@ -11593,6 +11647,9 @@ const docTemplate = `{
                 "society": {
                     "$ref": "#/definitions/models.SocietyResponse"
                 },
+                "subscription_health": {
+                    "$ref": "#/definitions/models.SocietyDashboardSubscriptionHealthResponse"
+                },
                 "subscription_usage": {
                     "$ref": "#/definitions/models.SocietyDashboardSubscriptionUsageResponse"
                 }
@@ -11632,6 +11689,23 @@ const docTemplate = `{
                 },
                 "used": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.SocietyDashboardSubscriptionHealthResponse": {
+            "type": "object",
+            "properties": {
+                "days_until_expiry": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_expiring_soon": {
+                    "type": "boolean"
+                },
+                "lifecycle_label": {
+                    "type": "string"
                 }
             }
         },
@@ -12284,6 +12358,9 @@ const docTemplate = `{
                 "allow_guard_entry": {
                     "type": "boolean"
                 },
+                "allow_guard_on_behalf_approval": {
+                    "type": "boolean"
+                },
                 "allow_public_qr_entry": {
                     "type": "boolean"
                 },
@@ -12648,6 +12725,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allow_guard_entry": {
+                    "type": "boolean"
+                },
+                "allow_guard_on_behalf_approval": {
                     "type": "boolean"
                 },
                 "allow_public_qr_entry": {
@@ -13132,6 +13212,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.VisitorEntryOptionsFlat"
                     }
+                },
+                "has_more": {
+                    "type": "boolean"
                 },
                 "purposes": {
                     "type": "array",

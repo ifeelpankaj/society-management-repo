@@ -303,3 +303,12 @@ WHERE society_id = sqlc.arg('society_id')::bigint
 ORDER BY id DESC
 LIMIT 1
 FOR UPDATE;
+
+-- name: ExpireDueSubscriptions :execrows
+UPDATE society_subscriptions
+SET status = 'expired', expired_at = NOW(), updated_at = NOW()
+WHERE status IN ('trial', 'active')
+  AND (
+      (ends_at IS NOT NULL AND ends_at <= NOW())
+      OR (status = 'trial' AND trial_ends_at IS NOT NULL AND trial_ends_at <= NOW())
+  );

@@ -2,6 +2,7 @@ package subscriptionsvc
 
 import (
 	"context"
+	"time"
 
 	"go-server/internal/models"
 	service "go-server/internal/services"
@@ -27,10 +28,26 @@ func (s *SubscriptionSvc) GetActiveSubscriptionBySocietyID(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	if sub == nil {
+	if sub != nil {
+		return sub.ToResponse(), nil
+	}
+
+	latest, err := s.subRepo.List(ctx, &models.SubscriptionFilter{SocietyID: &societyID, Limit: 1})
+	if err != nil {
+		return nil, err
+	}
+	if len(latest) == 0 {
 		return nil, ErrSubscriptionNotFound
 	}
-	return sub.ToResponse(), nil
+
+	item := latest[0]
+	if item.Status == models.SubscriptionStatusExpired ||
+		item.Status == models.SubscriptionStatusCancelled ||
+		(item.EndsAt != nil && !item.EndsAt.After(time.Now().UTC())) {
+		return nil, ErrSubscriptionExpired
+	}
+
+	return nil, ErrSubscriptionNotFound
 }
 
 func (s *SubscriptionSvc) ListSubscriptions(ctx context.Context, filter *models.SubscriptionFilter) ([]*models.SocietySubscriptionResponse, error) {

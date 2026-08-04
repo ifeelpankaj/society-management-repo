@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 
+import { resolveSubscriptionHealth } from "@/lib/subscription-health";
 import { useGetV1SocietiesBySocietyIdDashboardBootstrapQuery } from "@/lib/api/society-dashboard-api";
 
 type UseSocietyDashboardOptions = {
@@ -20,9 +21,15 @@ export function useSocietyDashboard({ societyId }: UseSocietyDashboardOptions) {
   const claimStats = dashboard?.claim_stats;
   const memberStats = dashboard?.member_stats;
   const subscription = dashboard?.current_subscription;
+  const subscriptionHealth = useMemo(
+    () => resolveSubscriptionHealth(subscription, dashboard?.subscription_health),
+    [subscription, dashboard?.subscription_health],
+  );
   const usage = dashboard?.subscription_usage;
   const planAds = dashboard?.plan_ads ?? [];
   const recentPendingClaims = dashboard?.recent_pending_claims ?? [];
+  const visitorStats = dashboard?.visitor_stats;
+  const visitorDaily = dashboard?.visitor_daily_last_7_days ?? [];
 
   const declaredFlats = society?.total_flats ?? 0;
   const configuredPercent = useMemo(
@@ -50,6 +57,9 @@ export function useSocietyDashboard({ societyId }: UseSocietyDashboardOptions) {
     refetch: query.refetch,
     society,
     subscription,
+    subscriptionHealth,
     usage,
+    visitorDaily,
+    visitorStats,
   };
 }

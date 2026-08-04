@@ -168,6 +168,7 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		planSvc,
 		subscriptionSvc,
 		visitorSettingSvc,
+		visitorEntrySvc,
 	)
 
 	flatSvc := flatsvc.NewFlatService(
@@ -201,6 +202,9 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 
 	flatMemberInviteExpiryJob := jobs.NewFlatMemberInviteExpiryJob(flatSvc)
 	go flatMemberInviteExpiryJob.Start(cleanupCtx, 30*time.Minute)
+
+	subscriptionExpiryJob := jobs.NewSubscriptionExpiryJob(subscriptionSvc)
+	go subscriptionExpiryJob.Start(cleanupCtx, time.Hour)
 
 	v1Handlers := &V1Handlers{
 		Auth: handlers.NewAuthHandler(

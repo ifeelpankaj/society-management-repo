@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
+
+import { ProfileWorkspaceShell } from "@/components/layout/profile-workspace-shell";
 import { RouteGuard } from "@/features/auth/components/route-guard";
-import { ProfileLayout } from "@/features/auth/profile/components/profile-layout";
 import { createPageMetadata } from "@/lib/site-metadata";
 
 export const metadata = createPageMetadata(
@@ -7,10 +9,10 @@ export const metadata = createPageMetadata(
   "View and manage your account profile.",
 );
 
-export default function ProfilePage() {
+export default function ProfileLayout({ children }: { children: ReactNode }) {
   return (
     <RouteGuard mode="authenticated">
-      <ProfileLayout />
+      <ProfileWorkspaceShell>{children}</ProfileWorkspaceShell>
     </RouteGuard>
   );
 }

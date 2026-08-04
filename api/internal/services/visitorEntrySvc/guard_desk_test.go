@@ -93,6 +93,9 @@ func (r *guardDeskEntryRepo) GetStats(context.Context, int64) (*models.VisitorEn
 func (r *guardDeskEntryRepo) GetStatsInRange(context.Context, int64, time.Time, time.Time) (*models.VisitorEntryStatsResponse, error) {
 	return r.stats, nil
 }
+func (r *guardDeskEntryRepo) GetDailyStatsCreated(context.Context, int64, int32) ([]models.VisitorDailyCountResponse, error) {
+	return nil, nil
+}
 func (r *guardDeskEntryRepo) CountWaitingAtGate(context.Context, int64) (int64, error) {
 	return r.waitingAtGateCount, nil
 }

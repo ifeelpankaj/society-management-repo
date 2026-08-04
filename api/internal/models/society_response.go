@@ -105,6 +105,13 @@ type SocietyDashboardSubscriptionUsageResponse struct {
 	Residents SocietyDashboardQuotaUsageResponse `json:"residents"`
 }
 
+type SocietyDashboardSubscriptionHealthResponse struct {
+	IsActive        bool   `json:"is_active"`
+	IsExpiringSoon  bool   `json:"is_expiring_soon"`
+	DaysUntilExpiry *int64 `json:"days_until_expiry,omitempty"`
+	LifecycleLabel  string `json:"lifecycle_label"`
+}
+
 type SocietyDashboardBootstrapResponse struct {
 	Society             *SocietyResponse                           `json:"society"`
 	FlatStats           *FlatStatsResponse                         `json:"flat_stats"`
@@ -113,7 +120,10 @@ type SocietyDashboardBootstrapResponse struct {
 	MemberStats         *SocietyDashboardMemberStatsResponse       `json:"member_stats"`
 	CurrentSubscription *SocietySubscriptionResponse               `json:"current_subscription,omitempty"`
 	SubscriptionUsage   *SocietyDashboardSubscriptionUsageResponse `json:"subscription_usage,omitempty"`
+	SubscriptionHealth  *SocietyDashboardSubscriptionHealthResponse `json:"subscription_health,omitempty"`
 	PlanAds             []*PlanResponse                            `json:"plan_ads"`
+	VisitorStats        *VisitorEntryStatsResponse                 `json:"visitor_stats,omitempty"`
+	VisitorDailyLast7   []VisitorDailyCountResponse                `json:"visitor_daily_last_7_days,omitempty"`
 }
 
 type DeveloperDashboardSocietyStatsResponse struct {

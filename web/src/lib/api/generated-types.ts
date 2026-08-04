@@ -1361,6 +1361,8 @@ export interface paths {
                     is_primary?: boolean;
                     /** @description Search user, contact, flat, block, role, or status */
                     search?: string;
+                    /** @description Search mode */
+                    search_mode?: string;
                     /** @description Limit */
                     limit?: number;
                     /** @description Offset */
@@ -2848,6 +2850,8 @@ export interface paths {
                     status?: string;
                     /** @description Search text */
                     search?: string;
+                    /** @description Search mode */
+                    search_mode?: string;
                     /** @description Society name */
                     name?: string;
                     /** @description Society code */
@@ -8252,6 +8256,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/societies/{societyId}/visitor-entries/expected-guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List expected guest entries
+         * @description [Owner/Admin/Staff] Lists pre-invited resident-link visitor entries expected today and ready for arrival.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Search by name, phone, flat, vehicle, or purpose */
+                    search?: string;
+                    /** @description Expected window start (RFC3339, defaults to IST today start) */
+                    event_from?: string;
+                    /** @description Expected window end (RFC3339, defaults to IST tomorrow start) */
+                    event_to?: string;
+                    /** @description Maximum records to return */
+                    limit?: number;
+                    /** @description Records to skip */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Society ID */
+                    societyId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Expected guest entries fetched successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.VisitorEntriesAPIResponse"];
+                    };
+                };
+                /** @description Invalid query or path parameter */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Missing, invalid, or expired access token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Owner, admin, or staff access required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["models.ErrorResponseDoc"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/societies/{societyId}/visitor-entries/guard": {
         parameters: {
             query?: never;
@@ -8522,7 +8615,7 @@ export interface paths {
         };
         /**
          * List visitors waiting at gate
-         * @description [Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.
+         * @description [Owner/Admin/Staff] Lists approved non-invite visitor entries awaiting manual check-in. Excludes resident-link QR guests (see Expected Guests).
          */
         get: {
             parameters: {
@@ -9800,6 +9893,20 @@ export interface paths {
                     status?: string;
                     /** @description Search text */
                     search?: string;
+                    /** @description Search mode */
+                    search_mode?: string;
+                    /** @description Only active subscriptions */
+                    is_active_only?: boolean;
+                    /** @description Only expired subscriptions */
+                    expired_only?: boolean;
+                    /** @description Subscriptions ending before RFC3339 timestamp */
+                    expiring_before?: string;
+                    /** @description Subscriptions ending within N days */
+                    expiring_days?: number;
+                    /** @description Page size */
+                    limit?: number;
+                    /** @description Page offset */
+                    offset?: number;
                 };
                 header?: never;
                 path?: never;
@@ -10698,6 +10805,7 @@ export interface components {
             desk?: components["schemas"]["models.GuardDeskBootstrapResponse"];
         };
         "models.GuardDeskBootstrapResponse": {
+            expected_guests_count?: number;
             pending_preview?: components["schemas"]["models.VisitorPendingEntry"][];
             society?: components["schemas"]["models.SocietyResponse"];
             stats?: components["schemas"]["models.VisitorEntryStatsResponse"];
@@ -11060,6 +11168,7 @@ export interface components {
             plan_ads?: components["schemas"]["models.PlanResponse"][];
             recent_pending_claims?: components["schemas"]["models.FlatClaimResponse"][];
             society?: components["schemas"]["models.SocietyResponse"];
+            subscription_health?: components["schemas"]["models.SocietyDashboardSubscriptionHealthResponse"];
             subscription_usage?: components["schemas"]["models.SocietyDashboardSubscriptionUsageResponse"];
         };
         "models.SocietyDashboardMemberStatsResponse": {
@@ -11074,6 +11183,12 @@ export interface components {
             percent?: number;
             remaining?: number;
             used?: number;
+        };
+        "models.SocietyDashboardSubscriptionHealthResponse": {
+            days_until_expiry?: number;
+            is_active?: boolean;
+            is_expiring_soon?: boolean;
+            lifecycle_label?: string;
         };
         "models.SocietyDashboardSubscriptionUsageResponse": {
             admins?: components["schemas"]["models.SocietyDashboardQuotaUsageResponse"];
@@ -11296,6 +11411,7 @@ export interface components {
         };
         "models.SocietyVisitorSettingsResponse": {
             allow_guard_entry?: boolean;
+            allow_guard_on_behalf_approval?: boolean;
             allow_public_qr_entry?: boolean;
             allow_resident_pre_approval?: boolean;
             approval_mode?: components["schemas"]["models.VisitorApprovalMode"];
@@ -11417,6 +11533,7 @@ export interface components {
         };
         "models.UpdateSocietyVisitorSettingsRequest": {
             allow_guard_entry?: boolean;
+            allow_guard_on_behalf_approval?: boolean;
             allow_public_qr_entry?: boolean;
             allow_resident_pre_approval?: boolean;
             approval_mode?: components["schemas"]["models.VisitorApprovalMode"];
@@ -11589,6 +11706,7 @@ export interface components {
         "models.VisitorEntryOptionsResponse": {
             blocks?: components["schemas"]["models.VisitorEntryOptionsBlock"][];
             flats?: components["schemas"]["models.VisitorEntryOptionsFlat"][];
+            has_more?: boolean;
             purposes?: components["schemas"]["models.VisitorPurpose"][];
         };
         /** @enum {string} */

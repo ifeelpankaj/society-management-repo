@@ -647,6 +647,43 @@ func (h *VisitorEntryHandler) GetEntryStats(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Visitor entry stats fetched successfully", gin.H{"stats": stats})
 }
 
+// GetEntryDailyStats godoc
+// @Summary Get visitor entry daily stats
+// @Description [Owner/Admin/Staff] Returns daily visitor counts for charting.
+// @Tags Visitor Entries
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param days query int false "Number of days (default 7, max 90)"
+// @Success 200 {object} models.VisitorEntryDailyStatsAPIResponse "Visitor entry daily stats fetched successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid society ID"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/stats/daily [get]
+func (h *VisitorEntryHandler) GetEntryDailyStats(c *gin.Context) {
+	societyID, ok := parsePathInt64(c, "societyId")
+	if !ok {
+		return
+	}
+
+	days := int32(7)
+	if rawDays := strings.TrimSpace(c.Query("days")); rawDays != "" {
+		parsed, err := strconv.ParseInt(rawDays, 10, 32)
+		if err != nil || parsed <= 0 {
+			utils.BadRequestResponse(c, "days must be a positive integer")
+			return
+		}
+		days = int32(parsed)
+	}
+
+	stats, err := h.entrySvc.GetDailyEntryStats(c.Request.Context(), societyID, days)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor entry daily stats fetched successfully", gin.H{"stats": stats})
+}
+
 // GetGuardDeskBootstrap godoc
 // @Summary Get guard desk bootstrap
 // @Description [Owner/Admin/Staff] Returns aggregated guard desk dashboard data for a society.

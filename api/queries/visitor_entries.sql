@@ -354,6 +354,17 @@ SELECT
 FROM visitor_entries ve
 WHERE ve.society_id = sqlc.arg('society_id');
 
+-- name: GetVisitorEntryDailyStatsCreated :many
+SELECT
+    to_char((ve.created_at AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS stat_date,
+    COUNT(*)::bigint AS count
+FROM visitor_entries ve
+WHERE ve.society_id = sqlc.arg('society_id')
+  AND ve.created_at >= ((CURRENT_DATE AT TIME ZONE 'Asia/Kolkata')::date - (sqlc.arg('days')::int - 1)) AT TIME ZONE 'Asia/Kolkata'
+  AND ve.created_at < ((CURRENT_DATE + INTERVAL '1 day') AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+GROUP BY (ve.created_at AT TIME ZONE 'Asia/Kolkata')::date
+ORDER BY stat_date ASC;
+
 -- name: CountWaitingAtGateVisitorEntries :one
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve

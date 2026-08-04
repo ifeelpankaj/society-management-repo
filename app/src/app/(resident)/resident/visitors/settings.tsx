@@ -1,7 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { SubscriptionExpiredBanner } from "@/components/dashboard";
 import { Button, Card } from "@/components/ui";
-import { getApiMessage, getVisitorActionErrorMessage } from "@/features/auth/api-error";
+import { getApiMessage, getVisitorActionErrorMessage, isSubscriptionError } from "@/features/auth/api-error";
 import { titleize } from "@/features/guard/guard-utils";
 import { ResidentSubScreen } from "@/features/resident/components/resident-sub-screen";
 import {
@@ -81,6 +82,9 @@ export default function ResidentVisitorSettingsScreen() {
   const failedQuery = [contextQuery, ...(canManageFlatVisitors ? [settingsQuery] : [])].find(
     (query) => query.isError,
   );
+  const failedError = failedQuery?.error ?? null;
+  const isSubscriptionBlocked = isSubscriptionError(failedError);
+  const hasLoadError = !!failedQuery && !isSubscriptionBlocked;
 
   const refetchAll = () => {
     if (!contextQuery.isUninitialized) {
@@ -150,14 +154,16 @@ export default function ResidentVisitorSettingsScreen() {
                 : societyModeExplanation(approvalMode, context?.inherits_society_mode)}
             </Text>
 
-            {failedQuery ? (
+            {isSubscriptionBlocked ? <SubscriptionExpiredBanner /> : null}
+
+            {hasLoadError ? (
               <ErrorBanner
-                message={getApiMessage(failedQuery.error, "Unable to load visitor settings.")}
+                message={getApiMessage(failedError, "Unable to load visitor settings.")}
                 onRetry={refetchAll}
               />
             ) : null}
 
-            {!canEdit ? (
+            {!isSubscriptionBlocked && !canEdit ? (
               <Card style={styles.modeCard}>
                 <Text style={styles.modeLabel}>Society policy</Text>
                 <Text style={styles.modeValue}>{titleize(approvalMode)}</Text>
@@ -167,7 +173,7 @@ export default function ResidentVisitorSettingsScreen() {
               </Card>
             ) : null}
 
-            {settings.length > 0 ? (
+            {!isSubscriptionBlocked && settings.length > 0 ? (
               <View style={styles.settingsList}>
                 {settings.map((setting) => (
                   <VisitorPurposeSettingCard
@@ -182,13 +188,13 @@ export default function ResidentVisitorSettingsScreen() {
                   />
                 ))}
               </View>
-            ) : (
+            ) : !isSubscriptionBlocked ? (
               <Card>
                 <Text style={styles.readOnlyBody}>No visitor settings are configured yet.</Text>
               </Card>
-            )}
+            ) : null}
 
-            {canEdit ? (
+            {!isSubscriptionBlocked && canEdit ? (
               <Button
                 title="Reset to defaults"
                 variant="secondary"
@@ -197,7 +203,7 @@ export default function ResidentVisitorSettingsScreen() {
               />
             ) : null}
 
-            {!canEdit && isHybrid ? (
+            {!isSubscriptionBlocked && !canEdit && isHybrid ? (
               <Card>
                 <Text style={styles.readOnlyTitle}>View only</Text>
                 <Text style={styles.readOnlyBody}>

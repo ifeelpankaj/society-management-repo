@@ -3,9 +3,11 @@ import type {
   ModelsFlatClaimResponse,
   ModelsFlatStatsResponse,
   ModelsPlanResponse,
+  ModelsSocietyDashboardSubscriptionHealthResponse,
   ModelsSocietyResponse,
   ModelsSocietySubscriptionResponse,
 } from "@/lib/api/generated-api";
+import type { VisitorEntryStats } from "@/lib/api/visitor-types";
 
 export type FlatClaimStatsResponse = {
   total_claims?: number;
@@ -37,6 +39,11 @@ export type SocietyDashboardSubscriptionUsage = {
   residents?: SocietyDashboardQuotaUsage;
 };
 
+export type VisitorDailyCount = {
+  date?: string;
+  count?: number;
+};
+
 export type SocietyDashboardBootstrap = {
   society?: ModelsSocietyResponse;
   flat_stats?: ModelsFlatStatsResponse;
@@ -45,7 +52,10 @@ export type SocietyDashboardBootstrap = {
   member_stats?: SocietyDashboardMemberStats;
   current_subscription?: ModelsSocietySubscriptionResponse;
   subscription_usage?: SocietyDashboardSubscriptionUsage;
+  subscription_health?: ModelsSocietyDashboardSubscriptionHealthResponse;
   plan_ads?: ModelsPlanResponse[];
+  visitor_stats?: VisitorEntryStats;
+  visitor_daily_last_7_days?: VisitorDailyCount[];
 };
 
 export type SocietyDashboardBootstrapApiResponse = {
@@ -74,6 +84,7 @@ export const societyDashboardApi = baseApi.injectEndpoints({
         "Society Members",
         "Plans",
         "Subscriptions",
+        "Visitor Entries",
       ],
     }),
   }),

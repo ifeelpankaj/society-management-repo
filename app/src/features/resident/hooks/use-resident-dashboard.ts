@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { getApiMessage } from "@/features/auth/api-error";
+import { getApiMessage, isSubscriptionError } from "@/features/auth/api-error";
 import { titleize } from "@/features/guard/guard-utils";
 import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
 import { useResident } from "@/features/resident/resident-context";
@@ -74,6 +74,9 @@ export function useResidentDashboard() {
 
   const queries = [contextQuery, pendingQuery, approvedQuery];
   const failedQuery = queries.find((query) => query.isError);
+  const failedError = failedQuery?.error ?? null;
+  const isSubscriptionBlocked = isSubscriptionError(failedError);
+  const hasError = !!failedQuery && !isSubscriptionBlocked;
 
   const { refetch: refetchContext } = contextQuery;
   const { refetch: refetchPending } = pendingQuery;
@@ -207,15 +210,16 @@ export function useResidentDashboard() {
     actionEntryId,
     approvalMode,
     displayName,
-    errorMessage: failedQuery
-      ? getApiMessage(failedQuery.error, "Unable to load resident home data.")
+    errorMessage: hasError
+      ? getApiMessage(failedError, "Unable to load resident home data.")
       : null,
     expectedCount,
     fetchEntryDetail: fetchEntryDetailById,
     flatLabel,
     handleApprove,
     handleReject,
-    hasError: !!failedQuery,
+    hasError,
+    isSubscriptionBlocked,
     isActionLoading: approveState.isLoading || rejectState.isLoading,
     isDetailLoading: fetchEntryState.isFetching,
     isHybrid,

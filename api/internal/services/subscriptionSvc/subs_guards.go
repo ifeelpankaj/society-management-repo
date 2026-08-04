@@ -2,15 +2,24 @@ package subscriptionsvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go-server/internal/models"
+	"go-server/internal/requestctx"
 )
 
 // Public guards.
 
+func skipSubscriptionGuards(ctx context.Context) bool {
+	return requestctx.HasDeveloperGuardBypass(ctx)
+}
+
 // EnsureSocietyOperational checks that the society is active and has an active subscription.
 func (s *SubscriptionSvc) EnsureSocietyOperational(ctx context.Context, societyID int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	society, err := s.societyRepo.Get(ctx, models.GetSocietyFilter{ID: &societyID})
 	if err != nil {
 		return err
@@ -23,8 +32,14 @@ func (s *SubscriptionSvc) EnsureSocietyOperational(ctx context.Context, societyI
 
 // EnsureActiveSubscription checks that the society has an active subscription.
 func (s *SubscriptionSvc) EnsureActiveSubscription(ctx context.Context, societyID int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	_, err := s.GetActiveSubscriptionBySocietyID(ctx, societyID)
 	if err != nil {
+		if errors.Is(err, ErrSubscriptionExpired) {
+			return err
+		}
 		return ErrSubscriptionRequired.WithCause(err)
 	}
 	return nil
@@ -32,6 +47,9 @@ func (s *SubscriptionSvc) EnsureActiveSubscription(ctx context.Context, societyI
 
 // EnsureFeatureEnabled checks that a named subscription feature exists and is enabled.
 func (s *SubscriptionSvc) EnsureFeatureEnabled(ctx context.Context, societyID int64, feature string) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	sub, err := s.GetActiveSubscriptionBySocietyID(ctx, societyID)
 	if err != nil {
 		return ErrSubscriptionRequired.WithCause(err)
@@ -45,6 +63,9 @@ func (s *SubscriptionSvc) EnsureFeatureEnabled(ctx context.Context, societyID in
 
 // CanAddFlat checks that adding flats will not exceed the active subscription limit.
 func (s *SubscriptionSvc) CanAddFlat(ctx context.Context, societyID int64, adding int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	return s.checkQuota(ctx, societyID, adding, "flats", func(sub *models.SocietySubscriptionResponse) int64 {
 		return int64(sub.MaxFlats)
 	}, s.subRepo.CountActiveFlats)
@@ -52,6 +73,9 @@ func (s *SubscriptionSvc) CanAddFlat(ctx context.Context, societyID int64, addin
 
 // CanAddAdmin checks that adding admins will not exceed the active subscription limit.
 func (s *SubscriptionSvc) CanAddAdmin(ctx context.Context, societyID int64, adding int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	return s.checkQuota(ctx, societyID, adding, "admins", func(sub *models.SocietySubscriptionResponse) int64 {
 		return int64(sub.MaxAdmins)
 	}, s.subRepo.CountActiveAdmins)
@@ -59,6 +83,9 @@ func (s *SubscriptionSvc) CanAddAdmin(ctx context.Context, societyID int64, addi
 
 // CanAddStaff checks that adding staff will not exceed the active subscription limit.
 func (s *SubscriptionSvc) CanAddStaff(ctx context.Context, societyID int64, adding int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	return s.checkQuota(ctx, societyID, adding, "staff", func(sub *models.SocietySubscriptionResponse) int64 {
 		return int64(sub.MaxStaff)
 	}, s.subRepo.CountActiveStaff)
@@ -66,6 +93,9 @@ func (s *SubscriptionSvc) CanAddStaff(ctx context.Context, societyID int64, addi
 
 // CanAddResident checks that adding residents will not exceed the active subscription limit.
 func (s *SubscriptionSvc) CanAddResident(ctx context.Context, societyID int64, adding int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	return s.checkQuota(ctx, societyID, adding, "residents", func(sub *models.SocietySubscriptionResponse) int64 {
 		return int64(sub.MaxResidents)
 	}, s.subRepo.CountActiveResidents)
@@ -73,6 +103,9 @@ func (s *SubscriptionSvc) CanAddResident(ctx context.Context, societyID int64, a
 
 // CanAddResidentWithLock serializes quota checks by locking the active subscription row in the current transaction.
 func (s *SubscriptionSvc) CanAddResidentWithLock(ctx context.Context, societyID int64, adding int64) error {
+	if skipSubscriptionGuards(ctx) {
+		return nil
+	}
 	if adding <= 0 {
 		return nil
 	}

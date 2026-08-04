@@ -1,3 +1,12 @@
+export const SUBSCRIPTION_ERROR_CODES = new Set([
+  "SUBSCRIPTION_EXPIRED",
+  "SUBSCRIPTION_REQUIRED",
+  "SUBSCRIPTION_QUOTA_EXCEEDED",
+]);
+
+export const SUBSCRIPTION_EXPIRED_BANNER_MESSAGE =
+  "Your society subscription has expired. Please contact your society admin to renew the plan.";
+
 export function getApiMessage(error: unknown, fallback: string) {
   if (!error || typeof error !== "object" || !("data" in error)) {
     return fallback;
@@ -38,6 +47,27 @@ export function getApiErrorCode(error: unknown): string | undefined {
   }
 
   return typeof nested.code === "string" ? nested.code : undefined;
+}
+
+export function isSubscriptionError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  if ("status" in error && error.status === 402) {
+    return true;
+  }
+
+  const code = getApiErrorCode(error);
+  return code != null && SUBSCRIPTION_ERROR_CODES.has(code);
+}
+
+export function getFriendlyApiMessage(error: unknown, fallback: string) {
+  if (isSubscriptionError(error)) {
+    return SUBSCRIPTION_EXPIRED_BANNER_MESSAGE;
+  }
+
+  return getApiMessage(error, fallback);
 }
 
 export function getVisitorActionErrorMessage(error: unknown, fallback: string) {

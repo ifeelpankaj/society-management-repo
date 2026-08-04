@@ -20,6 +20,7 @@ type SubscriptionRepository interface {
 	Renew(ctx context.Context, subscriptionID, renewedBy int64, req *models.RenewSubscriptionRequest) (*models.SocietySubscription, error)
 	Cancel(ctx context.Context, subscriptionID, cancelledBy int64, req *models.CancelSubscriptionRequest) (*models.SocietySubscription, error)
 	Expire(ctx context.Context, subscriptionID int64) (*models.SocietySubscription, error)
+	ExpireDue(ctx context.Context) (int64, error)
 	ChangePlan(ctx context.Context, subscriptionID, newPlanID int64) (*models.SocietySubscription, error)
 	Get(ctx context.Context, filter *models.SubscriptionFilter) (*models.SocietySubscription, error)
 	List(ctx context.Context, filter *models.SubscriptionFilter) ([]*models.SocietySubscription, error)
@@ -97,6 +98,10 @@ func (r *subscriptionRepository) Cancel(ctx context.Context, subscriptionID, can
 func (r *subscriptionRepository) Expire(ctx context.Context, subscriptionID int64) (*models.SocietySubscription, error) {
 	row, err := GetQueries(ctx, r.db).ExpireSubscription(ctx, subscriptionID)
 	return subscriptionFromDBNoRows(row, err)
+}
+
+func (r *subscriptionRepository) ExpireDue(ctx context.Context) (int64, error) {
+	return GetQueries(ctx, r.db).ExpireDueSubscriptions(ctx)
 }
 
 func (r *subscriptionRepository) ChangePlan(ctx context.Context, subscriptionID, newPlanID int64) (*models.SocietySubscription, error) {

@@ -7,6 +7,7 @@ export const AUTH_ROUTES = {
   login: "/login",
   onboarding: "/onboarding",
   profile: "/profile",
+  downloadApp: "/download-app",
   developer: "/developer",
   selectSociety: "/select-society",
 } as const;
@@ -16,8 +17,13 @@ export const PROTECTED_ROUTE_PREFIXES = [
   AUTH_ROUTES.developer,
   AUTH_ROUTES.onboarding,
   AUTH_ROUTES.profile,
+  AUTH_ROUTES.downloadApp,
   AUTH_ROUTES.selectSociety,
 ] as const;
+
+export function isProfileRoute(pathname: string) {
+  return pathname === AUTH_ROUTES.profile;
+}
 
 type SocietyMembership = Pick<ModelsMySocietyResponse, "member" | "society">;
 
@@ -26,7 +32,11 @@ export function isDeveloperRole(role?: string | null) {
 }
 
 export function isAdminWorkspaceRole(role?: string | null) {
-  return role === "owner" || role === "admin" || role === "staff";
+  return role === "owner" || role === "admin";
+}
+
+export function isMobileOnlyRole(role?: string | null) {
+  return role === "staff" || role === "resident";
 }
 
 export function isAdminSetupRole(role?: string | null) {
@@ -92,6 +102,21 @@ export function isResidentMembership(membership: SocietyMembership) {
   );
 }
 
+export function isMobileOnlyMembership(membership: SocietyMembership) {
+  return (
+    isActiveSocietyMembership(membership) &&
+    isMobileOnlyRole(membership.member?.role)
+  );
+}
+
+export function hasMobileOnlyAccess(memberships: SocietyMembership[]) {
+  const hasAdmin = memberships.some(isAdminWorkspaceMembership);
+  if (hasAdmin) {
+    return false;
+  }
+  return memberships.some(isMobileOnlyMembership);
+}
+
 export function getSocietyDashboardRoute(societyId: number) {
   return `/dashboard/${encodeSocietyId(societyId)}`;
 }
@@ -125,8 +150,8 @@ export function resolveAuthenticatedRoute(
     return getSocietyDashboardRoute(adminSocietyId);
   }
 
-  if (memberships.some(isResidentMembership)) {
-    return AUTH_ROUTES.profile;
+  if (hasMobileOnlyAccess(memberships)) {
+    return AUTH_ROUTES.downloadApp;
   }
 
   return AUTH_ROUTES.onboarding;

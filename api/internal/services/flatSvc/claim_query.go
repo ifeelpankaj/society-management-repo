@@ -43,3 +43,9 @@ func (s *FlatSvc) ListMyFlatClaims(ctx context.Context, userID int64, filter *mo
 	filter.UserID = &userID
 	return s.ListFlatClaims(ctx, filter)
 }
+
+func (s *FlatSvc) GetFlatClaimStats(ctx context.Context, societyID int64) (*models.FlatClaimStatsResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+	return s.claimRepo.Stats(ctx, societyID)
+}
