@@ -89,6 +89,8 @@ type PublicFlatMemberInviteView struct {
 	ID          int64                  `json:"id"`
 	Role        FlatMemberInviteRole   `json:"role"`
 	FullName    string                 `json:"full_name"`
+	Phone       *string                `json:"phone,omitempty"`
+	Email       *string                `json:"email,omitempty"`
 	Status      FlatMemberInviteStatus `json:"status"`
 	ExpiresAt   time.Time              `json:"expires_at"`
 	SocietyName string                 `json:"society_name"`
@@ -142,4 +144,28 @@ func (r *CreateFlatMemberInviteRequest) Validate() error {
 type AcceptFlatMemberInviteResponse struct {
 	Invite   *FlatMemberInviteResponse `json:"invite"`
 	Resident *FlatResidentResponse     `json:"resident"`
+}
+
+type JoinFlatMemberInviteRequest struct {
+	FirstName  string `json:"first_name,omitempty" validate:"omitempty,min=2,max=100,alphanumeric_space"`
+	LastName   string `json:"last_name,omitempty" validate:"omitempty,max=100,alphanumeric_space"`
+	Email      string `json:"email,omitempty" validate:"omitempty,email,max=255"`
+	Identifier string `json:"identifier,omitempty" validate:"omitempty,max=255"`
+	Password   string `json:"password" validate:"required,min=8,max=72"`
+}
+
+func (r *JoinFlatMemberInviteRequest) Sanitize() {
+	r.FirstName = strings.TrimSpace(r.FirstName)
+	r.LastName = strings.TrimSpace(r.LastName)
+	r.Email = strings.ToLower(strings.TrimSpace(r.Email))
+	r.Identifier = strings.TrimSpace(r.Identifier)
+}
+
+func (r *JoinFlatMemberInviteRequest) IsRegisterFlow() bool {
+	return strings.TrimSpace(r.FirstName) != ""
+}
+
+type JoinFlatMemberInviteResponse struct {
+	User       *UserResponse                 `json:"user"`
+	Acceptance *AcceptFlatMemberInviteResponse `json:"acceptance"`
 }

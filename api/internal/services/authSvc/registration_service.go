@@ -15,6 +15,7 @@ import (
 type RegistrationSvc interface {
 	Register(ctx context.Context, req *models.RegisterRequest) (*RegistrationResult, error)
 	RegisterResident(ctx context.Context, req *models.ResidentRegisterRequest) (*LoginResult, error)
+	CreateResidentUser(ctx context.Context, req *models.ResidentRegisterRequest) (*models.UserResponse, error)
 }
 type RegistrationResult struct {
 	User   *models.UserResponse `json:"user"`
@@ -151,6 +152,62 @@ func (s *registrationSvc) Register(ctx context.Context, req *models.RegisterRequ
 }
 
 func (s *registrationSvc) RegisterResident(ctx context.Context, req *models.ResidentRegisterRequest) (*LoginResult, error) {
+	user, err := s.createResidentUser(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.userRepo.UpdateLastLogin(ctx, user.ID); err != nil {
+		return nil, ErrLastLoginUpdate.WithCause(err)
+	}
+
+	accessToken, err := GenerateToken(
+		user.ID,
+		user.EmailValue(),
+		user.PhoneNumberValue(),
+		string(user.GlobalRole),
+		user.EmailVerified,
+		user.PhoneVerified,
+		TokenTypeAccess,
+		s.authCfg.JWTSecret,
+		s.authCfg.JWTIssuer,
+		s.authCfg.AccessExpiry,
+	)
+	if err != nil {
+		return nil, ErrGenerateToken.WithCause(err)
+	}
+
+	refreshToken, err := GenerateToken(
+		user.ID,
+		user.EmailValue(),
+		user.PhoneNumberValue(),
+		string(user.GlobalRole),
+		user.EmailVerified,
+		user.PhoneVerified,
+		TokenTypeRefresh,
+		s.authCfg.JWTSecret,
+		s.authCfg.JWTIssuer,
+		s.authCfg.RefreshExpiry,
+	)
+	if err != nil {
+		return nil, ErrGenerateToken.WithCause(err)
+	}
+
+	return &LoginResult{
+		User:         user.ToResponse(),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (s *registrationSvc) CreateResidentUser(ctx context.Context, req *models.ResidentRegisterRequest) (*models.UserResponse, error) {
+	user, err := s.createResidentUser(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return user.ToResponse(), nil
+}
+
+func (s *registrationSvc) createResidentUser(ctx context.Context, req *models.ResidentRegisterRequest) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
@@ -199,54 +256,15 @@ func (s *registrationSvc) RegisterResident(ctx context.Context, req *models.Resi
 		Timezone:      "Asia/Kolkata",
 		Language:      "en",
 		Metadata: map[string]any{
-			"registered_from": "resident_claim_flow",
+			"registered_from": "member_invite_flow",
 		},
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		return nil, ErrCreateUser.WithCause(err)
 	}
-	if err := s.userRepo.UpdateLastLogin(ctx, user.ID); err != nil {
-		return nil, ErrLastLoginUpdate.WithCause(err)
-	}
 
-	accessToken, err := GenerateToken(
-		user.ID,
-		user.EmailValue(),
-		user.PhoneNumberValue(),
-		string(user.GlobalRole),
-		user.EmailVerified,
-		user.PhoneVerified,
-		TokenTypeAccess,
-		s.authCfg.JWTSecret,
-		s.authCfg.JWTIssuer,
-		s.authCfg.AccessExpiry,
-	)
-	if err != nil {
-		return nil, ErrGenerateToken.WithCause(err)
-	}
-
-	refreshToken, err := GenerateToken(
-		user.ID,
-		user.EmailValue(),
-		user.PhoneNumberValue(),
-		string(user.GlobalRole),
-		user.EmailVerified,
-		user.PhoneVerified,
-		TokenTypeRefresh,
-		s.authCfg.JWTSecret,
-		s.authCfg.JWTIssuer,
-		s.authCfg.RefreshExpiry,
-	)
-	if err != nil {
-		return nil, ErrGenerateToken.WithCause(err)
-	}
-
-	return &LoginResult{
-		User:         user.ToResponse(),
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
+	return user, nil
 }
 
 func buildFullName(firstName, lastName string) string {

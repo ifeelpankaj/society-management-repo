@@ -2,11 +2,13 @@ package flatsvc
 
 import (
 	"context"
+	"time"
 
 	"go-server/internal/models"
 	repository "go-server/internal/repositories"
 	societysvc "go-server/internal/services/societySvc"
 	flatauthz "go-server/internal/services/flatAuthz"
+	notificationsvc "go-server/internal/services/notificationSvc"
 )
 
 type FlatService interface {
@@ -69,6 +71,7 @@ type FlatMemberInviteService interface {
 	CreateMemberInvite(ctx context.Context, societyID int64, flatID int64, actorUserID int64, req *models.CreateFlatMemberInviteRequest) (*models.FlatMemberInviteTokenResponse, *models.FlatMemberInviteResponse, error)
 	CancelMemberInvite(ctx context.Context, societyID int64, flatID int64, inviteID int64, actorUserID int64) error
 	GetPublicMemberInviteByToken(ctx context.Context, rawToken string) (*models.PublicFlatMemberInviteView, error)
+	JoinMemberInvite(ctx context.Context, rawToken string, req *models.JoinFlatMemberInviteRequest) (*models.JoinFlatMemberInviteResponse, error)
 	AcceptMemberInvite(ctx context.Context, rawToken string, userID int64) (*models.AcceptFlatMemberInviteResponse, error)
 	ExpireOldMemberInvites(ctx context.Context) error
 }
@@ -84,6 +87,18 @@ type FlatSvc struct {
 	subscriptionSvc   flatSubscriptionGuard
 	visitorSettingSvc flatVisitorSettingDefaults
 	flatAuthz         *flatauthz.FlatVisitorAuthz
+	memberInviteTTL   time.Duration
+	notifier          notificationsvc.NotificationService
+	memberInviteUserCreator       memberInviteUserCreator
+	memberInviteUserAuthenticator memberInviteUserAuthenticator
+}
+
+type memberInviteUserCreator interface {
+	CreateResidentUser(ctx context.Context, req *models.ResidentRegisterRequest) (*models.UserResponse, error)
+}
+
+type memberInviteUserAuthenticator interface {
+	AuthenticateCredentials(ctx context.Context, req *models.LoginRequest) (*models.UserResponse, error)
 }
 
 type flatVisitorSettingDefaults interface {
@@ -106,12 +121,17 @@ func NewFlatService(
 	txManager repository.TransactionManager,
 	societySvc societysvc.SocietyService,
 	subscriptionSvc flatSubscriptionGuard,
+	memberInviteTTL time.Duration,
 	deps ...any,
 ) FlatService {
 	svc := &FlatSvc{
 		flatRepo: flatRepo, claimRepo: claimRepo, residentRepo: residentRepo,
 		memberInviteRepo: memberInviteRepo, memberRepo: memberRepo, txManager: txManager,
 		societySvc: societySvc, subscriptionSvc: subscriptionSvc,
+		memberInviteTTL: memberInviteTTL,
+	}
+	if svc.memberInviteTTL <= 0 {
+		svc.memberInviteTTL = 168 * time.Hour
 	}
 	for _, dep := range deps {
 		switch value := dep.(type) {
@@ -119,6 +139,12 @@ func NewFlatService(
 			svc.visitorSettingSvc = value
 		case *flatauthz.FlatVisitorAuthz:
 			svc.flatAuthz = value
+		case notificationsvc.NotificationService:
+			svc.notifier = value
+		case memberInviteUserCreator:
+			svc.memberInviteUserCreator = value
+		case memberInviteUserAuthenticator:
+			svc.memberInviteUserAuthenticator = value
 		}
 	}
 	return svc

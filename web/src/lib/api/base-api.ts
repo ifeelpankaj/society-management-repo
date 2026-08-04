@@ -60,7 +60,10 @@ function getRequestUrl(args: string | FetchArgs) {
 
 function shouldSkipReauth(args: string | FetchArgs) {
   const url = getRequestUrl(args);
-  return PUBLIC_AUTH_PATHS.some((path) => url.includes(path));
+  return (
+    PUBLIC_AUTH_PATHS.some((path) => url.includes(path)) ||
+    url.includes("/v1/public/")
+  );
 }
 
 function isLoginRequest(args: string | FetchArgs) {

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "analyze": "cross-env ANALYZE=true next build",
     "start": "next start",
     "lint": "biome check",
     "lint:fix": "biome check --write --unsafe",
@@ -19,6 +20,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",
     "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.14.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.16.0",
@@ -38,12 +40,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@next/bundle-analyzer": "^16.2.12",
     "@rtk-query/codegen-openapi": "^2.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "cross-env": "^10.1.0",
     "openapi-typescript": "^7.13.0",
     "swagger2openapi": "^7.0.8",
     "tailwindcss": "^4",

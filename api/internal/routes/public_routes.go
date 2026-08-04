@@ -18,6 +18,7 @@ func SetupPublicRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guard
 		public.POST("/societies/:societyCode/visitor-entries/quick-link", h.VisitorEntry.CreateQuickLinkEntry)
 		public.POST("/visitor-entries/qr/validate", h.VisitorEntry.ValidateQR)
 		public.GET("/flat-member-invites/:token", h.MemberInvite.GetPublicMemberInviteByToken)
+		public.POST("/flat-member-invites/:token/join", h.MemberInvite.JoinMemberInvite)
 		acceptInvite := append(g.Authenticated(), h.MemberInvite.AcceptMemberInvite)
 		public.POST("/flat-member-invites/:token/accept", acceptInvite...)
 	}

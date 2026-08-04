@@ -3,19 +3,26 @@
 import { useMemo } from "react";
 
 import { resolveSubscriptionHealth } from "@/lib/subscription-health";
-import { useGetV1SocietiesBySocietyIdDashboardBootstrapQuery } from "@/lib/api/society-dashboard-api";
+import {
+  type SocietyDashboardBootstrap,
+  useGetV1SocietiesBySocietyIdDashboardBootstrapQuery,
+} from "@/lib/api/society-dashboard-api";
 
 type UseSocietyDashboardOptions = {
   societyId: number;
+  initialDashboard?: SocietyDashboardBootstrap | null;
 };
 
-export function useSocietyDashboard({ societyId }: UseSocietyDashboardOptions) {
+export function useSocietyDashboard({
+  societyId,
+  initialDashboard,
+}: UseSocietyDashboardOptions) {
   const query = useGetV1SocietiesBySocietyIdDashboardBootstrapQuery(
     { societyId },
     { refetchOnMountOrArgChange: false },
   );
 
-  const dashboard = query.data?.data?.dashboard;
+  const dashboard = query.data?.data?.dashboard ?? initialDashboard ?? undefined;
   const society = dashboard?.society;
   const flatStats = dashboard?.flat_stats;
   const claimStats = dashboard?.claim_stats;
@@ -50,7 +57,7 @@ export function useSocietyDashboard({ societyId }: UseSocietyDashboardOptions) {
     declaredFlats,
     flatStats,
     isFetching: query.isFetching,
-    isLoading: query.isLoading,
+    isLoading: query.isLoading && !initialDashboard,
     memberStats,
     planAds,
     recentPendingClaims,

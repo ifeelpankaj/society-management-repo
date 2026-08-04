@@ -6,14 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"go-server/internal/models"
 	service "go-server/internal/services"
 	flatauthz "go-server/internal/services/flatAuthz"
 )
-
-const defaultMemberInviteDuration = 7 * 24 * time.Hour
 
 func (s *FlatSvc) ListFlatResidentsForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64, filter *models.FlatResidentFilter) ([]*models.FlatResidentResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
@@ -77,7 +76,7 @@ func (s *FlatSvc) CreateMemberInvite(ctx context.Context, societyID int64, flatI
 	if err != nil {
 		return nil, nil, err
 	}
-	expiry := time.Now().Add(defaultMemberInviteDuration)
+	expiry := time.Now().Add(s.memberInviteTTL)
 
 	invite, err := s.memberInviteRepo.Create(ctx, societyID, flatID, actorUserID, req.Role, req.Phone, req.Email, req.FullName, tokenHash, expiry)
 	if err != nil {
@@ -146,6 +145,8 @@ func (s *FlatSvc) GetPublicMemberInviteByToken(ctx context.Context, rawToken str
 		ID:          invite.ID,
 		Role:        invite.Role,
 		FullName:    invite.FullName,
+		Phone:       invite.Phone,
+		Email:       invite.Email,
 		Status:      invite.Status,
 		ExpiresAt:   invite.ExpiresAt,
 		SocietyName: societyName,
@@ -217,13 +218,7 @@ func (s *FlatSvc) AcceptMemberInvite(ctx context.Context, rawToken string, userI
 		if err := s.residentRepo.Add(txCtx, resident); err != nil {
 			return ErrResidentConflict.WithCause(err)
 		}
-		if s.visitorSettingSvc != nil {
-			if err := s.visitorSettingSvc.CreateDefaultFlatSettings(txCtx, invite.SocietyID, invite.FlatID, invite.InvitedBy); err != nil {
-				return err
-			}
-		}
-		_, err = s.flatRepo.MarkOccupied(txCtx, invite.SocietyID, invite.FlatID)
-		return err
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -232,10 +227,121 @@ func (s *FlatSvc) AcceptMemberInvite(ctx context.Context, rawToken string, userI
 	if err != nil {
 		return nil, err
 	}
+
+	s.dispatchMemberInviteAcceptedNotification(ctx, accepted, residentResp)
+
 	return &models.AcceptFlatMemberInviteResponse{
 		Invite:   accepted.ToResponse(),
 		Resident: residentResp,
 	}, nil
+}
+
+func (s *FlatSvc) JoinMemberInvite(ctx context.Context, rawToken string, req *models.JoinFlatMemberInviteRequest) (*models.JoinFlatMemberInviteResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	if req == nil {
+		return nil, ErrInvalidMemberInviteRequest
+	}
+	req.Sanitize()
+
+	invite, err := s.GetMemberInviteByToken(ctx, rawToken)
+	if err != nil {
+		return nil, err
+	}
+
+	var user *models.UserResponse
+	if req.IsRegisterFlow() {
+		if s.memberInviteUserCreator == nil {
+			return nil, ErrMemberInviteForbidden
+		}
+		if invite.Email == nil || strings.TrimSpace(*invite.Email) == "" {
+			return nil, ErrInvalidMemberInviteRequest
+		}
+		if !strings.EqualFold(strings.TrimSpace(req.Email), strings.TrimSpace(*invite.Email)) {
+			return nil, ErrInvalidMemberInviteRequest.WithCause(errors.New("email must match the invite"))
+		}
+		if invite.Phone == nil || strings.TrimSpace(*invite.Phone) == "" {
+			return nil, ErrInvalidMemberInviteRequest.WithCause(errors.New("invite is missing phone number"))
+		}
+		user, err = s.memberInviteUserCreator.CreateResidentUser(ctx, &models.ResidentRegisterRequest{
+			FirstName:   req.FirstName,
+			LastName:    req.LastName,
+			Email:       req.Email,
+			PhoneNumber: strings.TrimSpace(*invite.Phone),
+			Password:    req.Password,
+		})
+	} else {
+		if s.memberInviteUserAuthenticator == nil {
+			return nil, ErrMemberInviteForbidden
+		}
+		loginReq, err := loginRequestFromIdentifier(req.Identifier, req.Password)
+		if err != nil {
+			return nil, ErrInvalidMemberInviteRequest.WithCause(err)
+		}
+		user, err = s.memberInviteUserAuthenticator.AuthenticateCredentials(ctx, loginReq)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if user == nil || user.ID <= 0 {
+		return nil, ErrMemberInviteForbidden
+	}
+
+	acceptance, err := s.AcceptMemberInvite(ctx, rawToken, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.JoinFlatMemberInviteResponse{
+		User:       user,
+		Acceptance: acceptance,
+	}, nil
+}
+
+func (s *FlatSvc) dispatchMemberInviteAcceptedNotification(
+	ctx context.Context,
+	invite *models.FlatMemberInvite,
+	resident *models.FlatResidentResponse,
+) {
+	if invite == nil {
+		return
+	}
+
+	flatNumber := ""
+	flat, err := s.flatRepo.Get(ctx, &models.FlatFilter{ID: &invite.FlatID, SocietyID: &invite.SocietyID})
+	if err == nil && flat != nil {
+		flatNumber = flat.FlatNumber
+	}
+
+	joinedName := invite.FullName
+	if resident != nil && resident.UserName != nil && strings.TrimSpace(*resident.UserName) != "" {
+		joinedName = *resident.UserName
+	}
+
+	var residentID int64
+	if resident != nil {
+		residentID = resident.ID
+	}
+
+	s.notifyMemberInviteAccepted(invite, flatNumber, joinedName, residentID)
+}
+
+func loginRequestFromIdentifier(identifier, password string) (*models.LoginRequest, error) {
+	identifier = strings.TrimSpace(identifier)
+	password = strings.TrimSpace(password)
+	if identifier == "" || password == "" {
+		return nil, errors.New("identifier and password are required")
+	}
+
+	req := &models.LoginRequest{Password: password}
+	if strings.Contains(identifier, "@") {
+		req.Email = strings.ToLower(identifier)
+		return req, nil
+	}
+
+	req.PhoneNumber = identifier
+	return req, nil
 }
 
 func (s *FlatSvc) ExpireOldMemberInvites(ctx context.Context) error {

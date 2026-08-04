@@ -54,6 +54,7 @@ export type GuardVisitorStatsQuery = {
 };
 
 export const guardApiExtensions = enhancedApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (build) => ({
     getV1SocietiesBySocietyIdVisitorEntriesExtended: build.query<
       ApiEnvelope<VisitorEntriesPayload>,

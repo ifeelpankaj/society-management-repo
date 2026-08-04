@@ -94,6 +94,9 @@ type Config struct {
 	FCMEnabled         bool
 	FCMCredentialsPath string
 
+	// Flat member invites
+	FlatMemberInviteTTL time.Duration
+
 	// Security
 	EnableHTTPS    bool
 	TLSCertFile    string
@@ -166,6 +169,11 @@ func loadConfigInternal() (*Config, error) {
 	onboardingExpiry := time.Duration(getEnvAsInt("JWT_ONBOARDING_TOKEN_EXPIRY", 30*60)) * time.Second
 	otpSecret := getEnv("OTP_SECRET", "Something_Secret_ChangeMe")
 	otpExpiry := time.Duration(getEnvAsInt("OTP_EXPIRY_SECONDS", 10*60)) * time.Second
+
+	flatMemberInviteTTL, err := getEnvAsDuration("FLAT_MEMBER_INVITE_TTL", 168*time.Hour)
+	if err != nil {
+		return nil, fmt.Errorf("invalid FLAT_MEMBER_INVITE_TTL: %w", err)
+	}
 
 	// Build config
 	config := &Config{
@@ -255,6 +263,8 @@ func loadConfigInternal() (*Config, error) {
 		// Push notifications
 		FCMEnabled:         getEnvAsBool("FCM_ENABLED", false),
 		FCMCredentialsPath: getEnv("FCM_CREDENTIALS_PATH", ""),
+
+		FlatMemberInviteTTL: flatMemberInviteTTL,
 
 		// Security
 		// EnableHTTPS:    getEnvAsBool("ENABLE_HTTPS", env == "production"),
@@ -431,6 +441,21 @@ func getEnvAsSlice(key string, defaultValue []string) []string {
 		values[i] = strings.TrimSpace(v)
 	}
 	return values
+}
+
+func getEnvAsDuration(key string, defaultValue time.Duration) (time.Duration, error) {
+	valueStr := strings.TrimSpace(os.Getenv(key))
+	if valueStr == "" {
+		return defaultValue, nil
+	}
+	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", key, err)
+	}
+	if value <= 0 {
+		return 0, fmt.Errorf("%s must be positive", key)
+	}
+	return value, nil
 }
 
 func getDefaultLogLevel(env string) string {

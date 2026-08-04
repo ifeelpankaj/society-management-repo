@@ -3,22 +3,22 @@ import { useCallback, useMemo, useState } from "react";
 import { getApiMessage, isSubscriptionError } from "@/features/auth/api-error";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
-import { useAppActivePollingInterval } from "@/features/shared/use-app-active-polling-interval";
 import {
   useGetV1SocietiesBySocietyIdGuardDeskBootstrapQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation,
 } from "@/lib/api/generated-api";
 
-const GUARD_POLL_MS = 60_000;
-
 export function useGuardDashboard() {
   const { selectedSocietyId, societyName } = useGuardScreen();
   const { showError, showSuccess } = useGuardFeedback();
   const [checkoutEntryId, setCheckoutEntryId] = useState<number | null>(null);
-  const pollingInterval = useAppActivePollingInterval(GUARD_POLL_MS);
 
   const shouldSkip = !selectedSocietyId;
-  const queryOpts = { skip: shouldSkip, pollingInterval };
+  const queryOpts = {
+    skip: shouldSkip,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  };
 
   const bootstrapQuery = useGetV1SocietiesBySocietyIdGuardDeskBootstrapQuery(
     { societyId: selectedSocietyId ?? 0 },

@@ -1,16 +1,35 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { ChartPanel } from "@/components/charts/chart-panel";
-import { DailyBarChart } from "@/components/charts/daily-bar-chart";
-import { DonutChart } from "@/components/charts/donut-chart";
-import { HorizontalBarChart } from "@/components/charts/horizontal-bar-chart";
-import { MembersDonut } from "@/components/charts/members-donut";
+import { AppLoader } from "@/components/shared/app-loader";
 import type {
   SocietyDashboardMemberStats,
   SocietyDashboardSubscriptionUsage,
   VisitorDailyCount,
 } from "@/lib/api/society-dashboard-api";
 import type { ModelsFlatStatsResponse } from "@/lib/api/generated-api";
+
+const DonutChart = dynamic(
+  () => import("@/components/charts/donut-chart").then((m) => m.DonutChart),
+  { loading: () => <AppLoader label="Loading chart" /> },
+);
+const MembersDonut = dynamic(
+  () => import("@/components/charts/members-donut").then((m) => m.MembersDonut),
+  { loading: () => <AppLoader label="Loading chart" /> },
+);
+const DailyBarChart = dynamic(
+  () => import("@/components/charts/daily-bar-chart").then((m) => m.DailyBarChart),
+  { loading: () => <AppLoader label="Loading chart" /> },
+);
+const HorizontalBarChart = dynamic(
+  () =>
+    import("@/components/charts/horizontal-bar-chart").then(
+      (m) => m.HorizontalBarChart,
+    ),
+  { loading: () => <AppLoader label="Loading chart" /> },
+);
 
 type DashboardAnalyticsGridProps = {
   flatStats?: ModelsFlatStatsResponse;

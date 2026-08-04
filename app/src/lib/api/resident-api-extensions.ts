@@ -58,6 +58,7 @@ type ApiEnvelope<T> = {
 };
 
 export const residentApiExtensions = enhancedApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (build) => ({
     getV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntries: build.query<
       ApiEnvelope<{

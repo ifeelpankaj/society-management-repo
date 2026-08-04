@@ -123,6 +123,8 @@ export function invalidateVisitorNotificationTags(type?: string): VisitorNotific
         "VisitorWaitingAtGate",
         "VisitorExpectedGuests",
       ];
+    case "member_invite.accepted":
+      return ["FlatMemberInvites", "FlatMembers"];
     default:
       return [
         "Visitor Entries",

@@ -13,7 +13,6 @@ export function useCompleteAuth() {
     payload?: AuthSessionPayload & { user?: ModelsUserResponse | null },
   ) => {
     const route = await completeLogin(payload);
-    console.log("Redirecting to route:", route);
     router.replace(route);
   };
 }

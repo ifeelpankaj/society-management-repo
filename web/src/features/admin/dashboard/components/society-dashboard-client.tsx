@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSocietyDashboard } from "@/features/admin/dashboard/hooks";
 import { titleCaseFromSnake } from "@/lib/format";
+import type { SocietyDashboardBootstrap } from "@/lib/api/society-dashboard-api";
 import { paths } from "@/lib/routes/paths";
 
 import { DashboardActionCenter } from "./dashboard-action-center";
@@ -23,10 +24,12 @@ import { societyAddressLine } from "../utils/dashboard-action-items";
 
 type SocietyDashboardClientProps = {
   societyId: number;
+  initialDashboard?: SocietyDashboardBootstrap | null;
 };
 
 export function SocietyDashboardClient({
   societyId,
+  initialDashboard,
 }: SocietyDashboardClientProps) {
   const {
     claimStats,
@@ -44,7 +47,7 @@ export function SocietyDashboardClient({
     usage,
     visitorDaily,
     visitorStats,
-  } = useSocietyDashboard({ societyId });
+  } = useSocietyDashboard({ societyId, initialDashboard });
 
   return (
     <WorkspacePage size="wide">

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"go-server/internal/models"
 	flatsvc "go-server/internal/services/flatSvc"
@@ -190,6 +191,42 @@ func (h *MemberInviteHandler) GetPublicMemberInviteByToken(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, "Member invite fetched successfully", gin.H{"invite": invite})
+}
+
+// JoinMemberInvite godoc
+// @Summary Join flat via member invite
+// @Description [Public] Creates or authenticates a user and accepts a flat member invite without setting auth cookies.
+// @Tags Flat Members
+// @Accept json
+// @Produce json
+// @Param token path string true "Member invite token"
+// @Param request body models.JoinFlatMemberInviteRequest true "Join request"
+// @Success 200 {object} models.JoinFlatMemberInviteAPIResponse "Member joined successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid request or token"
+// @Failure 404 {object} models.ErrorResponseDoc "Member invite not found"
+// @Failure 409 {object} models.ErrorResponseDoc "Member invite unavailable or resident conflict"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Router /v1/public/flat-member-invites/{token}/join [post]
+func (h *MemberInviteHandler) JoinMemberInvite(c *gin.Context) {
+	var req models.JoinFlatMemberInviteRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	req.Sanitize()
+	if validationErrors := validator.ValidateStruct(&req); len(validationErrors) > 0 {
+		utils.ValidationErrorResponse(c, validationErrors.ToMap())
+		return
+	}
+	if !req.IsRegisterFlow() && strings.TrimSpace(req.Identifier) == "" {
+		utils.BadRequestResponse(c, "first_name or identifier is required")
+		return
+	}
+
+	result, err := h.flatSvc.JoinMemberInvite(c.Request.Context(), c.Param("token"), &req)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Member joined successfully. Log in on the mobile app with your credentials.", gin.H{"join": result})
 }
 
 // AcceptMemberInvite godoc

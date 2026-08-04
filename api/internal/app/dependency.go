@@ -180,8 +180,12 @@ func InitializeDependencies(db *database.Database, cfg *config.Config) (*Depende
 		txManager,
 		societySvc,
 		subscriptionSvc,
+		cfg.FlatMemberInviteTTL,
 		visitorSettingSvc,
 		flatVisitorAuthz,
+		notificationSvc,
+		registrationSvc,
+		sessionSvc,
 	)
 
 	bootstrapSvc := bootstrapsvc.NewBootstrapService(

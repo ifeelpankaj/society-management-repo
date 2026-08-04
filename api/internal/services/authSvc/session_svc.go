@@ -13,6 +13,7 @@ import (
 
 type SessionSvc interface {
 	Login(ctx context.Context, req *models.LoginRequest) (*LoginResult, error)
+	AuthenticateCredentials(ctx context.Context, req *models.LoginRequest) (*models.UserResponse, error)
 	Refresh(ctx context.Context, userID int64) (*RefreshResult, error)
 	GetProfile(ctx context.Context, userID int64) (*models.UserResponse, error)
 }
@@ -43,42 +44,9 @@ func NewSessionService(
 }
 
 func (s *sessionSvc) Login(ctx context.Context, req *models.LoginRequest) (*LoginResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
-	defer cancel()
-
-	email := strings.TrimSpace(strings.ToLower(req.Email))
-	phoneNumber := strings.TrimSpace(req.PhoneNumber)
-
-	var (
-		user *models.User
-		err  error
-	)
-	if email != "" {
-		user, err = s.userRepo.GetByEmail(ctx, email)
-	} else {
-		user, err = s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
-	}
+	user, err := s.authenticateUser(ctx, req)
 	if err != nil {
-		return nil, ErrInvalidCredentials.WithCause(err)
-	}
-	if user == nil || user.PasswordHash == nil {
-		return nil, ErrInvalidCredentials
-	}
-
-	if err := utils.CheckPassword(req.Password, *user.PasswordHash); err != nil {
-		return nil, ErrInvalidCredentials
-	}
-
-	if !user.EmailVerified {
-		return nil, ErrEmailNotVerified
-	}
-
-	if !user.IsActive {
-		return nil, ErrUserInactive
-	}
-
-	if user.IsBlocked {
-		return nil, ErrUserBlocked
+		return nil, err
 	}
 
 	if err := s.userRepo.UpdateLastLogin(ctx, user.ID); err != nil {
@@ -122,6 +90,56 @@ func (s *sessionSvc) Login(ctx context.Context, req *models.LoginRequest) (*Logi
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *sessionSvc) AuthenticateCredentials(ctx context.Context, req *models.LoginRequest) (*models.UserResponse, error) {
+	user, err := s.authenticateUser(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return user.ToResponse(), nil
+}
+
+func (s *sessionSvc) authenticateUser(ctx context.Context, req *models.LoginRequest) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	email := strings.TrimSpace(strings.ToLower(req.Email))
+	phoneNumber := strings.TrimSpace(req.PhoneNumber)
+
+	var (
+		user *models.User
+		err  error
+	)
+	if email != "" {
+		user, err = s.userRepo.GetByEmail(ctx, email)
+	} else {
+		user, err = s.userRepo.GetByPhoneNumber(ctx, phoneNumber)
+	}
+	if err != nil {
+		return nil, ErrInvalidCredentials.WithCause(err)
+	}
+	if user == nil || user.PasswordHash == nil {
+		return nil, ErrInvalidCredentials
+	}
+
+	if err := utils.CheckPassword(req.Password, *user.PasswordHash); err != nil {
+		return nil, ErrInvalidCredentials
+	}
+
+	if !user.EmailVerified {
+		return nil, ErrEmailNotVerified
+	}
+
+	if !user.IsActive {
+		return nil, ErrUserInactive
+	}
+
+	if user.IsBlocked {
+		return nil, ErrUserBlocked
+	}
+
+	return user, nil
 }
 
 func (s *sessionSvc) Refresh(ctx context.Context, userID int64) (*RefreshResult, error) {

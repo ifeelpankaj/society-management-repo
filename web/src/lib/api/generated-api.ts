@@ -3360,11 +3360,13 @@ export type ModelsFlatMemberInviteStatus =
   | "cancelled";
 export type ModelsPublicFlatMemberInviteView = {
   block?: string;
+  email?: string;
   expires_at?: string;
   flat_number?: string;
   floor?: string;
   full_name?: string;
   id?: number;
+  phone?: string;
   role?: ModelsFlatMemberInviteRole;
   society_name?: string;
   status?: ModelsFlatMemberInviteStatus;
