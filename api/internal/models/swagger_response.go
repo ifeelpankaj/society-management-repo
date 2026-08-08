@@ -307,7 +307,7 @@ type PublicFlatMemberInviteData struct {
 }
 
 type FlatMemberInviteTokenData struct {
-	Invite *FlatMemberInviteResponse    `json:"invite"`
+	Invite *FlatMemberInviteResponse      `json:"invite"`
 	Token  *FlatMemberInviteTokenResponse `json:"token"`
 }
 

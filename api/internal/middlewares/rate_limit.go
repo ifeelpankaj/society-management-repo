@@ -61,13 +61,6 @@ func (rl *rateLimiter) allow() bool {
 	return false
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // RateLimit middleware implements token bucket rate limiting
 func RateLimit(cfg *config.Config) gin.HandlerFunc {
 	// Cleanup old visitors every 5 minutes

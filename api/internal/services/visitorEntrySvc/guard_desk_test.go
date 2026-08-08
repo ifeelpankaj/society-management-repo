@@ -40,18 +40,20 @@ func (r *guardDeskSocietyRepo) Suspend(context.Context, int64, int64, string) (*
 func (r *guardDeskSocietyRepo) Reactivate(context.Context, int64, int64) (*models.Society, error) {
 	return nil, nil
 }
-func (r *guardDeskSocietyRepo) Restore(context.Context, int64) (*models.Society, error) { return nil, nil }
-func (r *guardDeskSocietyRepo) SoftDelete(context.Context, int64) error                 { return nil }
+func (r *guardDeskSocietyRepo) Restore(context.Context, int64) (*models.Society, error) {
+	return nil, nil
+}
+func (r *guardDeskSocietyRepo) SoftDelete(context.Context, int64) error { return nil }
 func (r *guardDeskSocietyRepo) CountPendingByCreator(context.Context, int64) (int64, error) {
 	return 0, nil
 }
 
 type guardDeskEntryRepo struct {
-	stats                *models.VisitorEntryStatsResponse
-	expectedGuestsCount  int64
-	expectedGuests       []*models.VisitorEntry
-	waitingAtGateCount   int64
-	pending              []*models.VisitorPendingEntry
+	stats               *models.VisitorEntryStatsResponse
+	expectedGuestsCount int64
+	expectedGuests      []*models.VisitorEntry
+	waitingAtGateCount  int64
+	pending             []*models.VisitorPendingEntry
 }
 
 func (r *guardDeskEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
@@ -135,7 +137,7 @@ func (r *guardDeskEntryRepo) CheckIn(context.Context, int64, int64, int64) (*mod
 func (r *guardDeskEntryRepo) CheckOut(context.Context, int64, int64, int64) (*models.VisitorEntry, error) {
 	return nil, nil
 }
-func (r *guardDeskEntryRepo) AutoCloseExpired(context.Context) error { return nil }
+func (r *guardDeskEntryRepo) AutoCloseExpired(context.Context) error   { return nil }
 func (r *guardDeskEntryRepo) ExpireStaleEntries(context.Context) error { return nil }
 
 type noopTxManager struct{}

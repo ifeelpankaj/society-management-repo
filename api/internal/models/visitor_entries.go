@@ -489,11 +489,11 @@ type FlatRecentVisitorSummary struct {
 }
 
 type GuardDeskBootstrapResponse struct {
-	Society            *SocietyResponse           `json:"society"`
-	Stats              *VisitorEntryStatsResponse `json:"stats"`
-	ExpectedGuestsCount int64                     `json:"expected_guests_count"`
-	WaitingAtGateCount int64                      `json:"waiting_at_gate_count"`
-	PendingPreview     []*VisitorPendingEntry     `json:"pending_preview"`
+	Society             *SocietyResponse           `json:"society"`
+	Stats               *VisitorEntryStatsResponse `json:"stats"`
+	ExpectedGuestsCount int64                      `json:"expected_guests_count"`
+	WaitingAtGateCount  int64                      `json:"waiting_at_gate_count"`
+	PendingPreview      []*VisitorPendingEntry     `json:"pending_preview"`
 }
 
 type SocietyFlatVisitorSettingRow struct {

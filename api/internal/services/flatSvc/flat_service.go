@@ -6,9 +6,9 @@ import (
 
 	"go-server/internal/models"
 	repository "go-server/internal/repositories"
-	societysvc "go-server/internal/services/societySvc"
 	flatauthz "go-server/internal/services/flatAuthz"
 	notificationsvc "go-server/internal/services/notificationSvc"
+	societysvc "go-server/internal/services/societySvc"
 )
 
 type FlatService interface {
@@ -77,18 +77,18 @@ type FlatMemberInviteService interface {
 }
 
 type FlatSvc struct {
-	flatRepo          repository.FlatRepository
-	claimRepo         repository.FlatClaimRepository
-	residentRepo      repository.FlatResidentRepository
-	memberInviteRepo  repository.FlatMemberInviteRepository
-	memberRepo        repository.SocietyMemberRepository
-	txManager         repository.TransactionManager
-	societySvc        societysvc.SocietyService
-	subscriptionSvc   flatSubscriptionGuard
-	visitorSettingSvc flatVisitorSettingDefaults
-	flatAuthz         *flatauthz.FlatVisitorAuthz
-	memberInviteTTL   time.Duration
-	notifier          notificationsvc.NotificationService
+	flatRepo                      repository.FlatRepository
+	claimRepo                     repository.FlatClaimRepository
+	residentRepo                  repository.FlatResidentRepository
+	memberInviteRepo              repository.FlatMemberInviteRepository
+	memberRepo                    repository.SocietyMemberRepository
+	txManager                     repository.TransactionManager
+	societySvc                    societysvc.SocietyService
+	subscriptionSvc               flatSubscriptionGuard
+	visitorSettingSvc             flatVisitorSettingDefaults
+	flatAuthz                     *flatauthz.FlatVisitorAuthz
+	memberInviteTTL               time.Duration
+	notifier                      notificationsvc.NotificationService
 	memberInviteUserCreator       memberInviteUserCreator
 	memberInviteUserAuthenticator memberInviteUserAuthenticator
 }

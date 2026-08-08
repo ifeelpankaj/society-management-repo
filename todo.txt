@@ -1,2 +1,3 @@
 remove fetching same data from bootstap api 
 check in developer bootstrap route weather the array are fetching limited data or unlimited data 
+in web do not when reason pop up is there we are unable to type on it 

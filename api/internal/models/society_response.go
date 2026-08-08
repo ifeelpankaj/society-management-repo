@@ -113,17 +113,17 @@ type SocietyDashboardSubscriptionHealthResponse struct {
 }
 
 type SocietyDashboardBootstrapResponse struct {
-	Society             *SocietyResponse                           `json:"society"`
-	FlatStats           *FlatStatsResponse                         `json:"flat_stats"`
-	ClaimStats          *FlatClaimStatsResponse                    `json:"claim_stats"`
-	RecentPendingClaims []*FlatClaimResponse                       `json:"recent_pending_claims"`
-	MemberStats         *SocietyDashboardMemberStatsResponse       `json:"member_stats"`
-	CurrentSubscription *SocietySubscriptionResponse               `json:"current_subscription,omitempty"`
-	SubscriptionUsage   *SocietyDashboardSubscriptionUsageResponse `json:"subscription_usage,omitempty"`
+	Society             *SocietyResponse                            `json:"society"`
+	FlatStats           *FlatStatsResponse                          `json:"flat_stats"`
+	ClaimStats          *FlatClaimStatsResponse                     `json:"claim_stats"`
+	RecentPendingClaims []*FlatClaimResponse                        `json:"recent_pending_claims"`
+	MemberStats         *SocietyDashboardMemberStatsResponse        `json:"member_stats"`
+	CurrentSubscription *SocietySubscriptionResponse                `json:"current_subscription,omitempty"`
+	SubscriptionUsage   *SocietyDashboardSubscriptionUsageResponse  `json:"subscription_usage,omitempty"`
 	SubscriptionHealth  *SocietyDashboardSubscriptionHealthResponse `json:"subscription_health,omitempty"`
-	PlanAds             []*PlanResponse                            `json:"plan_ads"`
-	VisitorStats        *VisitorEntryStatsResponse                 `json:"visitor_stats,omitempty"`
-	VisitorDailyLast7   []VisitorDailyCountResponse                `json:"visitor_daily_last_7_days,omitempty"`
+	PlanAds             []*PlanResponse                             `json:"plan_ads"`
+	VisitorStats        *VisitorEntryStatsResponse                  `json:"visitor_stats,omitempty"`
+	VisitorDailyLast7   []VisitorDailyCountResponse                 `json:"visitor_daily_last_7_days,omitempty"`
 }
 
 type DeveloperDashboardSocietyStatsResponse struct {

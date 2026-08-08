@@ -275,9 +275,9 @@ func (s *VisitorEntrySvc) ListExpectedGuests(ctx context.Context, filter models.
 
 func (s *VisitorEntrySvc) buildOnBehalfAudit(ctx context.Context, entry *models.VisitorEntry, guardUserID int64, reason *string) (map[string]any, error) {
 	audit := map[string]any{
-		"approved_on_behalf":    true,
-		"approved_by_guard_id":  guardUserID,
-		"approved_at":           time.Now().UTC().Format(time.RFC3339),
+		"approved_on_behalf":   true,
+		"approved_by_guard_id": guardUserID,
+		"approved_at":          time.Now().UTC().Format(time.RFC3339),
 	}
 
 	pending, err := s.entryRepo.ListSocietyPending(ctx, models.VisitorPendingFilter{

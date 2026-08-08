@@ -38,8 +38,8 @@ func (f *fakeMemberRepo) Reactivate(context.Context, int64, int64) (*models.Soci
 	return nil, nil
 }
 func (f *fakeMemberRepo) Remove(context.Context, int64, int64, int64, string) error { return nil }
-func (f *fakeMemberRepo) CountActiveOwners(context.Context, int64) (int64, error) { return 0, nil }
-func (f *fakeMemberRepo) DemoteActiveOwners(context.Context, int64, int64) error { return nil }
+func (f *fakeMemberRepo) CountActiveOwners(context.Context, int64) (int64, error)   { return 0, nil }
+func (f *fakeMemberRepo) DemoteActiveOwners(context.Context, int64, int64) error    { return nil }
 func (f *fakeMemberRepo) PromoteToOwner(context.Context, int64, int64) (*models.SocietyMember, error) {
 	return nil, nil
 }
@@ -103,8 +103,12 @@ func (f *fakeFlatRepo) MarkOccupied(context.Context, int64, int64) (*models.Flat
 func (f *fakeFlatRepo) MarkVacant(context.Context, int64, int64) (*models.Flat, error) {
 	return nil, nil
 }
-func (f *fakeFlatRepo) Block(context.Context, *models.FlatFilter) (*models.Flat, error) { return nil, nil }
-func (f *fakeFlatRepo) Unblock(context.Context, *models.FlatFilter) (*models.Flat, error) { return nil, nil }
+func (f *fakeFlatRepo) Block(context.Context, *models.FlatFilter) (*models.Flat, error) {
+	return nil, nil
+}
+func (f *fakeFlatRepo) Unblock(context.Context, *models.FlatFilter) (*models.Flat, error) {
+	return nil, nil
+}
 
 func testAuthz(member *models.SocietyMember, resident *models.FlatResident) *FlatVisitorAuthz {
 	return New(

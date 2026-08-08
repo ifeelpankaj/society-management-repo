@@ -166,6 +166,6 @@ func (r *JoinFlatMemberInviteRequest) IsRegisterFlow() bool {
 }
 
 type JoinFlatMemberInviteResponse struct {
-	User       *UserResponse                 `json:"user"`
+	User       *UserResponse                   `json:"user"`
 	Acceptance *AcceptFlatMemberInviteResponse `json:"acceptance"`
 }

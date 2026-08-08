@@ -1,4 +1,11 @@
-import { Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import { useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -83,7 +90,7 @@ export default function GuardCheckInScreen() {
       !redirectTriggeredRef.current
     ) {
       redirectTriggeredRef.current = true;
-      feedback.showError("QR not recognized", checkIn.entryError.message);
+      feedback.showError("QR not recognized", "", checkIn.entryError.message); //TODO fix me
       router.replace(guardWaitingAtGateRoute());
     }
   }, [
@@ -116,7 +123,8 @@ export default function GuardCheckInScreen() {
           <Card>
             <Text style={styles.cardTitle}>Invalid check-in link</Text>
             <Text style={styles.cardBody}>
-              This check-in route is missing a valid QR token. Scan a visitor QR to continue.
+              This check-in route is missing a valid QR token. Scan a visitor QR
+              to continue.
             </Text>
           </Card>
           <Pressable
@@ -146,7 +154,9 @@ export default function GuardCheckInScreen() {
             </View>
           ) : null}
 
-          {scanOutcome === "error" && checkIn.entryError && !checkIn.entryError.redirectToWaitingAtGate ? (
+          {scanOutcome === "error" &&
+          checkIn.entryError &&
+          !checkIn.entryError.redirectToWaitingAtGate ? (
             <Card style={styles.errorCard}>
               <Text style={styles.errorTitle}>Unable to load visitor</Text>
               <Text style={styles.errorBody}>{checkIn.entryError.message}</Text>
@@ -157,7 +167,9 @@ export default function GuardCheckInScreen() {
             <VisitorEntryCard
               entry={checkIn.entry}
               loading={checkIn.isCheckingIn}
-              primaryActionLabel={scanOutcome === "ready" ? "Check In" : undefined}
+              primaryActionLabel={
+                scanOutcome === "ready" ? "Check In" : undefined
+              }
               onPrimaryAction={() => {
                 void checkIn.checkIn();
               }}
@@ -193,11 +205,15 @@ export default function GuardCheckInScreen() {
           {scanOutcome === "just_checked_in" ? (
             <Card style={styles.successCard}>
               <Text style={styles.successTitle}>Checked in successfully</Text>
-              <Text style={styles.successBody}>The visitor may proceed to entry.</Text>
+              <Text style={styles.successBody}>
+                The visitor may proceed to entry.
+              </Text>
             </Card>
           ) : null}
 
-          {checkIn.entryError && checkIn.entry && scanOutcome !== "just_checked_in" ? (
+          {checkIn.entryError &&
+          checkIn.entry &&
+          scanOutcome !== "just_checked_in" ? (
             <Card style={styles.errorCard}>
               <Text style={styles.errorTitle}>Check-in failed</Text>
               <Text style={styles.errorBody}>{checkIn.entryError.message}</Text>

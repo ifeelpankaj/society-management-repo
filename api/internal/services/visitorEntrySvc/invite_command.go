@@ -60,7 +60,8 @@ func (s *VisitorEntrySvc) createInvite(ctx context.Context, societyID int64, fla
 	return &models.VisitorEntryMutationResponse{QR: &models.QRTokenResponse{Token: token, ExpiresAt: expiry}}, invite, nil
 }
 
-func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error) {	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string, req models.VisitorFormRequest) (*models.VisitorEntryMutationResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
 	if err := req.Validate(false); err != nil {

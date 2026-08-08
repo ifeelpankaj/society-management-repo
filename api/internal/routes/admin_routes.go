@@ -66,7 +66,7 @@ func SetupAdminRoutesV1(rg *gin.RouterGroup, h *app.V1Handlers, g *guards.Guards
 		staffRead.POST("/visitor-entries/guard", h.VisitorEntry.CreateGuardEntry)
 		staffRead.POST("/flats/:flatId/visitor-invites/staff", h.VisitorEntry.CreateStaffInvite)
 		staffRead.POST("/visitor-entries/check-in", h.VisitorEntry.CheckIn)
-	staffRead.GET("/visitor-entries/stats", h.VisitorEntry.GetEntryStats)
+		staffRead.GET("/visitor-entries/stats", h.VisitorEntry.GetEntryStats)
 		staffRead.GET("/visitor-entries/stats/daily", h.VisitorEntry.GetEntryDailyStats)
 		staffRead.GET("/guard-desk/bootstrap", h.VisitorEntry.GetGuardDeskBootstrap)
 		staffRead.GET("/visitor-entries/pending", h.VisitorEntry.ListSocietyPendingApprovals)

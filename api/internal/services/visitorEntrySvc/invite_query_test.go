@@ -196,7 +196,7 @@ func (r *inviteQueryEntryRepo) CheckIn(context.Context, int64, int64, int64) (*m
 func (r *inviteQueryEntryRepo) CheckOut(context.Context, int64, int64, int64) (*models.VisitorEntry, error) {
 	return nil, nil
 }
-func (r *inviteQueryEntryRepo) AutoCloseExpired(context.Context) error { return nil }
+func (r *inviteQueryEntryRepo) AutoCloseExpired(context.Context) error   { return nil }
 func (r *inviteQueryEntryRepo) ExpireStaleEntries(context.Context) error { return nil }
 
 type inviteQueryEventRepo struct{}
