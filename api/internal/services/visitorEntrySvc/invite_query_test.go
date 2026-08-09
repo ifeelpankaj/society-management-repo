@@ -34,6 +34,9 @@ func (s *inviteQuerySettingSvc) EnsureDefaultFlatSettingsIfMissing(context.Conte
 func (s *inviteQuerySettingSvc) ResolveApprovalRequirement(context.Context, int64, int64, models.VisitorPurpose, models.VisitorEntrySource) (bool, error) {
 	return false, nil
 }
+func (s *inviteQuerySettingSvc) ResolveVisitDurationMinutes(context.Context, int64, int64, models.VisitorPurpose) (int32, error) {
+	return 60, nil
+}
 
 type inviteQueryInviteRepo struct {
 	invite            *models.VisitorInvite
@@ -101,7 +104,7 @@ type inviteQueryEntryRepo struct {
 	entry *models.VisitorEntry
 }
 
-func (r *inviteQueryEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
+func (r *inviteQueryEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, *int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
 	return nil, nil
 }
 func (r *inviteQueryEntryRepo) Get(context.Context, int64, int64) (*models.VisitorEntry, error) {
@@ -194,6 +197,9 @@ func (r *inviteQueryEntryRepo) CheckIn(context.Context, int64, int64, int64) (*m
 	return nil, nil
 }
 func (r *inviteQueryEntryRepo) CheckOut(context.Context, int64, int64, int64) (*models.VisitorEntry, error) {
+	return nil, nil
+}
+func (r *inviteQueryEntryRepo) UpdateDetails(context.Context, int64, int64, models.UpdateGuardVisitorEntryRequest) (*models.VisitorEntry, error) {
 	return nil, nil
 }
 func (r *inviteQueryEntryRepo) AutoCloseExpired(context.Context) error   { return nil }

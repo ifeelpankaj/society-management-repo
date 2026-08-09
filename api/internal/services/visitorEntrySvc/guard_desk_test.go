@@ -48,6 +48,24 @@ func (r *guardDeskSocietyRepo) CountPendingByCreator(context.Context, int64) (in
 	return 0, nil
 }
 
+type guardDeskSettingSvc struct{}
+
+func (guardDeskSettingSvc) GetSocietySettings(context.Context, int64) (*models.SocietyVisitorSettingsResponse, error) {
+	return &models.SocietyVisitorSettingsResponse{AllowGuardEntry: true, AllowGuardOnBehalfApproval: true}, nil
+}
+func (guardDeskSettingSvc) GetFlatSettings(context.Context, int64, int64) ([]models.FlatVisitorSettingsResponse, error) {
+	return nil, nil
+}
+func (guardDeskSettingSvc) EnsureDefaultFlatSettingsIfMissing(context.Context, int64, int64, int64) error {
+	return nil
+}
+func (guardDeskSettingSvc) ResolveApprovalRequirement(context.Context, int64, int64, models.VisitorPurpose, models.VisitorEntrySource) (bool, error) {
+	return false, nil
+}
+func (guardDeskSettingSvc) ResolveVisitDurationMinutes(context.Context, int64, int64, models.VisitorPurpose) (int32, error) {
+	return 60, nil
+}
+
 type guardDeskEntryRepo struct {
 	stats               *models.VisitorEntryStatsResponse
 	expectedGuestsCount int64
@@ -56,7 +74,7 @@ type guardDeskEntryRepo struct {
 	pending             []*models.VisitorPendingEntry
 }
 
-func (r *guardDeskEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
+func (r *guardDeskEntryRepo) Create(context.Context, models.VisitorFormRequest, int64, *int64, int64, *int64, models.VisitorEntrySource, models.VisitorPurpose, models.VisitorStatus, *int64, *int64, *string, *time.Time) (*models.VisitorEntry, error) {
 	return nil, nil
 }
 func (r *guardDeskEntryRepo) Get(context.Context, int64, int64) (*models.VisitorEntry, error) {
@@ -137,6 +155,9 @@ func (r *guardDeskEntryRepo) CheckIn(context.Context, int64, int64, int64) (*mod
 func (r *guardDeskEntryRepo) CheckOut(context.Context, int64, int64, int64) (*models.VisitorEntry, error) {
 	return nil, nil
 }
+func (r *guardDeskEntryRepo) UpdateDetails(context.Context, int64, int64, models.UpdateGuardVisitorEntryRequest) (*models.VisitorEntry, error) {
+	return nil, nil
+}
 func (r *guardDeskEntryRepo) AutoCloseExpired(context.Context) error   { return nil }
 func (r *guardDeskEntryRepo) ExpireStaleEntries(context.Context) error { return nil }
 
@@ -163,7 +184,7 @@ func TestGetGuardDeskBootstrap(t *testing.T) {
 		nil,
 		&guardDeskEntryRepo{stats: stats, expectedGuestsCount: 2, waitingAtGateCount: 4, pending: pending},
 		nil,
-		nil,
+		guardDeskSettingSvc{},
 		nil,
 		nil,
 		nil,

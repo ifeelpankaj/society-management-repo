@@ -271,7 +271,7 @@ const countExpectedGuestEntriesFiltered = `-- name: CountExpectedGuestEntriesFil
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.source = 'resident_link'
   AND ve.status = 'approved'
@@ -337,7 +337,7 @@ func (q *Queries) CountMemberVisitorApprovals(ctx context.Context, arg CountMemb
 const countSocietyPendingVisitorApprovals = `-- name: CountSocietyPendingVisitorApprovals :one
 SELECT COUNT(*)
 FROM visitor_entries ve
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.status = 'waiting_approval'
   AND ($2::bigint IS NULL OR ve.flat_id = $2::bigint)
@@ -360,7 +360,7 @@ func (q *Queries) CountSocietyPendingVisitorApprovals(ctx context.Context, arg C
 const countVisitorEntries = `-- name: CountVisitorEntries :one
 SELECT COUNT(*)
 FROM visitor_entries ve
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ($2::bigint IS NULL OR ve.flat_id = $2::bigint)
   AND ($3::visitor_status IS NULL OR ve.status = $3::visitor_status)
@@ -491,7 +491,7 @@ const countWaitingAtGateVisitorEntriesFiltered = `-- name: CountWaitingAtGateVis
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.status = 'approved'
   AND ve.checked_in_at IS NULL
@@ -922,7 +922,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.id = $1
   AND ve.society_id = $2
 `
@@ -969,7 +969,7 @@ type GetVisitorEntryRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -1033,7 +1033,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.invite_id = $1
 `
 
@@ -1074,7 +1074,7 @@ type GetVisitorEntryByInviteIDRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -1138,7 +1138,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.qr_token_hash = $1
 `
 
@@ -1179,7 +1179,7 @@ type GetVisitorEntryByQRHashRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -1507,7 +1507,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.source = 'resident_link'
   AND ve.status = 'approved'
@@ -1573,7 +1573,7 @@ type ListExpectedGuestEntriesRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -1657,7 +1657,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.flat_id = $2
   AND ve.status = 'waiting_approval'
@@ -1708,7 +1708,7 @@ type ListPendingVisitorApprovalsRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -1785,7 +1785,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.flat_id = $2
 ORDER BY ve.created_at DESC
@@ -1835,7 +1835,7 @@ type ListRecentVisitorEntriesByFlatRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -1914,7 +1914,7 @@ SELECT
     fr.id AS primary_resident_id
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 LEFT JOIN flat_residents fr
     ON fr.flat_id = ve.flat_id
    AND fr.society_id = ve.society_id
@@ -1974,7 +1974,7 @@ type ListSocietyPendingVisitorApprovalsRow struct {
 	VisitorPhoneNumber  *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail        *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl     *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber          string              `db:"flat_number" json:"flat_number"`
+	FlatNumber          *string             `db:"flat_number" json:"flat_number"`
 	Block               *string             `db:"block" json:"block"`
 	Floor               *string             `db:"floor" json:"floor"`
 	PrimaryResidentName *string             `db:"primary_resident_name" json:"primary_resident_name"`
@@ -2061,7 +2061,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ($2::bigint IS NULL OR ve.flat_id = $2::bigint)
   AND ($3::visitor_status IS NULL OR ve.status = $3::visitor_status)
@@ -2179,7 +2179,7 @@ type ListVisitorEntriesRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -2313,7 +2313,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.status = 'approved'
   AND ve.checked_in_at IS NULL
@@ -2376,7 +2376,7 @@ type ListWaitingAtGateVisitorEntriesRow struct {
 	VisitorPhoneNumber *string             `db:"visitor_phone_number" json:"visitor_phone_number"`
 	VisitorEmail       *string             `db:"visitor_email" json:"visitor_email"`
 	VisitorPhotoUrl    *string             `db:"visitor_photo_url" json:"visitor_photo_url"`
-	FlatNumber         string              `db:"flat_number" json:"flat_number"`
+	FlatNumber         *string             `db:"flat_number" json:"flat_number"`
 	Block              *string             `db:"block" json:"block"`
 	Floor              *string             `db:"floor" json:"floor"`
 }
@@ -2598,11 +2598,12 @@ func (q *Queries) RejectVisitorEntry(ctx context.Context, arg RejectVisitorEntry
 const updateVisitorEntryDetails = `-- name: UpdateVisitorEntryDetails :one
 UPDATE visitor_entries
 SET
-    vehicle_number = COALESCE($3, vehicle_number),
-    vehicle_type = COALESCE($4, vehicle_type),
-    companions_count = COALESCE($5, companions_count),
-    companion_details = COALESCE($6, companion_details),
-    notes = COALESCE($7, notes),
+    flat_id = COALESCE($3, flat_id),
+    vehicle_number = COALESCE($4, vehicle_number),
+    vehicle_type = COALESCE($5, vehicle_type),
+    companions_count = COALESCE($6, companions_count),
+    companion_details = COALESCE($7, companion_details),
+    notes = COALESCE($8, notes),
     updated_at = NOW()
 WHERE id = $1
   AND society_id = $2
@@ -2613,6 +2614,7 @@ RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, statu
 type UpdateVisitorEntryDetailsParams struct {
 	ID               int64               `db:"id" json:"id"`
 	SocietyID        int64               `db:"society_id" json:"society_id"`
+	FlatID           *int64              `db:"flat_id" json:"flat_id"`
 	VehicleNumber    *string             `db:"vehicle_number" json:"vehicle_number"`
 	VehicleType      *VisitorVehicleType `db:"vehicle_type" json:"vehicle_type"`
 	CompanionsCount  *int32              `db:"companions_count" json:"companions_count"`
@@ -2624,6 +2626,7 @@ func (q *Queries) UpdateVisitorEntryDetails(ctx context.Context, arg UpdateVisit
 	row := q.db.QueryRow(ctx, updateVisitorEntryDetails,
 		arg.ID,
 		arg.SocietyID,
+		arg.FlatID,
 		arg.VehicleNumber,
 		arg.VehicleType,
 		arg.CompanionsCount,

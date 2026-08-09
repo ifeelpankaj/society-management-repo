@@ -23,7 +23,7 @@ type UserResponse struct {
 	BlockedReason *string `json:"blocked_reason,omitempty"`
 
 	AvatarURL   *string    `json:"avatar_url,omitempty"`
-	DateOfBirth *time.Time `json:"date_of_birth,omitempty"`
+	DateOfBirth *DateOnly  `json:"date_of_birth,omitempty"`
 	Gender      *string    `json:"gender,omitempty"`
 
 	Timezone string `json:"timezone"`

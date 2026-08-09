@@ -4,13 +4,15 @@ import { SymbolView } from "expo-symbols";
 import { useRouter } from "expo-router";
 
 import { PaginatedList } from "@/components/ui";
+import { GuardEntryEditSheet } from "@/features/guard/components/guard-entry-edit-sheet";
 import {
   GuardQueueEntryCard,
   GuardQueueEntryDivider,
 } from "@/features/guard/components/guard-queue-entry-card";
 import { GuardQueueEmptyState } from "@/features/guard/components/guard-queue-empty-state";
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
-import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
+import { canEditVisitorEntry } from "@/features/guard/guard-entry-edit";
+import { guardCheckInRoute } from "@/features/guard/guard-routes";
 import { getWaitingDuration } from "@/features/guard/guard-utils";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
@@ -30,6 +32,7 @@ export default function GuardWaitingAtGateScreen() {
   const [search, setSearch] = useState("");
   const queue = useGuardWaitingAtGate(selectedSocietyId, search);
   const actions = useGuardActions(selectedSocietyId ?? 0);
+  const [editEntry, setEditEntry] = useState<ModelsVisitorEntry | null>(null);
 
   const handleCheckIn = useCallback(
     async (entry: ModelsVisitorEntry) => {
@@ -104,14 +107,18 @@ export default function GuardWaitingAtGateScreen() {
               entry={item}
               loading={actions.activeEntryId === item.id}
               primaryActionLabel="Check In"
+              secondaryActionLabel={canEditVisitorEntry(item) ? "Edit Details" : undefined}
               waitingLabel={waiting.label}
               waitingTone={waiting.tone}
               onPress={() => {
                 if (item.id) {
-                  router.push(guardEntryDetailRoute(item.id));
+                  router.push(guardCheckInRoute({ source: "entry", entryId: item.id }));
                 }
               }}
               onPrimaryAction={() => void handleCheckIn(item)}
+              onSecondaryAction={
+                canEditVisitorEntry(item) ? () => setEditEntry(item) : undefined
+              }
             />
           );
         }}
@@ -121,6 +128,17 @@ export default function GuardWaitingAtGateScreen() {
         }}
       />
 
+      <GuardEntryEditSheet
+        entry={editEntry}
+        societyId={selectedSocietyId ?? 0}
+        visible={Boolean(editEntry)}
+        onClose={() => setEditEntry(null)}
+        onSaved={() => {
+          setEditEntry(null);
+          void queue.refresh();
+          feedback.showSuccess("Details updated", "Visitor information saved.");
+        }}
+      />
     </GuardSubScreen>
   );
 }

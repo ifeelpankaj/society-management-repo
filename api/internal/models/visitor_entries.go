@@ -369,6 +369,7 @@ type GuardApproveEntryRequest struct {
 }
 
 type UpdateGuardVisitorEntryRequest struct {
+	FlatID             *int64              `json:"flat_id,omitempty"`
 	FullName           *string             `json:"full_name,omitempty"`
 	PhoneNumber        *string             `json:"phone_number,omitempty"`
 	Email              *string             `json:"email,omitempty"`
@@ -384,7 +385,8 @@ func (r *UpdateGuardVisitorEntryRequest) Validate() error {
 	if r == nil {
 		return errors.New("update request is required")
 	}
-	if r.FullName == nil &&
+	if r.FlatID == nil &&
+		r.FullName == nil &&
 		r.PhoneNumber == nil &&
 		r.Email == nil &&
 		r.PhotoURL == nil &&
@@ -394,6 +396,9 @@ func (r *UpdateGuardVisitorEntryRequest) Validate() error {
 		r.CompanionDetails == nil &&
 		r.Notes == nil {
 		return errors.New("at least one field must be provided for update")
+	}
+	if r.FlatID != nil && *r.FlatID <= 0 {
+		return errors.New("flat_id must be positive")
 	}
 	if r.FullName != nil && strings.TrimSpace(*r.FullName) == "" {
 		return errors.New("full_name cannot be empty")

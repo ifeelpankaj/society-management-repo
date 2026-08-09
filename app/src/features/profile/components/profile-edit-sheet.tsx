@@ -15,6 +15,7 @@ import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
 import { getApiMessage } from "@/features/auth/api-error";
 import {
+  formatDateOfBirthForInput,
   normalizeProfileDateInput,
   PROFILE_GENDER_OPTIONS,
   type ProfileGenderValue,
@@ -42,7 +43,7 @@ function buildInitialValues(user?: ModelsUserResponse | null): UpdateProfileBody
     first_name: user?.first_name ?? "",
     last_name: user?.last_name ?? "",
     phone_number: user?.phone_number ?? "",
-    date_of_birth: user?.date_of_birth ?? "",
+    date_of_birth: formatDateOfBirthForInput(user?.date_of_birth),
     gender: user?.gender ?? "",
   };
 }

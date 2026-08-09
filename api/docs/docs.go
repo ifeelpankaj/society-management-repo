@@ -310,6 +310,67 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Updates authenticated user profile fields such as name, phone, and date of birth.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Update current user profile",
+                "parameters": [
+                    {
+                        "description": "Profile update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.GetProfileAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, or expired access token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "403": {
+                        "description": "Account disabled",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    }
+                }
             }
         },
         "/v1/auth/refresh": {
@@ -1897,6 +1958,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/public/flat-member-invites/{token}/join": {
+            "post": {
+                "description": "[Public] Creates or authenticates a user and accepts a flat member invite without setting auth cookies.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flat Members"
+                ],
+                "summary": "Join flat via member invite",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Member invite token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Join request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.JoinFlatMemberInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Member joined successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.JoinFlatMemberInviteAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Member invite not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "409": {
+                        "description": "Member invite unavailable or resident conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/public/societies/{societyCode}/claim-options": {
             "get": {
                 "description": "Public QR flow endpoint that resolves an active society code and returns safe society details plus active flats for resident claims.",
@@ -3072,6 +3198,47 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Insufficient society role",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/societies/{societyId}/flat-claims/stats": {
+            "get": {
+                "description": "[Owner/Admin/Staff] Returns flat claim counts by status for a society.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flat Claims"
+                ],
+                "summary": "Get flat claim stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Society ID",
+                        "name": "societyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Flat claim stats fetched successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.FlatClaimStatsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid society ID",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponseDoc"
                         }
@@ -7506,6 +7673,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/societies/{societyId}/visitor-entries/stats/daily": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "[Owner/Admin/Staff] Returns daily visitor counts for charting.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Visitor Entries"
+                ],
+                "summary": "Get visitor entry daily stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Society ID",
+                        "name": "societyId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of days (default 7, max 90)",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Visitor entry daily stats fetched successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.VisitorEntryDailyStatsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid society ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, or expired access token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "403": {
+                        "description": "Owner, admin, or staff access required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/societies/{societyId}/visitor-entries/waiting-at-gate": {
             "get": {
                 "security": [
@@ -7642,6 +7873,93 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Visitor entry not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "[Owner/Admin/Staff] Updates visitor and entry details before check-in for approved or pending entries.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Visitor Entries"
+                ],
+                "summary": "Update visitor entry details",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Society ID",
+                        "name": "societyId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Visitor entry ID",
+                        "name": "entryId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Visitor entry update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateGuardVisitorEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Visitor entry updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.VisitorEntryMutationAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, or expired access token",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "403": {
+                        "description": "Owner, admin, or staff access required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "404": {
+                        "description": "Visitor entry not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponseDoc"
+                        }
+                    },
+                    "409": {
+                        "description": "Visitor entry is not in an editable state",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponseDoc"
                         }
@@ -9873,6 +10191,30 @@ const docTemplate = `{
                 }
             }
         },
+        "models.FlatClaimStatsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.FlatClaimStatsData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Flat claim stats fetched successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "models.FlatClaimStatsData": {
+            "type": "object",
+            "properties": {
+                "stats": {
+                    "$ref": "#/definitions/models.FlatClaimStatsResponse"
+                }
+            }
+        },
         "models.FlatClaimStatsResponse": {
             "type": "object",
             "properties": {
@@ -10260,6 +10602,9 @@ const docTemplate = `{
                 },
                 "is_active": {
                     "type": "boolean"
+                },
+                "primary_resident_name": {
+                    "type": "string"
                 },
                 "society_code": {
                     "type": "string"
@@ -10658,8 +11003,22 @@ const docTemplate = `{
                 "stats": {
                     "$ref": "#/definitions/models.VisitorEntryStatsResponse"
                 },
+                "visitor_settings": {
+                    "$ref": "#/definitions/models.GuardDeskVisitorSettingsSummary"
+                },
                 "waiting_at_gate_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.GuardDeskVisitorSettingsSummary": {
+            "type": "object",
+            "properties": {
+                "allow_guard_entry": {
+                    "type": "boolean"
+                },
+                "allow_guard_on_behalf_approval": {
+                    "type": "boolean"
                 }
             }
         },
@@ -10698,6 +11057,71 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "not_ready"
+                }
+            }
+        },
+        "models.JoinFlatMemberInviteAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.JoinFlatMemberInviteData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Member joined successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "models.JoinFlatMemberInviteData": {
+            "type": "object",
+            "properties": {
+                "join": {
+                    "$ref": "#/definitions/models.JoinFlatMemberInviteResponse"
+                }
+            }
+        },
+        "models.JoinFlatMemberInviteRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "first_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "identifier": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                }
+            }
+        },
+        "models.JoinFlatMemberInviteResponse": {
+            "type": "object",
+            "properties": {
+                "acceptance": {
+                    "$ref": "#/definitions/models.AcceptFlatMemberInviteResponse"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.UserResponse"
                 }
             }
         },
@@ -11235,6 +11659,9 @@ const docTemplate = `{
                 "block": {
                     "type": "string"
                 },
+                "email": {
+                    "type": "string"
+                },
                 "expires_at": {
                     "type": "string"
                 },
@@ -11249,6 +11676,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "phone": {
+                    "type": "string"
                 },
                 "role": {
                     "$ref": "#/definitions/models.FlatMemberInviteRole"
@@ -11652,6 +12082,15 @@ const docTemplate = `{
                 },
                 "subscription_usage": {
                     "$ref": "#/definitions/models.SocietyDashboardSubscriptionUsageResponse"
+                },
+                "visitor_daily_last_7_days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.VisitorDailyCountResponse"
+                    }
+                },
+                "visitor_stats": {
+                    "$ref": "#/definitions/models.VisitorEntryStatsResponse"
                 }
             }
         },
@@ -12618,6 +13057,45 @@ const docTemplate = `{
                 }
             }
         },
+        "models.UpdateGuardVisitorEntryRequest": {
+            "type": "object",
+            "properties": {
+                "companion_details": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "companions_count": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "flat_id": {
+                    "type": "integer"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "vehicle_number": {
+                    "type": "string"
+                },
+                "vehicle_type": {
+                    "$ref": "#/definitions/models.VisitorVehicleType"
+                }
+            }
+        },
         "models.UpdatePlanRequest": {
             "type": "object",
             "properties": {
@@ -12750,6 +13228,48 @@ const docTemplate = `{
                 },
                 "qr_expiry_minutes": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female",
+                        "other",
+                        "prefer_not_to_say"
+                    ]
+                },
+                "language": {
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "timezone": {
+                    "type": "string",
+                    "maxLength": 100
                 }
             }
         },
@@ -12889,6 +13409,17 @@ const docTemplate = `{
                 "VisitorApprovalModeOptional",
                 "VisitorApprovalModeHybrid"
             ]
+        },
+        "models.VisitorDailyCountResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                }
+            }
         },
         "models.VisitorEntriesAPIResponse": {
             "type": "object",
@@ -13048,6 +13579,53 @@ const docTemplate = `{
                 "success": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "models.VisitorEntryDailyStatsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.VisitorEntryDailyStatsData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Visitor entry daily stats fetched successfully"
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "models.VisitorEntryDailyStatsData": {
+            "type": "object",
+            "properties": {
+                "stats": {
+                    "$ref": "#/definitions/models.VisitorEntryDailyStatsResponse"
+                }
+            }
+        },
+        "models.VisitorEntryDailyStatsResponse": {
+            "type": "object",
+            "properties": {
+                "daily": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.VisitorDailyCountResponse"
+                    }
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "metric": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

@@ -42,7 +42,7 @@ module.exports = {
       package: "com.apnagate",
       googleServicesFile:
         process.env.GOOGLE_SERVICES_JSON ?? defaultGoogleServicesJson,
-      softwareKeyboardLayoutMode: "resize",
+      softwareKeyboardLayoutMode: "pan",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",

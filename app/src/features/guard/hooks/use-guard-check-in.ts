@@ -4,7 +4,9 @@ import { getApiErrorCode, getApiMessage } from "@/features/auth/api-error";
 import type { GuardCheckInInput } from "@/features/guard/guard-routes";
 import {
   type ModelsVisitorEntry,
+  useGetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdQuery,
   usePostV1PublicVisitorEntriesQrValidateMutation,
+  usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation,
 } from "@/lib/api/generated-api";
 
@@ -98,6 +100,11 @@ function mapValidateError(error: unknown): GuardCheckInError {
   };
 }
 
+function mapEntryLoadError(error: unknown): GuardCheckInError {
+  const message = getApiMessage(error, "Could not load visitor entry.");
+  return { kind: "unknown", message };
+}
+
 function mapCheckInError(error: unknown): GuardCheckInError {
   const code = getApiErrorCode(error);
   const message = getApiMessage(error, "Please try again.");
@@ -131,6 +138,7 @@ export interface UseGuardCheckInResult {
   checkIn: () => Promise<void>;
   isCheckingIn: boolean;
   isCheckedIn: boolean;
+  refreshEntry: () => void;
 }
 
 export function useVisitorAlreadyCheckedIn(entry: ModelsVisitorEntry | null, isCheckedIn: boolean) {
@@ -144,7 +152,7 @@ function deriveScanOutcome(input: {
   justCheckedInThisSession: boolean;
   canCheckIn: boolean;
   alreadyCheckedIn: boolean;
-  hasQrToken: boolean;
+  isResolvingEntry: boolean;
 }): GuardScanOutcome {
   const {
     entry,
@@ -153,10 +161,10 @@ function deriveScanOutcome(input: {
     justCheckedInThisSession,
     canCheckIn,
     alreadyCheckedIn,
-    hasQrToken,
+    isResolvingEntry,
   } = input;
 
-  if (isLoadingEntry || (hasQrToken && !entry && !entryError)) {
+  if (isLoadingEntry || isResolvingEntry) {
     return "loading";
   }
 
@@ -191,30 +199,44 @@ export function useGuardCheckIn(
   input: GuardCheckInInput | null,
   societyId: number | undefined,
 ): UseGuardCheckInResult {
-  const [entry, setEntry] = useState<ModelsVisitorEntry | null>(null);
+  const [qrEntry, setQrEntry] = useState<ModelsVisitorEntry | null>(null);
   const [entryError, setEntryError] = useState<GuardCheckInError | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [justCheckedInThisSession, setJustCheckedInThisSession] = useState(false);
   const checkInSubmittedRef = useRef(false);
-  const qrToken = input?.token;
+
+  const isQrSource = input?.source === "qr";
+  const isEntrySource = input?.source === "entry";
+  const qrToken = input?.source === "qr" ? input.token : input?.source === "entry" ? input.token : undefined;
+  const entryId = input?.source === "entry" ? input.entryId : 0;
 
   const [validateQr, validateQrState] = usePostV1PublicVisitorEntriesQrValidateMutation();
-  const [checkInMutation, checkInState] = usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation();
+  const [checkInByToken, checkInByTokenState] =
+    usePostV1SocietiesBySocietyIdVisitorEntriesCheckInMutation();
+  const [checkInByEntryId, checkInByEntryIdState] =
+    usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInMutation();
+
+  const entryQuery = useGetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdQuery(
+    { societyId: societyId ?? 0, entryId },
+    { skip: !isEntrySource || !societyId || entryId <= 0 },
+  );
 
   useEffect(() => {
     checkInSubmittedRef.current = false;
-    setEntry(null);
+    setQrEntry(null);
     setEntryError(null);
     setIsCheckedIn(false);
     setJustCheckedInThisSession(false);
 
-    if (!qrToken || !societyId) {
-      if (!qrToken) {
-        setEntryError({
-          kind: "invalid_params",
-          message: "This check-in link is invalid or incomplete.",
-        });
-      }
+    if (!input || !societyId) {
+      setEntryError({
+        kind: "invalid_params",
+        message: "This check-in link is invalid or incomplete.",
+      });
+      return;
+    }
+
+    if (!isQrSource) {
       return;
     }
 
@@ -223,7 +245,7 @@ export function useGuardCheckIn(
     void (async () => {
       try {
         const response = await validateQr({
-          modelsQrTokenRequest: { token: qrToken },
+          modelsQrTokenRequest: { token: input.token },
         }).unwrap();
 
         if (cancelled) {
@@ -231,7 +253,7 @@ export function useGuardCheckIn(
         }
 
         const validatedEntry = response.data?.entry ?? null;
-        setEntry(validatedEntry);
+        setQrEntry(validatedEntry);
 
         if (validatedEntry?.status === "checked_in") {
           setIsCheckedIn(true);
@@ -248,15 +270,38 @@ export function useGuardCheckIn(
     return () => {
       cancelled = true;
     };
-  }, [qrToken, societyId, validateQr]);
+  }, [input, isQrSource, societyId, validateQr]);
 
+  useEffect(() => {
+    if (!isEntrySource) {
+      return;
+    }
+
+    if (entryQuery.isError) {
+      setEntryError(mapEntryLoadError(entryQuery.error));
+      return;
+    }
+
+    if (entryQuery.data?.data?.entry) {
+      setEntryError(null);
+      if (entryQuery.data.data.entry.status === "checked_in") {
+        setIsCheckedIn(true);
+      }
+    }
+  }, [entryQuery.data, entryQuery.error, entryQuery.isError, isEntrySource]);
+
+  const entry = isEntrySource ? (entryQuery.data?.data?.entry ?? null) : qrEntry;
+  const isLoadingEntry = isQrSource
+    ? validateQrState.isLoading
+    : entryQuery.isLoading || entryQuery.isFetching;
+  const isCheckingIn = checkInByTokenState.isLoading || checkInByEntryIdState.isLoading;
   const alreadyCheckedIn = useVisitorAlreadyCheckedIn(entry, isCheckedIn);
 
   const canCheckIn =
     Boolean(entry?.status === "approved") &&
     !alreadyCheckedIn &&
-    !checkInState.isLoading &&
-    !validateQrState.isLoading;
+    !isCheckingIn &&
+    !isLoadingEntry;
 
   const disabledReason = (() => {
     if (!entry || alreadyCheckedIn) {
@@ -268,7 +313,7 @@ export function useGuardCheckIn(
     }
 
     if (entry.status !== "approved") {
-      return "This visitor cannot be checked in from this QR.";
+      return "This visitor cannot be checked in yet.";
     }
 
     return undefined;
@@ -279,38 +324,52 @@ export function useGuardCheckIn(
       deriveScanOutcome({
         entry,
         entryError,
-        isLoadingEntry: validateQrState.isLoading,
+        isLoadingEntry,
         justCheckedInThisSession,
         canCheckIn,
         alreadyCheckedIn,
-        hasQrToken: Boolean(qrToken && societyId),
+        isResolvingEntry: isQrSource && Boolean(input?.source === "qr" && !entry && !entryError),
       }),
     [
       entry,
       entryError,
-      validateQrState.isLoading,
+      isLoadingEntry,
       justCheckedInThisSession,
       canCheckIn,
       alreadyCheckedIn,
-      qrToken,
-      societyId,
+      isQrSource,
+      input,
     ],
   );
 
   const checkIn = useCallback(async () => {
-    if (!qrToken || !societyId || !canCheckIn || checkInSubmittedRef.current) {
+    if (!societyId || !canCheckIn || checkInSubmittedRef.current || !entry) {
       return;
     }
 
     checkInSubmittedRef.current = true;
 
     try {
-      const response = await checkInMutation({
-        societyId,
-        modelsQrTokenRequest: { token: qrToken },
-      }).unwrap();
+      if (qrToken) {
+        const response = await checkInByToken({
+          societyId,
+          modelsQrTokenRequest: { token: qrToken },
+        }).unwrap();
+        setQrEntry(response.data?.entry ?? entry);
+      } else if (isEntrySource && entry.id) {
+        const response = await checkInByEntryId({
+          societyId,
+          entryId: entry.id,
+        }).unwrap();
+        if (isQrSource) {
+          setQrEntry(response.data?.entry ?? entry);
+        } else {
+          void entryQuery.refetch();
+        }
+      } else {
+        throw new Error("Missing check-in credentials.");
+      }
 
-      setEntry(response.data?.entry ?? entry);
       setIsCheckedIn(true);
       setJustCheckedInThisSession(true);
       setEntryError(null);
@@ -322,17 +381,34 @@ export function useGuardCheckIn(
         setIsCheckedIn(true);
       }
     }
-  }, [canCheckIn, checkInMutation, entry, qrToken, societyId]);
+  }, [
+    canCheckIn,
+    checkInByEntryId,
+    checkInByToken,
+    entry,
+    entryQuery,
+    isEntrySource,
+    isQrSource,
+    qrToken,
+    societyId,
+  ]);
+
+  const refreshEntry = useCallback(() => {
+    if (isEntrySource) {
+      void entryQuery.refetch();
+    }
+  }, [entryQuery, isEntrySource]);
 
   return {
     entry,
-    isLoadingEntry: validateQrState.isLoading,
+    isLoadingEntry,
     entryError,
     scanOutcome,
     canCheckIn,
     disabledReason,
     checkIn,
-    isCheckingIn: checkInState.isLoading,
+    isCheckingIn,
     isCheckedIn: alreadyCheckedIn,
+    refreshEntry,
   };
 }

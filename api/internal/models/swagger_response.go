@@ -315,6 +315,16 @@ type AcceptFlatMemberInviteData struct {
 	Acceptance *AcceptFlatMemberInviteResponse `json:"acceptance"`
 }
 
+type JoinFlatMemberInviteData struct {
+	Join *JoinFlatMemberInviteResponse `json:"join"`
+}
+
+type JoinFlatMemberInviteAPIResponse struct {
+	Success bool                     `json:"success" example:"true"`
+	Message string                   `json:"message" example:"Member joined successfully"`
+	Data    JoinFlatMemberInviteData `json:"data"`
+}
+
 type MyResidencesData struct {
 	Residences []*FlatResidentResponse `json:"residences"`
 }

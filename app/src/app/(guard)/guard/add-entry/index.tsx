@@ -21,10 +21,17 @@ export default function GuardAddEntryScreen() {
         societyName={
           selectedMembership ? `Society #${selectedMembership.society_id}` : undefined
         }
-        onEntryCreated={({ qrToken }) => {
-          if (qrToken) {
-            router.push(guardCheckInRoute({ source: "qr", token: qrToken }));
+        onEntryCreated={({ entry, qrToken }) => {
+          if (!entry?.id) {
+            return;
           }
+          router.push(
+            guardCheckInRoute({
+              source: "entry",
+              entryId: entry.id,
+              ...(qrToken ? { token: qrToken } : {}),
+            }),
+          );
         }}
         onError={(message) =>
           feedback.showActionResult(

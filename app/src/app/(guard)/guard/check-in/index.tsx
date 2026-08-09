@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,6 +13,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Card } from "@/components/ui";
 import { GuardEntryEditSheet } from "@/features/guard/components/guard-entry-edit-sheet";
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
+import {
+  canEditVisitorEntry,
+  getCheckInSessionKey,
+} from "@/features/guard/guard-entry-edit";
 import {
   guardHomeRoute,
   guardScannerRoute,
@@ -48,16 +52,13 @@ function getSubtitle(outcome: GuardScanOutcome) {
   }
 }
 
-function canEditEntry(entry?: ModelsVisitorEntry | null) {
-  return entry?.status === "waiting_approval" || entry?.status === "approved";
-}
-
 export default function GuardCheckInScreen() {
   const router = useRouter();
   const feedback = useGuardFeedback();
   const params = useLocalSearchParams<{
     source?: string | string[];
     token?: string | string[];
+    entryId?: string | string[];
   }>();
   const { selectedSocietyId } = useGuardScreen();
 
@@ -65,22 +66,27 @@ export default function GuardCheckInScreen() {
   const checkIn = useGuardCheckIn(checkInInput, selectedSocietyId);
   const [editVisible, setEditVisible] = useState(false);
   const [editedEntry, setEditedEntry] = useState<{
+    key: string;
     entry: ModelsVisitorEntry;
-    token: string;
   } | null>(null);
   const checkInToastShownRef = useRef(false);
   const wasCheckingInRef = useRef(false);
   const redirectTriggeredRef = useRef(false);
 
-  const activeToken = checkInInput?.token ?? "";
+  const sessionKey = useMemo(
+    () => (checkInInput ? getCheckInSessionKey(checkInInput) : ""),
+    [checkInInput],
+  );
+
   const entry =
-    editedEntry?.token === activeToken ? editedEntry.entry : checkIn.entry;
+    editedEntry?.key === sessionKey ? editedEntry.entry : checkIn.entry;
 
   useEffect(() => {
     checkInToastShownRef.current = false;
     wasCheckingInRef.current = false;
     redirectTriggeredRef.current = false;
-  }, [checkInInput?.token]);
+    setEditedEntry(null);
+  }, [sessionKey]);
 
   useEffect(() => {
     if (checkIn.isCheckingIn) {
@@ -140,8 +146,8 @@ export default function GuardCheckInScreen() {
           <Card>
             <Text style={styles.cardTitle}>Invalid check-in link</Text>
             <Text style={styles.cardBody}>
-              This check-in route is missing a valid QR token. Scan a visitor QR
-              to continue.
+              This check-in route is missing a valid visitor reference. Scan a visitor QR
+              or open the entry from Add Entry to continue.
             </Text>
           </Card>
           <Pressable
@@ -158,7 +164,7 @@ export default function GuardCheckInScreen() {
 
   const { scanOutcome } = checkIn;
   const showPrimaryCheckIn = scanOutcome === "ready" && entry;
-  const showEditDetails = canEditEntry(entry);
+  const showEditDetails = canEditVisitorEntry(entry);
 
   return (
     <GuardSubScreen title="Check In">
@@ -179,7 +185,7 @@ export default function GuardCheckInScreen() {
           {scanOutcome === "loading" ? (
             <View style={styles.inlineLoading}>
               <ActivityIndicator color={colors.guard.teal} />
-              <Text style={styles.cardBody}>Validating QR...</Text>
+              <Text style={styles.cardBody}>Loading visitor...</Text>
             </View>
           ) : null}
 
@@ -298,9 +304,10 @@ export default function GuardCheckInScreen() {
         visible={editVisible}
         onClose={() => setEditVisible(false)}
         onSaved={(updated) => {
-          if (activeToken) {
-            setEditedEntry({ token: activeToken, entry: updated });
+          if (sessionKey) {
+            setEditedEntry({ key: sessionKey, entry: updated });
           }
+          checkIn.refreshEntry();
           feedback.showSuccess("Details updated", "Visitor information saved.");
         }}
       />

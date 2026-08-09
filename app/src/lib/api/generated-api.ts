@@ -87,6 +87,17 @@ const injectedRtkApi = api
         query: () => ({ url: `/v1/auth/profile` }),
         providesTags: ["Auth"],
       }),
+      patchV1AuthProfile: build.mutation<
+        PatchV1AuthProfileApiResponse,
+        PatchV1AuthProfileApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/auth/profile`,
+          method: "PATCH",
+          body: queryArg.modelsUpdateUserRequest,
+        }),
+        invalidatesTags: ["Auth"],
+      }),
       postV1AuthRefresh: build.mutation<
         PostV1AuthRefreshApiResponse,
         PostV1AuthRefreshApiArg
@@ -229,6 +240,7 @@ const injectedRtkApi = api
             status: queryArg.status,
             is_primary: queryArg.isPrimary,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
             limit: queryArg.limit,
             offset: queryArg.offset,
           },
@@ -397,6 +409,17 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Flat Members"],
       }),
+      postV1PublicFlatMemberInvitesByTokenJoin: build.mutation<
+        PostV1PublicFlatMemberInvitesByTokenJoinApiResponse,
+        PostV1PublicFlatMemberInvitesByTokenJoinApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/public/flat-member-invites/${queryArg.token}/join`,
+          method: "POST",
+          body: queryArg.modelsJoinFlatMemberInviteRequest,
+        }),
+        invalidatesTags: ["Flat Members"],
+      }),
       getV1PublicSocietiesBySocietyCodeClaimOptions: build.query<
         GetV1PublicSocietiesBySocietyCodeClaimOptionsApiResponse,
         GetV1PublicSocietiesBySocietyCodeClaimOptionsApiArg
@@ -477,6 +500,7 @@ const injectedRtkApi = api
           params: {
             status: queryArg.status,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
             name: queryArg.name,
             code: queryArg.code,
             city: queryArg.city,
@@ -599,6 +623,15 @@ const injectedRtkApi = api
             limit: queryArg.limit,
             offset: queryArg.offset,
           },
+        }),
+        providesTags: ["Flat Claims"],
+      }),
+      getV1SocietiesBySocietyIdFlatClaimsStats: build.query<
+        GetV1SocietiesBySocietyIdFlatClaimsStatsApiResponse,
+        GetV1SocietiesBySocietyIdFlatClaimsStatsApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/flat-claims/stats`,
         }),
         providesTags: ["Flat Claims"],
       }),
@@ -1250,6 +1283,18 @@ const injectedRtkApi = api
         }),
         providesTags: ["Visitor Entries"],
       }),
+      getV1SocietiesBySocietyIdVisitorEntriesStatsDaily: build.query<
+        GetV1SocietiesBySocietyIdVisitorEntriesStatsDailyApiResponse,
+        GetV1SocietiesBySocietyIdVisitorEntriesStatsDailyApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/stats/daily`,
+          params: {
+            days: queryArg.days,
+          },
+        }),
+        providesTags: ["Visitor Entries"],
+      }),
       getV1SocietiesBySocietyIdVisitorEntriesWaitingAtGate: build.query<
         GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiResponse,
         GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiArg
@@ -1272,6 +1317,17 @@ const injectedRtkApi = api
           url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}`,
         }),
         providesTags: ["Visitor Entries"],
+      }),
+      patchV1SocietiesBySocietyIdVisitorEntriesAndEntryId: build.mutation<
+        PatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiResponse,
+        PatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/v1/societies/${queryArg.societyId}/visitor-entries/${queryArg.entryId}`,
+          method: "PATCH",
+          body: queryArg.modelsUpdateGuardVisitorEntryRequest,
+        }),
+        invalidatesTags: ["Visitor Entries"],
       }),
       postV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApprove: build.mutation<
         PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveApiResponse,
@@ -1415,6 +1471,13 @@ const injectedRtkApi = api
             plan_id: queryArg.planId,
             status: queryArg.status,
             search: queryArg.search,
+            search_mode: queryArg.searchMode,
+            is_active_only: queryArg.isActiveOnly,
+            expired_only: queryArg.expiredOnly,
+            expiring_before: queryArg.expiringBefore,
+            expiring_days: queryArg.expiringDays,
+            limit: queryArg.limit,
+            offset: queryArg.offset,
           },
         }),
         providesTags: ["Subscriptions"],
@@ -1493,7 +1556,7 @@ const injectedRtkApi = api
         invalidatesTags: ["Subscriptions"],
       }),
     }),
-    overrideExisting: false,
+    overrideExisting: true,
   });
 export { injectedRtkApi as generatedApi };
 export type GetHealthApiResponse =
@@ -1529,6 +1592,12 @@ export type PostV1AuthLogoutApiArg = void;
 export type GetV1AuthProfileApiResponse =
   /** status 200 Profile fetched successfully */ ModelsGetProfileApiResponse;
 export type GetV1AuthProfileApiArg = void;
+export type PatchV1AuthProfileApiResponse =
+  /** status 200 Profile updated successfully */ ModelsGetProfileApiResponse;
+export type PatchV1AuthProfileApiArg = {
+  /** Profile update payload */
+  modelsUpdateUserRequest: ModelsUpdateUserRequest;
+};
 export type PostV1AuthRefreshApiResponse =
   /** status 200 OK */ ModelsRefreshTokenApiResponse;
 export type PostV1AuthRefreshApiArg = {
@@ -1628,6 +1697,8 @@ export type GetV1FlatResidentsApiArg = {
   isPrimary?: boolean;
   /** Search user, contact, flat, block, role, or status */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
   /** Limit */
   limit?: number;
   /** Offset */
@@ -1769,6 +1840,14 @@ export type PostV1PublicFlatMemberInvitesByTokenAcceptApiArg = {
   /** Member invite token */
   token: string;
 };
+export type PostV1PublicFlatMemberInvitesByTokenJoinApiResponse =
+  /** status 200 Member joined successfully */ ModelsJoinFlatMemberInviteApiResponse;
+export type PostV1PublicFlatMemberInvitesByTokenJoinApiArg = {
+  /** Member invite token */
+  token: string;
+  /** Join request */
+  modelsJoinFlatMemberInviteRequest: ModelsJoinFlatMemberInviteRequest;
+};
 export type GetV1PublicSocietiesBySocietyCodeClaimOptionsApiResponse =
   /** status 200 Claim options fetched successfully */ ModelsPublicClaimOptionsApiResponse;
 export type GetV1PublicSocietiesBySocietyCodeClaimOptionsApiArg = {
@@ -1824,6 +1903,8 @@ export type GetV1SocietiesApiArg = {
   status?: string;
   /** Search text */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
   /** Society name */
   name?: string;
   /** Society code */
@@ -1945,6 +2026,12 @@ export type GetV1SocietiesBySocietyIdFlatClaimsApiArg = {
   limit?: number;
   /** Offset */
   offset?: number;
+};
+export type GetV1SocietiesBySocietyIdFlatClaimsStatsApiResponse =
+  /** status 200 Flat claim stats fetched successfully */ ModelsFlatClaimStatsApiResponse;
+export type GetV1SocietiesBySocietyIdFlatClaimsStatsApiArg = {
+  /** Society ID */
+  societyId: number;
 };
 export type GetV1SocietiesBySocietyIdFlatClaimsAndClaimIdApiResponse =
   /** status 200 Flat claim fetched successfully */ ModelsFlatClaimApiResponse;
@@ -2574,6 +2661,14 @@ export type GetV1SocietiesBySocietyIdVisitorEntriesStatsApiArg = {
   /** Society ID */
   societyId: number;
 };
+export type GetV1SocietiesBySocietyIdVisitorEntriesStatsDailyApiResponse =
+  /** status 200 Visitor entry daily stats fetched successfully */ ModelsVisitorEntryDailyStatsApiResponse;
+export type GetV1SocietiesBySocietyIdVisitorEntriesStatsDailyApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Number of days (default 7, max 90) */
+  days?: number;
+};
 export type GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiResponse =
   /** status 200 Waiting at gate entries fetched successfully */ ModelsVisitorEntriesApiResponse;
 export type GetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateApiArg = {
@@ -2593,6 +2688,16 @@ export type GetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiArg = {
   societyId: number;
   /** Visitor entry ID */
   entryId: number;
+};
+export type PatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiResponse =
+  /** status 200 Visitor entry updated successfully */ ModelsVisitorEntryMutationApiResponse;
+export type PatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApiArg = {
+  /** Society ID */
+  societyId: number;
+  /** Visitor entry ID */
+  entryId: number;
+  /** Visitor entry update payload */
+  modelsUpdateGuardVisitorEntryRequest: ModelsUpdateGuardVisitorEntryRequest;
 };
 export type PostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveApiResponse =
   /** status 200 Visitor entry approved successfully */ ModelsVisitorEntryMutationApiResponse;
@@ -2722,6 +2827,20 @@ export type GetV1SubscriptionsApiArg = {
   status?: string;
   /** Search text */
   search?: string;
+  /** Search mode */
+  searchMode?: string;
+  /** Only active subscriptions */
+  isActiveOnly?: boolean;
+  /** Only expired subscriptions */
+  expiredOnly?: boolean;
+  /** Subscriptions ending before RFC3339 timestamp */
+  expiringBefore?: string;
+  /** Subscriptions ending within N days */
+  expiringDays?: number;
+  /** Page size */
+  limit?: number;
+  /** Page offset */
+  offset?: number;
 };
 export type GetV1SubscriptionsLookupApiResponse =
   /** status 200 Subscription fetched successfully */ ModelsSubscriptionApiResponse;
@@ -2882,6 +3001,16 @@ export type ModelsGetProfileApiResponse = {
   data?: ModelsUserData;
   message?: string;
   success?: boolean;
+};
+export type ModelsUpdateUserRequest = {
+  avatar_url?: string;
+  date_of_birth?: string;
+  first_name?: string;
+  gender?: "male" | "female" | "other" | "prefer_not_to_say";
+  language?: string;
+  last_name?: string;
+  phone_number?: string;
+  timezone?: string;
 };
 export type ModelsAuthRefreshData = {
   access_token?: string;
@@ -3190,6 +3319,7 @@ export type ModelsFlatResponse = {
   floor?: string;
   id?: number;
   is_active?: boolean;
+  primary_resident_name?: string;
   society_code?: string;
   society_id?: number;
   society_name?: string;
@@ -3314,11 +3444,13 @@ export type ModelsFlatMemberInviteStatus =
   "pending" | "accepted" | "expired" | "cancelled";
 export type ModelsPublicFlatMemberInviteView = {
   block?: string;
+  email?: string;
   expires_at?: string;
   flat_number?: string;
   floor?: string;
   full_name?: string;
   id?: number;
+  phone?: string;
   role?: ModelsFlatMemberInviteRole;
   society_name?: string;
   status?: ModelsFlatMemberInviteStatus;
@@ -3356,6 +3488,25 @@ export type ModelsAcceptFlatMemberInviteApiResponse = {
   data?: ModelsAcceptFlatMemberInviteData;
   message?: string;
   success?: boolean;
+};
+export type ModelsJoinFlatMemberInviteResponse = {
+  acceptance?: ModelsAcceptFlatMemberInviteResponse;
+  user?: ModelsUserResponse;
+};
+export type ModelsJoinFlatMemberInviteData = {
+  join?: ModelsJoinFlatMemberInviteResponse;
+};
+export type ModelsJoinFlatMemberInviteApiResponse = {
+  data?: ModelsJoinFlatMemberInviteData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsJoinFlatMemberInviteRequest = {
+  email?: string;
+  first_name?: string;
+  identifier?: string;
+  last_name?: string;
+  password: string;
 };
 export type ModelsPublicClaimFlatResponse = {
   block?: string;
@@ -3497,6 +3648,7 @@ export type ModelsVisitorEntryOptionsBlock = {
 export type ModelsVisitorEntryOptionsResponse = {
   blocks?: ModelsVisitorEntryOptionsBlock[];
   flats?: ModelsVisitorEntryOptionsFlat[];
+  has_more?: boolean;
   purposes?: ModelsVisitorPurpose[];
 };
 export type ModelsVisitorEntryOptionsData = {
@@ -3684,6 +3836,12 @@ export type ModelsSocietyDashboardMemberStatsResponse = {
   staff?: number;
   total_active_members?: number;
 };
+export type ModelsSocietyDashboardSubscriptionHealthResponse = {
+  days_until_expiry?: number;
+  is_active?: boolean;
+  is_expiring_soon?: boolean;
+  lifecycle_label?: string;
+};
 export type ModelsSocietyDashboardQuotaUsageResponse = {
   limit?: number;
   percent?: number;
@@ -3696,6 +3854,19 @@ export type ModelsSocietyDashboardSubscriptionUsageResponse = {
   residents?: ModelsSocietyDashboardQuotaUsageResponse;
   staff?: ModelsSocietyDashboardQuotaUsageResponse;
 };
+export type ModelsVisitorDailyCountResponse = {
+  count?: number;
+  date?: string;
+};
+export type ModelsVisitorEntryStatsResponse = {
+  auto_closed_today?: number;
+  checked_out_in_range?: number;
+  checked_out_today?: number;
+  pending_approvals?: number;
+  rejected_today?: number;
+  today_visitors?: number;
+  visitors_inside?: number;
+};
 export type ModelsSocietyDashboardBootstrapResponse = {
   claim_stats?: ModelsFlatClaimStatsResponse;
   current_subscription?: ModelsSocietySubscriptionResponse;
@@ -3704,13 +3875,24 @@ export type ModelsSocietyDashboardBootstrapResponse = {
   plan_ads?: ModelsPlanResponse[];
   recent_pending_claims?: ModelsFlatClaimResponse[];
   society?: ModelsSocietyResponse;
+  subscription_health?: ModelsSocietyDashboardSubscriptionHealthResponse;
   subscription_usage?: ModelsSocietyDashboardSubscriptionUsageResponse;
+  visitor_daily_last_7_days?: ModelsVisitorDailyCountResponse[];
+  visitor_stats?: ModelsVisitorEntryStatsResponse;
 };
 export type ModelsSocietyDashboardBootstrapData = {
   dashboard?: ModelsSocietyDashboardBootstrapResponse;
 };
 export type ModelsSocietyDashboardBootstrapApiResponse = {
   data?: ModelsSocietyDashboardBootstrapData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsFlatClaimStatsData = {
+  stats?: ModelsFlatClaimStatsResponse;
+};
+export type ModelsFlatClaimStatsApiResponse = {
+  data?: ModelsFlatClaimStatsData;
   message?: string;
   success?: boolean;
 };
@@ -3982,20 +4164,16 @@ export type ModelsVisitorPendingEntry = {
   visitor_id?: number;
   waiting_since?: string;
 };
-export type ModelsVisitorEntryStatsResponse = {
-  auto_closed_today?: number;
-  checked_out_in_range?: number;
-  checked_out_today?: number;
-  pending_approvals?: number;
-  rejected_today?: number;
-  today_visitors?: number;
-  visitors_inside?: number;
+export type ModelsGuardDeskVisitorSettingsSummary = {
+  allow_guard_entry?: boolean;
+  allow_guard_on_behalf_approval?: boolean;
 };
 export type ModelsGuardDeskBootstrapResponse = {
   expected_guests_count?: number;
   pending_preview?: ModelsVisitorPendingEntry[];
   society?: ModelsSocietyResponse;
   stats?: ModelsVisitorEntryStatsResponse;
+  visitor_settings?: ModelsGuardDeskVisitorSettingsSummary;
   waiting_at_gate_count?: number;
 };
 export type ModelsGuardDeskBootstrapData = {
@@ -4136,6 +4314,35 @@ export type ModelsVisitorEntryStatsApiResponse = {
   message?: string;
   success?: boolean;
 };
+export type ModelsVisitorEntryDailyStatsResponse = {
+  daily?: ModelsVisitorDailyCountResponse[];
+  days?: number;
+  metric?: string;
+  timezone?: string;
+  total?: number;
+};
+export type ModelsVisitorEntryDailyStatsData = {
+  stats?: ModelsVisitorEntryDailyStatsResponse;
+};
+export type ModelsVisitorEntryDailyStatsApiResponse = {
+  data?: ModelsVisitorEntryDailyStatsData;
+  message?: string;
+  success?: boolean;
+};
+export type ModelsUpdateGuardVisitorEntryRequest = {
+  companion_details?: {
+    [key: string]: any;
+  }[];
+  companions_count?: number;
+  email?: string;
+  flat_id?: number;
+  full_name?: string;
+  notes?: string;
+  phone_number?: string;
+  photo_url?: string;
+  vehicle_number?: string;
+  vehicle_type?: ModelsVisitorVehicleType;
+};
 export type ModelsGuardApproveEntryRequest = {
   on_behalf?: boolean;
   reason?: string;
@@ -4183,6 +4390,7 @@ export type ModelsRejectVisitorEntryRequest = {
 };
 export type ModelsSocietyVisitorSettingsResponse = {
   allow_guard_entry?: boolean;
+  allow_guard_on_behalf_approval?: boolean;
   allow_public_qr_entry?: boolean;
   allow_resident_pre_approval?: boolean;
   approval_mode?: ModelsVisitorApprovalMode;
@@ -4206,6 +4414,7 @@ export type ModelsSocietyVisitorSettingsApiResponse = {
 };
 export type ModelsUpdateSocietyVisitorSettingsRequest = {
   allow_guard_entry?: boolean;
+  allow_guard_on_behalf_approval?: boolean;
   allow_public_qr_entry?: boolean;
   allow_resident_pre_approval?: boolean;
   approval_mode?: ModelsVisitorApprovalMode;
@@ -4279,6 +4488,7 @@ export const {
   usePostV1AuthLoginMutation,
   usePostV1AuthLogoutMutation,
   useGetV1AuthProfileQuery,
+  usePatchV1AuthProfileMutation,
   usePostV1AuthRefreshMutation,
   usePostV1AuthRegisterMutation,
   usePostV1AuthResendOtpMutation,
@@ -4305,6 +4515,7 @@ export const {
   usePostV1PlansByPlanIdDeactivateMutation,
   useGetV1PublicFlatMemberInvitesByTokenQuery,
   usePostV1PublicFlatMemberInvitesByTokenAcceptMutation,
+  usePostV1PublicFlatMemberInvitesByTokenJoinMutation,
   useGetV1PublicSocietiesBySocietyCodeClaimOptionsQuery,
   usePostV1PublicSocietiesBySocietyCodeVisitorEntriesPublicQrMutation,
   usePostV1PublicSocietiesBySocietyCodeVisitorEntriesQuickLinkMutation,
@@ -4322,6 +4533,7 @@ export const {
   usePostV1SocietiesBySocietyIdApproveMutation,
   useGetV1SocietiesBySocietyIdDashboardBootstrapQuery,
   useGetV1SocietiesBySocietyIdFlatClaimsQuery,
+  useGetV1SocietiesBySocietyIdFlatClaimsStatsQuery,
   useGetV1SocietiesBySocietyIdFlatClaimsAndClaimIdQuery,
   usePostV1SocietiesBySocietyIdFlatClaimsAndClaimIdApproveMutation,
   usePostV1SocietiesBySocietyIdFlatClaimsAndClaimIdRejectMutation,
@@ -4379,8 +4591,10 @@ export const {
   usePostV1SocietiesBySocietyIdVisitorEntriesGuardMutation,
   useGetV1SocietiesBySocietyIdVisitorEntriesPendingQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesStatsQuery,
+  useGetV1SocietiesBySocietyIdVisitorEntriesStatsDailyQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesWaitingAtGateQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesAndEntryIdQuery,
+  usePatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdApproveAndCheckInMutation,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckInMutation,

@@ -112,7 +112,7 @@ func (u *User) ToResponse() *UserResponse {
 		IsBlocked:     u.IsBlocked,
 		BlockedReason: u.BlockedReason,
 		AvatarURL:     u.AvatarURL,
-		DateOfBirth:   u.DateOfBirth,
+		DateOfBirth:   NewDateOnly(u.DateOfBirth),
 		Gender:        u.Gender,
 		Timezone:      u.Timezone,
 		Language:      u.Language,

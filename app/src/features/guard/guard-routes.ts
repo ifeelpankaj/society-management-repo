@@ -37,10 +37,9 @@ export {
   getTodayRange,
 };
 
-export type GuardCheckInInput = {
-  source: "qr";
-  token: string;
-};
+export type GuardCheckInInput =
+  | { source: "qr"; token: string }
+  | { source: "entry"; entryId: number; token?: string };
 
 export function firstParam(value?: string | string[]): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -49,12 +48,20 @@ export function firstParam(value?: string | string[]): string | undefined {
 export function parseCheckInParams(params: {
   source?: string | string[];
   token?: string | string[];
+  entryId?: string | string[];
 }): GuardCheckInInput | null {
   const source = firstParam(params.source);
   const token = firstParam(params.token)?.trim();
+  const entryId = Number(firstParam(params.entryId));
 
   if (source === "qr" && token) {
     return { source: "qr", token };
+  }
+
+  if (source === "entry" && Number.isFinite(entryId) && entryId > 0) {
+    return token
+      ? { source: "entry", entryId, token }
+      : { source: "entry", entryId };
   }
 
   return null;
@@ -93,7 +100,14 @@ export const guardWaitingAtGateRoute = (): Href =>
 export const guardCheckInRoute = (params: GuardCheckInInput): Href =>
   ({
     pathname: "/guard/check-in",
-    params,
+    params:
+      params.source === "qr"
+        ? { source: "qr", token: params.token }
+        : {
+            source: "entry",
+            entryId: String(params.entryId),
+            ...(params.token ? { token: params.token } : {}),
+          },
   }) as unknown as Href;
 
 export const guardEntriesRoute = (preset: GuardEntriesPreset = "today"): Href =>

@@ -5,12 +5,14 @@ import { useRouter } from "expo-router";
 
 import { PaginatedList } from "@/components/ui";
 import { GuardConfirmDialog } from "@/features/guard/components/guard-confirm-dialog";
+import { GuardEntryEditSheet } from "@/features/guard/components/guard-entry-edit-sheet";
 import {
   GuardQueueEntryCard,
   GuardQueueEntryDivider,
 } from "@/features/guard/components/guard-queue-entry-card";
 import { GuardQueueEmptyState } from "@/features/guard/components/guard-queue-empty-state";
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
+import { canEditVisitorEntry } from "@/features/guard/guard-entry-edit";
 import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
 import { useGuardDashboard } from "@/features/guard/hooks/use-guard-dashboard";
@@ -34,6 +36,7 @@ export default function GuardPendingScreen() {
   const { visitorSettings } = useGuardDashboard();
   const allowOnBehalfApproval = visitorSettings?.allow_guard_on_behalf_approval !== false;
   const [forceEntry, setForceEntry] = useState<ModelsVisitorPendingEntry | null>(null);
+  const [editEntry, setEditEntry] = useState<ModelsVisitorPendingEntry | null>(null);
 
   const handleNotify = useCallback(
     async (entry: ModelsVisitorPendingEntry) => {
@@ -123,7 +126,8 @@ export default function GuardPendingScreen() {
               entry={item}
               loading={actions.activeEntryId === item.id}
               primaryActionLabel={isGuardEntry ? "Approve & Check In" : "Force Check In"}
-              secondaryActionLabel="Notify Resident"
+              secondaryActionLabel={canEditVisitorEntry(item) ? "Edit Details" : undefined}
+              tertiaryActionLabel="Notify Resident"
               onPress={() => {
                 if (item.id) {
                   router.push(guardEntryDetailRoute(item.id));
@@ -147,7 +151,10 @@ export default function GuardPendingScreen() {
                 }
                 setForceEntry(item);
               }}
-              onSecondaryAction={() => void handleNotify(item)}
+              onSecondaryAction={
+                canEditVisitorEntry(item) ? () => setEditEntry(item) : undefined
+              }
+              onTertiaryAction={() => void handleNotify(item)}
             />
           );
         }}
@@ -167,6 +174,18 @@ export default function GuardPendingScreen() {
         visible={Boolean(forceEntry)}
         onCancel={() => setForceEntry(null)}
         onConfirm={() => forceEntry && void handleApproveAndCheckIn(forceEntry, true)}
+      />
+
+      <GuardEntryEditSheet
+        entry={editEntry}
+        societyId={selectedSocietyId ?? 0}
+        visible={Boolean(editEntry)}
+        onClose={() => setEditEntry(null)}
+        onSaved={() => {
+          setEditEntry(null);
+          void pending.refresh();
+          feedback.showSuccess("Details updated", "Visitor information saved.");
+        }}
       />
     </GuardSubScreen>
   );

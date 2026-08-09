@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { SymbolView } from "expo-symbols";
+import { SymbolView, type SymbolViewProps } from "expo-symbols";
 
 import {
   formatDateOnly,
@@ -27,9 +27,11 @@ type GuardQueueEntryCardProps = {
   loading?: boolean;
   primaryActionLabel?: string;
   secondaryActionLabel?: string;
+  tertiaryActionLabel?: string;
   onPress?: () => void;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
+  onTertiaryAction?: () => void;
   waitingLabel?: string;
   waitingTone?: WaitingDurationTone;
 };
@@ -88,7 +90,7 @@ function InfoColumn({
   primary,
   secondary,
 }: {
-  icon: { ios: string; android: string; web: string };
+  icon: Extract<NonNullable<SymbolViewProps["name"]>, object>;
   label: string;
   primary: string;
   secondary?: string | null;
@@ -123,8 +125,10 @@ export function GuardQueueEntryCard({
   onPress,
   onPrimaryAction,
   onSecondaryAction,
+  onTertiaryAction,
   primaryActionLabel,
   secondaryActionLabel,
+  tertiaryActionLabel,
   waitingLabel,
   waitingTone,
 }: GuardQueueEntryCardProps) {
@@ -139,7 +143,7 @@ export function GuardQueueEntryCard({
     ? waitStyle
     : { backgroundColor: statusMeta.bg, borderColor: statusMeta.border, color: statusMeta.color };
   const badgeLabel = waitingLabel ?? statusMeta.label;
-  const hasActions = Boolean(primaryActionLabel || secondaryActionLabel);
+  const hasActions = Boolean(primaryActionLabel || secondaryActionLabel || tertiaryActionLabel);
 
   return (
     <View style={styles.card}>
@@ -220,49 +224,61 @@ export function GuardQueueEntryCard({
       ) : null}
 
       {hasActions ? (
-        <View style={styles.actionsRow}>
-          {secondaryActionLabel ? (
+        <View style={styles.actionsWrap}>
+          <View style={styles.actionsRow}>
+            {secondaryActionLabel ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={loading}
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+                onPress={onSecondaryAction}
+              >
+                <Text style={styles.secondaryButtonText}>{secondaryActionLabel}</Text>
+              </Pressable>
+            ) : null}
+            {primaryActionLabel ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={loading}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  !secondaryActionLabel && !tertiaryActionLabel && styles.primaryButtonFull,
+                  pressed && !loading && styles.buttonPressed,
+                ]}
+                onPress={onPrimaryAction}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.text.inverse} size="small" />
+                ) : (
+                  <>
+                    <SymbolView
+                      name={{
+                        ios: "checkmark.circle.fill",
+                        android: "check_circle",
+                        web: "check_circle",
+                      }}
+                      size={16}
+                      tintColor={colors.text.inverse}
+                    />
+                    <Text style={styles.primaryButtonText}>{primaryActionLabel}</Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+          </View>
+          {tertiaryActionLabel ? (
             <Pressable
               accessibilityRole="button"
               disabled={loading}
-              style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-              onPress={onSecondaryAction}
+              style={({ pressed }) => [styles.tertiaryButton, pressed && styles.buttonPressed]}
+              onPress={onTertiaryAction}
             >
               <SymbolView
                 name={{ ios: "bell", android: "notifications", web: "notifications" }}
                 size={15}
                 tintColor={colors.guard.text}
               />
-              <Text style={styles.secondaryButtonText}>{secondaryActionLabel}</Text>
-            </Pressable>
-          ) : null}
-          {primaryActionLabel ? (
-            <Pressable
-              accessibilityRole="button"
-              disabled={loading}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                !secondaryActionLabel && styles.primaryButtonFull,
-                pressed && !loading && styles.buttonPressed,
-              ]}
-              onPress={onPrimaryAction}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.text.inverse} size="small" />
-              ) : (
-                <>
-                  <SymbolView
-                    name={{
-                      ios: "checkmark.circle.fill",
-                      android: "check_circle",
-                      web: "check_circle",
-                    }}
-                    size={16}
-                    tintColor={colors.text.inverse}
-                  />
-                  <Text style={styles.primaryButtonText}>{primaryActionLabel}</Text>
-                </>
-              )}
+              <Text style={styles.tertiaryButtonText}>{tertiaryActionLabel}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -289,6 +305,9 @@ export function GuardQueueEntryDivider() {
 const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: "row",
+    gap: spacing.sm,
+  },
+  actionsWrap: {
     gap: spacing.sm,
   },
   avatar: {
@@ -479,6 +498,23 @@ const styles = StyleSheet.create({
     color: colors.guard.textMuted,
     fontSize: 11,
     fontWeight: "500",
+  },
+  tertiaryButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: CARD_BORDER,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
+    minHeight: 40,
+    paddingHorizontal: spacing.sm,
+  },
+  tertiaryButtonText: {
+    color: colors.guard.text,
+    fontSize: 12,
+    fontWeight: "600",
   },
   visitorName: {
     color: colors.brand.navy,

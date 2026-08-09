@@ -120,12 +120,43 @@ function toIsoDate(year: number, month: number, day: number) {
   return `${year}-${padDatePart(month)}-${padDatePart(day)}`;
 }
 
+function extractIsoDatePortion(raw: string): string | null {
+  const isoDateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoDateMatch) {
+    return isoDateMatch[1];
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return toIsoDate(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
+}
+
+export function formatDateOfBirthForInput(dob?: string | null): string {
+  const trimmed = dob?.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const iso = extractIsoDatePortion(trimmed);
+  return iso ?? trimmed;
+}
+
 export function normalizeProfileDateInput(raw?: string | null):
   | { ok: true; value: string }
   | { ok: false; error: string } {
   const trimmed = raw?.trim();
   if (!trimmed) {
     return { ok: true, value: "" };
+  }
+
+  const isoDatePrefix = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:T|$)/);
+  if (isoDatePrefix) {
+    const [year, month, day] = isoDatePrefix[1].split("-").map(Number);
+    const iso = toIsoDate(year, month, day);
+    return iso ? { ok: true, value: iso } : { ok: false, error: "Enter a valid date of birth." };
   }
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {

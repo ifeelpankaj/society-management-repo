@@ -16,11 +16,22 @@ export type SelectedFlat = {
   floor?: string;
 };
 
+export type CompanionDetail = {
+  name: string;
+  phoneNumber: string;
+};
+
+export type CompanionFieldErrors = {
+  name?: string;
+  phoneNumber?: string;
+};
+
 export type ManualEntryFormErrors = {
   fullName?: string;
   phoneNumber?: string;
   flat?: string;
   companionsCount?: string;
+  companionDetails?: CompanionFieldErrors[];
   deliveryPartner?: string;
   serviceProvider?: string;
   vehicleNumber?: string;
@@ -51,6 +62,57 @@ function requiresName(purpose: ModelsVisitorPurpose) {
 
 function isStaffPurpose(purpose: ModelsVisitorPurpose) {
   return purpose === "staff";
+}
+
+function emptyCompanion(): CompanionDetail {
+  return { name: "", phoneNumber: "" };
+}
+
+function resizeCompanions(current: CompanionDetail[], count: number) {
+  if (count <= 0) {
+    return [];
+  }
+  if (current.length === count) {
+    return current;
+  }
+  if (current.length < count) {
+    return [
+      ...current,
+      ...Array.from({ length: count - current.length }, emptyCompanion),
+    ];
+  }
+  return current.slice(0, count);
+}
+
+function validateCompanionDetails(
+  companions: CompanionDetail[],
+  count: number,
+): CompanionFieldErrors[] {
+  const errors: CompanionFieldErrors[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const companion = companions[index] ?? emptyCompanion();
+    const name = companion.name.trim();
+    const phone = companion.phoneNumber.trim();
+    const fieldErrors: CompanionFieldErrors = {};
+
+    if (!name && !phone) {
+      fieldErrors.name = "Enter name or phone";
+      fieldErrors.phoneNumber = "Enter name or phone";
+    } else if (phone && !isValidPhone(phone)) {
+      fieldErrors.phoneNumber = "Enter a valid 10-digit phone number";
+    }
+
+    if (fieldErrors.name || fieldErrors.phoneNumber) {
+      errors[index] = fieldErrors;
+    }
+  }
+
+  return errors;
+}
+
+function hasCompanionDetailErrors(errors: CompanionFieldErrors[]) {
+  return errors.some((entry) => Boolean(entry?.name || entry?.phoneNumber));
 }
 
 export function flatFromResponse(flat: ModelsFlatResponse): SelectedFlat | null {
@@ -90,7 +152,8 @@ export function useGuardManualEntry(societyId: number) {
   const [deliveryPartner, setDeliveryPartner] = useState("");
   const [deliveryPartnerIsOther, setDeliveryPartnerIsOther] = useState(false);
   const [serviceProvider, setServiceProvider] = useState("");
-  const [companionsCount, setCompanionsCount] = useState(0);
+  const [companionsCount, setCompanionsCountState] = useState(0);
+  const [companions, setCompanions] = useState<CompanionDetail[]>([]);
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<ManualEntryFormErrors>({});
   const [createdEntry, setCreatedEntry] = useState<CreatedEntryState>();
@@ -131,6 +194,13 @@ export function useGuardManualEntry(societyId: number) {
       nextErrors.companionsCount = "Companions cannot be negative";
     }
 
+    if (purpose === "guest" && companionsCount > 0) {
+      const companionErrors = validateCompanionDetails(companions, companionsCount);
+      if (hasCompanionDetailErrors(companionErrors)) {
+        nextErrors.companionDetails = companionErrors;
+      }
+    }
+
     if (purpose === "delivery" && !deliveryPartner.trim()) {
       nextErrors.deliveryPartner = deliveryPartnerIsOther
         ? "Enter where the delivery is from"
@@ -153,6 +223,7 @@ export function useGuardManualEntry(societyId: number) {
     setErrors(nextErrors);
     return nextErrors;
   }, [
+    companions,
     companionsCount,
     deliveryPartner,
     deliveryPartnerIsOther,
@@ -187,8 +258,17 @@ export function useGuardManualEntry(societyId: number) {
     if (purpose === "cab" && (!vehicleNumber.trim() || !vehicleType)) {
       return false;
     }
+    if (
+      purpose === "guest" &&
+      companionsCount > 0 &&
+      hasCompanionDetailErrors(validateCompanionDetails(companions, companionsCount))
+    ) {
+      return false;
+    }
     return true;
   }, [
+    companions,
+    companionsCount,
     deliveryPartner,
     fullName,
     phoneNumber,
@@ -210,10 +290,29 @@ export function useGuardManualEntry(societyId: number) {
     setDeliveryPartner("");
     setDeliveryPartnerIsOther(false);
     setServiceProvider("");
-    setCompanionsCount(0);
+    setCompanionsCountState(0);
+    setCompanions([]);
     setNotes("");
     setErrors({});
   }, []);
+
+  const setCompanionsCount = useCallback((count: number) => {
+    const nextCount = Math.max(0, count);
+    setCompanionsCountState(nextCount);
+    setCompanions((current) => resizeCompanions(current, nextCount));
+  }, []);
+
+  const updateCompanion = useCallback(
+    (index: number, field: keyof CompanionDetail, value: string) => {
+      setCompanions((current) => {
+        const next = resizeCompanions(current, Math.max(current.length, index + 1));
+        return next.map((companion, companionIndex) =>
+          companionIndex === index ? { ...companion, [field]: value } : companion,
+        );
+      });
+    },
+    [],
+  );
 
   const submit = useCallback(async () => {
     const validationErrors = validate();
@@ -231,10 +330,29 @@ export function useGuardManualEntry(societyId: number) {
     const resolvedCompanions =
       purpose === "guest" ? companionsCount : purpose === "delivery" || purpose === "cab" || purpose === "service" || purpose === "maintenance" ? 0 : companionsCount;
 
+    const companionDetails =
+      resolvedCompanions > 0
+        ? companions.slice(0, resolvedCompanions).map((companion) => {
+            const detail: Record<string, string> = {};
+            const name = companion.name.trim();
+            const phone = normalizePhone(companion.phoneNumber);
+
+            if (name) {
+              detail.full_name = name;
+            }
+            if (phone) {
+              detail.phone_number = phone;
+            }
+
+            return detail;
+          })
+        : undefined;
+
     try {
       const response = await createEntry({
         societyId,
         modelsVisitorFormRequest: {
+          companion_details: companionDetails,
           companions_count: resolvedCompanions,
           delivery_partner: deliveryPartner.trim() || undefined,
           email: email.trim() || undefined,
@@ -268,6 +386,7 @@ export function useGuardManualEntry(societyId: number) {
       };
     }
   }, [
+    companions,
     companionsCount,
     createEntry,
     deliveryPartner,
@@ -309,6 +428,7 @@ export function useGuardManualEntry(societyId: number) {
 
   return {
     clearCreatedEntry,
+    companions,
     companionsCount,
     createdEntry,
     createEntryState,
@@ -326,6 +446,7 @@ export function useGuardManualEntry(societyId: number) {
     selectedFlat,
     serviceProvider,
     setCompanionsCount,
+    updateCompanion,
     setDeliveryPartner,
     setEmail,
     setFullName,

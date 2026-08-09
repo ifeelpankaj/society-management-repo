@@ -57,6 +57,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test:unit": "tsx --test src/features/profile/profile-formatters.test.ts",
     "api:fetch": "tsx src/scripts/fetch-swagger.ts",
     "api:convert": "tsx src/scripts/convert-swagger.ts",
     "api:generate": "tsx src/scripts/generate-api.ts",

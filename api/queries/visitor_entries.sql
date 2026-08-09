@@ -120,7 +120,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.id = $1
   AND ve.society_id = $2;
 
@@ -143,7 +143,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.qr_token_hash = $1;
 
 -- name: GetVisitorEntryByInviteID :one
@@ -158,7 +158,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.invite_id = $1;
 
 -- name: ListVisitorEntries :many
@@ -173,7 +173,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('flat_id')::bigint IS NULL OR ve.flat_id = sqlc.narg('flat_id')::bigint)
   AND (sqlc.narg('status')::visitor_status IS NULL OR ve.status = sqlc.narg('status')::visitor_status)
@@ -239,7 +239,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 -- name: CountVisitorEntries :one
 SELECT COUNT(*)
 FROM visitor_entries ve
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND (sqlc.narg('flat_id')::bigint IS NULL OR ve.flat_id = sqlc.narg('flat_id')::bigint)
   AND (sqlc.narg('status')::visitor_status IS NULL OR ve.status = sqlc.narg('status')::visitor_status)
@@ -385,7 +385,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.status = 'approved'
   AND ve.checked_in_at IS NULL
@@ -407,7 +407,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.status = 'approved'
   AND ve.checked_in_at IS NULL
@@ -445,7 +445,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.source = 'resident_link'
   AND ve.status = 'approved'
@@ -468,7 +468,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT COUNT(*)::bigint
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.source = 'resident_link'
   AND ve.status = 'approved'
@@ -499,7 +499,7 @@ SELECT
     fr.id AS primary_resident_id
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 LEFT JOIN flat_residents fr
     ON fr.flat_id = ve.flat_id
    AND fr.society_id = ve.society_id
@@ -516,7 +516,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 -- name: CountSocietyPendingVisitorApprovals :one
 SELECT COUNT(*)
 FROM visitor_entries ve
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = sqlc.arg('society_id')
   AND ve.status = 'waiting_approval'
   AND (sqlc.narg('flat_id')::bigint IS NULL OR ve.flat_id = sqlc.narg('flat_id')::bigint)
@@ -542,7 +542,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.flat_id = $2
 ORDER BY ve.created_at DESC
@@ -560,7 +560,7 @@ SELECT
     f.floor
 FROM visitor_entries ve
 JOIN visitors v ON v.id = ve.visitor_id
-JOIN flats f ON f.id = ve.flat_id
+LEFT JOIN flats f ON f.id = ve.flat_id
 WHERE ve.society_id = $1
   AND ve.flat_id = $2
   AND ve.status = 'waiting_approval'
@@ -670,6 +670,7 @@ RETURNING *;
 -- name: UpdateVisitorEntryDetails :one
 UPDATE visitor_entries
 SET
+    flat_id = COALESCE(sqlc.narg('flat_id'), flat_id),
     vehicle_number = COALESCE(sqlc.narg('vehicle_number'), vehicle_number),
     vehicle_type = COALESCE(sqlc.narg('vehicle_type'), vehicle_type),
     companions_count = COALESCE(sqlc.narg('companions_count'), companions_count),

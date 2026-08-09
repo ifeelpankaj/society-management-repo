@@ -17,6 +17,7 @@ func TestUpdateUserRequestUnmarshalDateOfBirth(t *testing.T) {
 	}{
 		{name: "iso date", payload: `{"date_of_birth":"2000-04-04"}`, want: "2000-04-04"},
 		{name: "slash date", payload: `{"date_of_birth":"2000/4/4"}`, want: "2000-04-04"},
+		{name: "rfc3339 date", payload: `{"date_of_birth":"1990-01-15T00:00:00Z"}`, want: "1990-01-15"},
 		{name: "invalid date", payload: `{"date_of_birth":"not-a-date"}`, wantErr: true},
 	}
 

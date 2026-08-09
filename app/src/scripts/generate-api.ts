@@ -24,6 +24,17 @@ async function generateTypes() {
 
 async function generateRtkApi() {
   await generateEndpoints(config);
+
+  const generatedApiSource = await readFile(generatedApiPath, "utf8");
+  const patchedSource = generatedApiSource.replace(
+    "overrideExisting: false",
+    "overrideExisting: true",
+  );
+
+  if (patchedSource !== generatedApiSource) {
+    await writeFile(generatedApiPath, patchedSource, "utf8");
+  }
+
   console.log(`Generated RTK Query API -> ${generatedApiPath}`);
 }
 

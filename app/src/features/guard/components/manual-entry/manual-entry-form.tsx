@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -14,17 +12,16 @@ import {
   type TextStyle,
 } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Row, Stack } from "@/components/layout";
 import {
   dashboardActionToneStyles,
   type DashboardActionTone,
 } from "@/components/dashboard";
+import { FlatPicker } from "@/features/guard/components/flat-picker";
 import { DELIVERY_PARTNERS, DELIVERY_PARTNER_OTHER_LABEL, getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
 import {
-  flatFromResponse,
   formatSelectedFlatLabel,
   type SelectedFlat,
   useGuardManualEntry,
@@ -37,11 +34,8 @@ import {
   shareVisitorInviteOnWhatsApp,
 } from "@/features/visitors/visitor-invite-share";
 import {
-  type ModelsFlatResponse,
   type ModelsVisitorEntry,
   type ModelsVisitorPurpose,
-  useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery,
-  useGetV1SocietiesBySocietyIdFlatsQuery,
 } from "@/lib/api/generated-api";
 import { buildVisitorInviteUrl } from "@/lib/config";
 import { colors } from "@/theme/colors";
@@ -53,8 +47,19 @@ import { spacing } from "@/theme/spacing";
 
 type EntryMode = "full_entry" | "form_link";
 
-const SEARCH_DEBOUNCE_MS = 400;
-const SEARCH_LIMIT = 8;
+/** Keeps Android from tabbing focus through touchable chips while typing in inputs. */
+const androidTouchableFocusProps =
+  Platform.OS === "android" ? ({ focusable: false as const }) : {};
+
+/** Android autofill and keyboard resize can cycle focus across inputs when the keyboard opens. */
+const androidTextInputProps =
+  Platform.OS === "android"
+    ? ({
+        autoComplete: "off",
+        importantForAutofill: "no",
+        showSoftInputOnFocus: true,
+      } as const)
+    : {};
 
 /** Removes the default black browser outline on web when an input is focused. */
 const webNoOutline: TextStyle =
@@ -119,26 +124,39 @@ function Field({
 }) {
   const [focused, setFocused] = useState(false);
 
-  return (
-    <Stack gap={6}>
-      <View
-        style={[
-          styles.fieldCard,
-          multiline && styles.fieldCardMultiline,
-          focused && styles.fieldCardFocused,
-          {
-            borderColor: error ? "#fca5a5" : focused ? colors.brand.orange : colors.guard.border,
-          },
-          !focused && !error ? shadows.sm : null,
-        ]}
-      >
-        <Row
-          align={multiline ? "flex-start" : "center"}
-          gap="md"
-          style={multiline ? styles.fieldRowMultiline : styles.fieldRow}
+  const sharedInputProps = {
+    blurOnSubmit: false,
+    cursorColor: colors.brand.orange,
+    multiline,
+    placeholderTextColor: colors.guard.textMuted,
+    selectionColor: colors.accent.selection,
+    textAlignVertical: multiline ? ("top" as const) : undefined,
+    underlineColorAndroid: "transparent" as const,
+    onBlur: (event: Parameters<NonNullable<TextInputProps["onBlur"]>>[0]) => {
+      setFocused(false);
+      onBlur?.(event);
+    },
+    onFocus: (event: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
+      setFocused(true);
+      onFocus?.(event);
+    },
+    ...androidTextInputProps,
+    ...props,
+  };
+
+  if (Platform.OS === "android") {
+    return (
+      <View focusable={false} style={styles.fieldGroup}>
+        <View
+          style={[
+            styles.fieldCardAndroid,
+            multiline && styles.fieldCardAndroidMultiline,
+            focused && styles.fieldCardAndroidFocused,
+            error ? styles.fieldCardAndroidError : null,
+          ]}
         >
           {icon ? (
-            <View style={styles.fieldIconBadge}>
+            <View style={styles.fieldIconWrapAndroid}>
               <SymbolView
                 name={{ ios: icon.ios, android: icon.android, web: icon.web }}
                 size={18}
@@ -146,323 +164,55 @@ function Field({
               />
             </View>
           ) : null}
-          <View style={styles.fieldCopy}>
-            <Text style={styles.fieldFloatingLabel}>{label}</Text>
+          <View style={styles.fieldCopyAndroid}>
+            <Text style={styles.fieldLabelAndroid}>{label}</Text>
             <TextInput
-              cursorColor={colors.brand.orange}
-              multiline={multiline}
-              placeholderTextColor={colors.guard.textMuted}
-              selectionColor={colors.accent.selection}
-              underlineColorAndroid="transparent"
-              onBlur={(e) => {
-                setFocused(false);
-                onBlur?.(e);
-              }}
-              onFocus={(e) => {
-                setFocused(true);
-                onFocus?.(e);
-              }}
+              {...sharedInputProps}
               style={[
-                styles.fieldInput,
-                multiline && styles.fieldInputMultiline,
+                styles.fieldInputAndroid,
+                multiline && styles.fieldInputAndroidMultiline,
                 webNoOutline,
                 style,
               ]}
-              {...props}
             />
           </View>
-        </Row>
-      </View>
-      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
-    </Stack>
-  );
-}
-
-function SearchField({
-  label = "Search flat",
-  value,
-  onChangeText,
-  placeholder,
-  autoFocus,
-}: {
-  label?: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder?: string;
-  autoFocus?: boolean;
-}) {
-  const [focused, setFocused] = useState(false);
-
-  return (
-    <Stack gap={6}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Row
-        align="center"
-        gap="md"
-        style={[
-          styles.searchFieldWrapper,
-          {
-            borderColor: focused ? colors.brand.orange : colors.guard.border,
-          },
-          focused ? styles.fieldCardFocused : shadows.sm,
-        ]}
-      >
-        <SymbolView
-          name={{ ios: "magnifyingglass", android: "search", web: "search" }}
-          size={20}
-          tintColor={focused ? colors.brand.orange : colors.guard.textMuted}
-        />
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoFocus={autoFocus}
-          cursorColor={colors.brand.orange}
-          placeholder={placeholder}
-          placeholderTextColor={colors.guard.textMuted}
-          selectionColor={colors.accent.selection}
-          underlineColorAndroid="transparent"
-          value={value}
-          onBlur={() => setFocused(false)}
-          onChangeText={onChangeText}
-          onFocus={() => setFocused(true)}
-          style={[styles.searchInput, webNoOutline]}
-        />
-      </Row>
-    </Stack>
-  );
-}
-
-function FlatSearchModal({
-  visible,
-  societyId,
-  onClose,
-  onSelect,
-}: {
-  visible: boolean;
-  societyId: number;
-  onClose: () => void;
-  onSelect: (flat: SelectedFlat) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [debounced, setDebounced] = useState("");
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(query.trim()), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  useEffect(() => {
-    if (!visible) {
-      setQuery("");
-      setDebounced("");
-    }
-  }, [visible]);
-
-  const canSearch = debounced.length > 0;
-  const { data, isFetching, isLoading } = useGetV1SocietiesBySocietyIdFlatsQuery(
-    { societyId, search: debounced, status: "occupied", isActive: true, limit: SEARCH_LIMIT },
-    { skip: !visible || !canSearch },
-  );
-
-  const flats = data?.data?.flats?.items ?? [];
-  const total = data?.data?.flats?.total ?? 0;
-
-  return (
-    <Modal animationType="slide" visible={visible} onRequestClose={onClose}>
-      <SafeAreaView style={styles.modalScreen}>
-        <AppStatusBar />
-        <Row align="center" gap="sm" style={styles.modalHeader}>
-          <Pressable style={styles.modalBackButton} onPress={onClose}>
-            <SymbolView
-              name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
-              size={20}
-              tintColor={colors.guard.text}
-            />
-          </Pressable>
-          <View style={styles.modalHeaderText}>
-            <Text style={styles.modalTitle}>Find flat</Text>
-            <Text style={styles.modalSubtitle}>Type to see matching flats</Text>
-          </View>
-        </Row>
-
-        <View style={styles.modalSearchSection}>
-          <SearchField
-            autoFocus={visible}
-            placeholder="Flat no., resident, or wing"
-            value={query}
-            onChangeText={setQuery}
-          />
         </View>
-
-        {!canSearch ? (
-          <View style={styles.modalEmptyState}>
-            <Text style={styles.modalEmptyStateText}>
-              Type to search flats{"\n"}e.g. G-02, left-wing
-            </Text>
-          </View>
-        ) : isLoading ? (
-          <ActivityIndicator color={colors.guard.teal} style={styles.modalLoading} />
-        ) : flats.length === 0 ? (
-          <Text style={styles.modalNoResults}>No flats found</Text>
-        ) : (
-          <FlatList
-            contentContainerStyle={styles.modalListContent}
-            data={flats}
-            keyExtractor={(item) => String(item.id)}
-            keyboardShouldPersistTaps="handled"
-            ListFooterComponent={
-              total > flats.length ? (
-                <Text style={styles.modalListFooter}>
-                  {flats.length} of {total} — type more to refine
-                </Text>
-              ) : isFetching ? (
-                <ActivityIndicator color={colors.guard.teal} style={styles.modalListLoading} />
-              ) : null
-            }
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.flatListItem}
-                onPress={() => {
-                  const flat = flatFromResponse(item);
-                  if (flat) {
-                    onSelect(flat);
-                    onClose();
-                  }
-                }}
-              >
-                <Text style={styles.flatListItemNumber}>
-                  {item.flat_number ?? `#${item.id}`}
-                </Text>
-                <Text style={styles.flatListItemMeta}>
-                  {[
-                    item.primary_resident_name,
-                    item.block ? `Wing ${item.block}` : item.floor ? `Floor ${item.floor}` : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </Text>
-              </Pressable>
-            )}
-          />
-        )}
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
-function ResidentPreviewCard({
-  flat,
-  resident,
-  loading,
-  onPress,
-}: {
-  flat: SelectedFlat;
-  resident?: string | null;
-  loading?: boolean;
-  onPress: () => void;
-}) {
-  const wingLabel = flat.block
-    ? `Wing ${flat.block}`
-    : flat.floor
-      ? `Tower ${flat.floor}`
-      : null;
-  const residentLine = loading
-    ? "Loading resident..."
-    : [resident ?? "No primary resident", wingLabel].filter(Boolean).join(" · ");
+        {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+      </View>
+    );
+  }
 
   return (
-    <Pressable style={styles.flatSearchCard} onPress={onPress}>
+    <View focusable={false} style={styles.fieldGroup}>
+      <Text style={styles.fieldLabel}>{label}</Text>
       <View
         style={[
-          styles.flatSearchIcon,
-          { backgroundColor: dashboardActionToneStyles.blue.backgroundColor },
+          styles.fieldInputShell,
+          multiline && styles.fieldInputShellMultiline,
+          error ? styles.fieldInputShellError : null,
         ]}
       >
-        <SymbolView
-          name={{ ios: "house.fill", android: "home", web: "home" }}
-          size={24}
-          tintColor={dashboardActionToneStyles.blue.iconColor}
-        />
-      </View>
-      <Stack gap={2} style={styles.flatSearchCopy}>
-        <Text style={styles.flatSearchTitle}>{flat.flat_number ?? `Flat ${flat.id}`}</Text>
-        <Text numberOfLines={1} style={styles.flatSearchSubtitle}>
-          {residentLine}
-        </Text>
-      </Stack>
-      <Row align="center" gap="xs" style={styles.changeBadge}>
-        <Text style={styles.changeBadgeText}>Change</Text>
-        <SymbolView
-          name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-          size={10}
-          tintColor={colors.brand.orange}
-        />
-      </Row>
-    </Pressable>
-  );
-}
-
-function FlatPicker({
-  societyId,
-  selected,
-  error,
-  onSelect,
-}: {
-  societyId: number;
-  selected: SelectedFlat | null;
-  error?: string;
-  onSelect: (flat: SelectedFlat) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const { data, isFetching } = useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery(
-    { societyId, flatId: selected?.id ?? 0 },
-    { skip: !selected?.id },
-  );
-  const resident = data?.data?.context?.primary_resident?.full_name;
-
-  return (
-    <Stack gap="md">
-      {selected ? (
-        <ResidentPreviewCard
-          flat={selected}
-          loading={isFetching}
-          resident={resident}
-          onPress={() => setOpen(true)}
-        />
-      ) : (
-        <Pressable
-          style={[styles.flatSearchCard, error && styles.flatSearchCardError]}
-          onPress={() => setOpen(true)}
-        >
-          <View style={[styles.flatSearchIcon, styles.flatSearchIconOrange]}>
+        {icon ? (
+          <View pointerEvents="none" style={styles.fieldInputIcon}>
             <SymbolView
-              name={{ ios: "magnifyingglass", android: "search", web: "search" }}
-              size={24}
+              name={{ ios: icon.ios, android: icon.android, web: icon.web }}
+              size={18}
               tintColor={colors.brand.orange}
             />
           </View>
-          <Stack gap={2} style={styles.flatSearchCopy}>
-            <Text style={styles.flatSearchTitle}>Search flat</Text>
-            <Text style={styles.flatSearchSubtitle}>
-              Search by flat no., resident name or wing
-            </Text>
-          </Stack>
-          <SymbolView
-            name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-            size={16}
-            tintColor={colors.guard.textMuted}
-          />
-        </Pressable>
-      )}
-
-      {error ? <Text style={styles.flatPickerError}>{error}</Text> : null}
-      <FlatSearchModal
-        societyId={societyId}
-        visible={open}
-        onClose={() => setOpen(false)}
-        onSelect={onSelect}
-      />
-    </Stack>
+        ) : null}
+        <TextInput
+          {...sharedInputProps}
+          style={[
+            styles.fieldInputShellInput,
+            multiline && styles.fieldInputMultiline,
+            webNoOutline,
+            style,
+          ]}
+        />
+      </View>
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
   );
 }
 
@@ -488,6 +238,7 @@ function PurposePicker({
               key={p}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
+              {...androidTouchableFocusProps}
               style={({ pressed }) => [
                 styles.purposeTile,
                 active && styles.purposeTileActive,
@@ -541,6 +292,7 @@ function EntryLinkModeButton({
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       hitSlop={8}
+      {...androidTouchableFocusProps}
       style={({ pressed }) => [
         styles.linkModeButton,
         active && styles.linkModeButtonActive,
@@ -667,15 +419,18 @@ export function ManualEntryForm({
   const setPurpose = isFormLinkMode ? inviteForm.setPurpose : form.setPurpose;
 
   return (
-    <View style={styles.formRoot}>
-      <ScrollView
-        automaticallyAdjustKeyboardInsets
-        contentContainerStyle={styles.formScrollContent}
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
-        style={styles.formScroll}
-      >
+    <ScrollView
+      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+      contentContainerStyle={[
+        styles.formScrollContent,
+        { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing["3xl"] },
+      ]}
+      keyboardShouldPersistTaps="handled"
+      nestedScrollEnabled={Platform.OS === "android"}
+      removeClippedSubviews={Platform.OS === "android" ? false : undefined}
+      showsVerticalScrollIndicator={false}
+      style={styles.formScroll}
+    >
         <Row align="flex-start" justify="space-between">
           <Stack gap="xs" style={styles.formTitleBlock}>
             <Row align="baseline" gap={4} justify="flex-start">
@@ -724,6 +479,7 @@ export function ManualEntryForm({
               <SectionHeader accent title="Visitor details" />
               {form.purpose !== "delivery" ? (
                 <Field
+                  key="visitor-name"
                   autoCapitalize="words"
                   error={form.errors.fullName}
                   icon={FIELD_ICONS.person}
@@ -734,6 +490,7 @@ export function ManualEntryForm({
                 />
               ) : null}
               <Field
+                key="phone-number"
                 error={form.errors.phoneNumber}
                 icon={FIELD_ICONS.phone}
                 keyboardType="phone-pad"
@@ -744,6 +501,7 @@ export function ManualEntryForm({
               />
               {form.purpose === "guest" ? (
                 <Field
+                  key="companions-count"
                   error={form.errors.companionsCount}
                   icon={FIELD_ICONS.tag}
                   keyboardType="number-pad"
@@ -752,6 +510,39 @@ export function ManualEntryForm({
                   value={String(form.companionsCount)}
                   onChangeText={(value) => form.setCompanionsCount(Number(value.replace(/\D/g, "") || 0))}
                 />
+              ) : null}
+              {form.purpose === "guest" && form.companionsCount > 0 ? (
+                <Stack gap="md">
+                  {Array.from({ length: form.companionsCount }, (_, index) => {
+                    const companion = form.companions[index] ?? { name: "", phoneNumber: "" };
+                    const companionErrors = form.errors.companionDetails?.[index];
+
+                    return (
+                      <View key={`companion-${index}`} style={styles.companionCard}>
+                        <Text style={styles.companionCardTitle}>Companion {index + 1}</Text>
+                        <Text style={styles.companionCardHint}>Name or phone is required</Text>
+                        <Field
+                          autoCapitalize="words"
+                          error={companionErrors?.name}
+                          icon={FIELD_ICONS.person}
+                          label="Companion name"
+                          placeholder="Optional if phone is provided"
+                          value={companion.name}
+                          onChangeText={(value) => form.updateCompanion(index, "name", value)}
+                        />
+                        <Field
+                          error={companionErrors?.phoneNumber}
+                          icon={FIELD_ICONS.phone}
+                          keyboardType="phone-pad"
+                          label="Companion phone"
+                          placeholder="Optional if name is provided"
+                          value={companion.phoneNumber}
+                          onChangeText={(value) => form.updateCompanion(index, "phoneNumber", value)}
+                        />
+                      </View>
+                    );
+                  })}
+                </Stack>
               ) : null}
               {form.purpose === "delivery" ? (
                 <>
@@ -765,6 +556,7 @@ export function ManualEntryForm({
                           key={partner}
                           style={[styles.partnerChip, active && styles.partnerChipActive]}
                           onPress={() => form.selectDeliveryPartner(partner)}
+                          {...androidTouchableFocusProps}
                         >
                           <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
                             {partner}
@@ -778,6 +570,7 @@ export function ManualEntryForm({
                         form.deliveryPartnerIsOther && styles.partnerChipActive,
                       ]}
                       onPress={form.selectCustomDeliveryPartner}
+                      {...androidTouchableFocusProps}
                     >
                       <Text
                         style={[
@@ -825,6 +618,7 @@ export function ManualEntryForm({
                           key={type}
                           style={[styles.partnerChip, active && styles.partnerChipActive]}
                           onPress={() => form.setVehicleType(type)}
+                          {...androidTouchableFocusProps}
                         >
                           <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
                             {titleize(type)}
@@ -850,7 +644,11 @@ export function ManualEntryForm({
               ) : null}
             </Stack>
 
-            <Pressable style={styles.extraToggle} onPress={() => setShowExtra((v) => !v)}>
+            <Pressable
+              style={styles.extraToggle}
+              onPress={() => setShowExtra((v) => !v)}
+              {...androidTouchableFocusProps}
+            >
               <View style={styles.extraToggleIcon}>
                 <SymbolView
                   name={{
@@ -948,14 +746,7 @@ export function ManualEntryForm({
             ) : null}
           </>
         )}
-      </ScrollView>
-
-      <View
-        style={[
-          styles.formFooter,
-          { paddingBottom: Math.max(insets.bottom, 14) },
-        ]}
-      >
+      <View style={styles.formSubmitSection}>
         <Pressable
           disabled={!canSubmit}
           style={[
@@ -963,6 +754,7 @@ export function ManualEntryForm({
             canSubmit ? styles.submitButtonEnabled : styles.submitButtonDisabled,
           ]}
           onPress={handleSubmit}
+          {...androidTouchableFocusProps}
         >
           {isSubmitting ? (
             <ActivityIndicator color={colors.text.inverse} />
@@ -998,7 +790,7 @@ export function ManualEntryForm({
           )}
         </Pressable>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -1077,59 +869,129 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-  fieldCard: {
+  companionCard: {
     backgroundColor: colors.surface.card,
+    borderColor: colors.border.default,
     borderRadius: radius.lg,
     borderWidth: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    padding: spacing.md,
   },
-  fieldCardFocused: {
-    borderWidth: 1.5,
+  companionCardHint: {
+    color: colors.guard.textMuted,
+    fontSize: 12,
+    marginBottom: spacing.xs,
   },
-  fieldCardMultiline: {
-    minHeight: 112,
-  },
-  fieldCopy: {
-    flex: 1,
-    minWidth: 0,
+  companionCardTitle: {
+    color: colors.brand.navy,
+    fontSize: 14,
+    fontWeight: "700",
   },
   fieldError: {
     color: colors.status.error,
     fontSize: 14,
   },
-  fieldFloatingLabel: {
+  fieldGroup: {
+    gap: spacing.xs,
+  },
+  fieldCardAndroid: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: layout.inputHeight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  fieldCardAndroidError: {
+    borderColor: "#fca5a5",
+  },
+  fieldCardAndroidFocused: {
+    borderColor: colors.brand.orange,
+  },
+  fieldCardAndroidMultiline: {
+    alignItems: "flex-start",
+    minHeight: 112,
+    paddingVertical: spacing.md,
+  },
+  fieldCopyAndroid: {
+    flex: 1,
+    gap: 0,
+    justifyContent: "center",
+    minWidth: 0,
+  },
+  fieldIconWrapAndroid: {
+    alignItems: "center",
+    backgroundColor: colors.brand.orangeSoft,
+    borderRadius: radius.md,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  fieldInputAndroid: {
+    color: colors.guard.text,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+    minHeight: 20,
+    padding: 0,
+    paddingVertical: 0,
+    ...androidCompactText,
+  },
+  fieldInputAndroidMultiline: {
+    minHeight: 72,
+    paddingTop: spacing.xs,
+    textAlignVertical: "top",
+  },
+  fieldLabelAndroid: {
     color: colors.guard.textMuted,
     fontSize: 11,
     fontWeight: "600",
-    marginBottom: 2,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
-  fieldIconBadge: {
+  fieldInputIcon: {
     alignItems: "center",
     justifyContent: "center",
     width: 24,
   },
-  fieldInput: {
+  fieldInputMultiline: {
+    minHeight: 72,
+    paddingTop: Platform.OS === "android" ? spacing.xs : 0,
+    textAlignVertical: "top",
+  },
+  fieldInputShell: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: layout.inputHeight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: Platform.OS === "android" ? spacing.sm : spacing.md,
+  },
+  fieldInputShellError: {
+    borderColor: "#fca5a5",
+  },
+  fieldInputShellInput: {
     color: colors.guard.text,
     flex: 1,
     fontSize: 16,
     lineHeight: 22,
-    minHeight: Platform.OS === "android" ? 28 : 24,
-    paddingVertical: Platform.OS === "android" ? 2 : 0,
-    textAlignVertical: "center",
+    minHeight: Platform.OS === "android" ? 40 : 24,
+    minWidth: 0,
+    padding: 0,
     ...androidCompactText,
-    width: "100%",
   },
-  fieldInputMultiline: {
-    minHeight: 72,
-    textAlignVertical: "top",
-  },
-  fieldRow: {
-    minHeight: 48,
-  },
-  fieldRowMultiline: {
+  fieldInputShellMultiline: {
     alignItems: "flex-start",
-    paddingTop: spacing.xs,
+    minHeight: 112,
+    paddingVertical: spacing.md,
   },
   partnerChip: {
     backgroundColor: colors.dashboard.actionNeutralSoft,
@@ -1191,25 +1053,16 @@ const styles = StyleSheet.create({
   flexButton: {
     flex: 1,
   },
-  formFooter: {
-    backgroundColor: colors.surface.card,
-    borderTopColor: colors.guard.border,
-    borderTopWidth: 1,
-    boxShadow: "0 -6px 20px rgba(15, 23, 42, 0.06)",
-    paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingTop: spacing.lg,
-  },
-  formRoot: {
-    flex: 1,
-  },
   formScroll: {
     flex: 1,
   },
   formScrollContent: {
     gap: spacing["2xl"],
-    paddingBottom: spacing.lg,
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.md,
+  },
+  formSubmitSection: {
+    marginTop: spacing.sm,
   },
   formSubtitle: {
     color: colors.guard.textMuted,
@@ -1414,21 +1267,26 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   searchFieldWrapper: {
+    alignItems: "center",
     backgroundColor: colors.surface.card,
     borderRadius: radius.lg,
     borderWidth: 1,
-    height: layout.inputHeight,
-    paddingHorizontal: spacing.lg,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: layout.inputHeight,
+    paddingHorizontal: spacing.md,
   },
   searchInput: {
+    alignSelf: "stretch",
     backgroundColor: "transparent",
     borderWidth: 0,
     color: colors.guard.text,
     flex: 1,
     fontSize: 16,
-    height: "100%",
     lineHeight: 22,
+    minHeight: Platform.OS === "android" ? 44 : 40,
     paddingVertical: 0,
+    ...androidCompactText,
   },
   secondaryButton: {
     alignItems: "center",

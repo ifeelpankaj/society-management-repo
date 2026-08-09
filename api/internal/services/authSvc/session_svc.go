@@ -2,6 +2,7 @@ package authsvc
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"go-server/internal/config"
@@ -9,6 +10,7 @@ import (
 	repository "go-server/internal/repositories"
 	service "go-server/internal/services"
 	"go-server/pkg/utils"
+	"go-server/pkg/validator"
 )
 
 type SessionSvc interface {
@@ -214,6 +216,14 @@ func (s *sessionSvc) UpdateProfile(ctx context.Context, userID int64, req *model
 	defer cancel()
 
 	req.Sanitize()
+	if validationErrors := validator.ValidateStruct(req); len(validationErrors) > 0 {
+		return nil, models.NewAppError(
+			models.ErrCodeValidation,
+			validationErrors.Error(),
+			http.StatusBadRequest,
+			validationErrors,
+		)
+	}
 	if err := req.Validate(); err != nil {
 		return nil, ErrInvalidName.WithCause(err)
 	}

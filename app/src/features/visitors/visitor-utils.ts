@@ -36,6 +36,9 @@ export function getFlatLabel(entry?: ModelsVisitorEntry | ModelsVisitorPendingEn
   const flat = entry?.flat;
 
   if (!flat) {
+    if (entry?.purpose === "staff") {
+      return "Society staff";
+    }
     return entry?.flat_id ? `Flat #${entry.flat_id}` : "Flat pending";
   }
 
@@ -46,6 +49,12 @@ export function getFlatLocationParts(entry?: ModelsVisitorEntry | ModelsVisitorP
   const flat = entry?.flat;
 
   if (!flat) {
+    if (entry?.purpose === "staff") {
+      return {
+        number: "Society staff",
+        wing: null as string | null,
+      };
+    }
     return {
       number: entry?.flat_id ? `#${entry.flat_id}` : "-",
       wing: null as string | null,

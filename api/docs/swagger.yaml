@@ -660,6 +660,22 @@ definitions:
       user_phone:
         type: string
     type: object
+  models.FlatClaimStatsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.FlatClaimStatsData'
+      message:
+        example: Flat claim stats fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.FlatClaimStatsData:
+    properties:
+      stats:
+        $ref: '#/definitions/models.FlatClaimStatsResponse'
+    type: object
   models.FlatClaimStatsResponse:
     properties:
       approved_claims:
@@ -924,6 +940,8 @@ definitions:
         type: integer
       is_active:
         type: boolean
+      primary_resident_name:
+        type: string
       society_code:
         type: string
       society_id:
@@ -1190,8 +1208,17 @@ definitions:
         $ref: '#/definitions/models.SocietyResponse'
       stats:
         $ref: '#/definitions/models.VisitorEntryStatsResponse'
+      visitor_settings:
+        $ref: '#/definitions/models.GuardDeskVisitorSettingsSummary'
       waiting_at_gate_count:
         type: integer
+    type: object
+  models.GuardDeskVisitorSettingsSummary:
+    properties:
+      allow_guard_entry:
+        type: boolean
+      allow_guard_on_behalf_approval:
+        type: boolean
     type: object
   models.HealthCheckResponseDoc:
     properties:
@@ -1219,6 +1246,51 @@ definitions:
       status:
         example: not_ready
         type: string
+    type: object
+  models.JoinFlatMemberInviteAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.JoinFlatMemberInviteData'
+      message:
+        example: Member joined successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.JoinFlatMemberInviteData:
+    properties:
+      join:
+        $ref: '#/definitions/models.JoinFlatMemberInviteResponse'
+    type: object
+  models.JoinFlatMemberInviteRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      first_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      identifier:
+        maxLength: 255
+        type: string
+      last_name:
+        maxLength: 100
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - password
+    type: object
+  models.JoinFlatMemberInviteResponse:
+    properties:
+      acceptance:
+        $ref: '#/definitions/models.AcceptFlatMemberInviteResponse'
+      user:
+        $ref: '#/definitions/models.UserResponse'
     type: object
   models.LivenessResponseDoc:
     properties:
@@ -1868,6 +1940,12 @@ definitions:
         $ref: '#/definitions/models.SocietyDashboardSubscriptionHealthResponse'
       subscription_usage:
         $ref: '#/definitions/models.SocietyDashboardSubscriptionUsageResponse'
+      visitor_daily_last_7_days:
+        items:
+          $ref: '#/definitions/models.VisitorDailyCountResponse'
+        type: array
+      visitor_stats:
+        $ref: '#/definitions/models.VisitorEntryStatsResponse'
     type: object
   models.SocietyDashboardMemberStatsResponse:
     properties:
@@ -2516,6 +2594,32 @@ definitions:
       is_enabled:
         type: boolean
     type: object
+  models.UpdateGuardVisitorEntryRequest:
+    properties:
+      companion_details:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      companions_count:
+        type: integer
+      email:
+        type: string
+      flat_id:
+        type: integer
+      full_name:
+        type: string
+      notes:
+        type: string
+      phone_number:
+        type: string
+      photo_url:
+        type: string
+      vehicle_number:
+        type: string
+      vehicle_type:
+        $ref: '#/definitions/models.VisitorVehicleType'
+    type: object
   models.UpdatePlanRequest:
     properties:
       billing_cycle:
@@ -2612,6 +2716,37 @@ definitions:
       qr_expiry_minutes:
         type: integer
     type: object
+  models.UpdateUserRequest:
+    properties:
+      avatar_url:
+        maxLength: 500
+        type: string
+      date_of_birth:
+        type: string
+      first_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      gender:
+        enum:
+        - male
+        - female
+        - other
+        - prefer_not_to_say
+        type: string
+      language:
+        maxLength: 20
+        type: string
+      last_name:
+        maxLength: 100
+        type: string
+      phone_number:
+        maxLength: 20
+        type: string
+      timezone:
+        maxLength: 100
+        type: string
+    type: object
   models.UserData:
     properties:
       user:
@@ -2705,6 +2840,13 @@ definitions:
     - VisitorApprovalModeMandatory
     - VisitorApprovalModeOptional
     - VisitorApprovalModeHybrid
+  models.VisitorDailyCountResponse:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+    type: object
   models.VisitorEntriesAPIResponse:
     properties:
       data:
@@ -2812,6 +2954,37 @@ definitions:
       success:
         example: true
         type: boolean
+    type: object
+  models.VisitorEntryDailyStatsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.VisitorEntryDailyStatsData'
+      message:
+        example: Visitor entry daily stats fetched successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.VisitorEntryDailyStatsData:
+    properties:
+      stats:
+        $ref: '#/definitions/models.VisitorEntryDailyStatsResponse'
+    type: object
+  models.VisitorEntryDailyStatsResponse:
+    properties:
+      daily:
+        items:
+          $ref: '#/definitions/models.VisitorDailyCountResponse'
+        type: array
+      days:
+        type: integer
+      metric:
+        type: string
+      timezone:
+        type: string
+      total:
+        type: integer
     type: object
   models.VisitorEntryData:
     properties:
@@ -3498,6 +3671,46 @@ paths:
       security:
       - AccessToken: []
       summary: Get current user profile
+      tags:
+      - Auth
+    patch:
+      consumes:
+      - application/json
+      description: Updates authenticated user profile fields such as name, phone,
+        and date of birth.
+      parameters:
+      - description: Profile update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/models.GetProfileAPIResponse'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Account disabled
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Update current user profile
       tags:
       - Auth
   /v1/auth/refresh:
@@ -4547,6 +4760,50 @@ paths:
       summary: Accept flat member invite
       tags:
       - Flat Members
+  /v1/public/flat-member-invites/{token}/join:
+    post:
+      consumes:
+      - application/json
+      description: '[Public] Creates or authenticates a user and accepts a flat member
+        invite without setting auth cookies.'
+      parameters:
+      - description: Member invite token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Join request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.JoinFlatMemberInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member joined successfully
+          schema:
+            $ref: '#/definitions/models.JoinFlatMemberInviteAPIResponse'
+        "400":
+          description: Invalid request or token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Member invite not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "409":
+          description: Member invite unavailable or resident conflict
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      summary: Join flat via member invite
+      tags:
+      - Flat Members
   /v1/public/societies/{societyCode}/claim-options:
     get:
       description: Public QR flow endpoint that resolves an active society code and
@@ -5472,6 +5729,34 @@ paths:
       security:
       - AccessToken: []
       summary: Reject flat claim
+      tags:
+      - Flat Claims
+  /v1/societies/{societyId}/flat-claims/stats:
+    get:
+      description: '[Owner/Admin/Staff] Returns flat claim counts by status for a
+        society.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Flat claim stats fetched successfully
+          schema:
+            $ref: '#/definitions/models.FlatClaimStatsAPIResponse'
+        "400":
+          description: Invalid society ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      summary: Get flat claim stats
       tags:
       - Flat Claims
   /v1/societies/{societyId}/flats:
@@ -8044,6 +8329,64 @@ paths:
       summary: Get visitor entry
       tags:
       - Visitor Entries
+    patch:
+      consumes:
+      - application/json
+      description: '[Owner/Admin/Staff] Updates visitor and entry details before check-in
+        for approved or pending entries.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Visitor entry ID
+        in: path
+        name: entryId
+        required: true
+        type: integer
+      - description: Visitor entry update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateGuardVisitorEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor entry updated successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryMutationAPIResponse'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "404":
+          description: Visitor entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "409":
+          description: Visitor entry is not in an editable state
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Update visitor entry details
+      tags:
+      - Visitor Entries
   /v1/societies/{societyId}/visitor-entries/{entryId}/approve:
     post:
       description: '[Resident] Approves a waiting visitor entry and returns QR token
@@ -8710,6 +9053,47 @@ paths:
       security:
       - AccessToken: []
       summary: Get visitor entry stats
+      tags:
+      - Visitor Entries
+  /v1/societies/{societyId}/visitor-entries/stats/daily:
+    get:
+      description: '[Owner/Admin/Staff] Returns daily visitor counts for charting.'
+      parameters:
+      - description: Society ID
+        in: path
+        name: societyId
+        required: true
+        type: integer
+      - description: Number of days (default 7, max 90)
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Visitor entry daily stats fetched successfully
+          schema:
+            $ref: '#/definitions/models.VisitorEntryDailyStatsAPIResponse'
+        "400":
+          description: Invalid society ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "401":
+          description: Missing, invalid, or expired access token
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "403":
+          description: Owner, admin, or staff access required
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponseDoc'
+      security:
+      - AccessToken: []
+      summary: Get visitor entry daily stats
       tags:
       - Visitor Entries
   /v1/societies/{societyId}/visitor-entries/waiting-at-gate:

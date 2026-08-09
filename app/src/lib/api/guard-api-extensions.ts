@@ -62,6 +62,7 @@ export type UpdateGuardVisitorEntryBody = {
   companion_details?: Record<string, string>[];
   companions_count?: number;
   email?: string;
+  flat_id?: number;
   full_name?: string;
   notes?: string;
   phone_number?: string;

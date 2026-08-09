@@ -353,6 +353,81 @@
             }
           }
         }
+      },
+      "patch": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "Updates authenticated user profile fields such as name, phone, and date of birth.",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Update current user profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.UpdateUserRequest"
+              }
+            }
+          },
+          "description": "Profile update payload",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.GetProfileAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/auth/refresh": {
@@ -1284,6 +1359,14 @@
           {
             "description": "Search user, contact, flat, block, role, or status",
             "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Search mode",
+            "name": "search_mode",
             "in": "query",
             "schema": {
               "type": "string"
@@ -2357,6 +2440,89 @@
         }
       }
     },
+    "/v1/public/flat-member-invites/{token}/join": {
+      "post": {
+        "description": "[Public] Creates or authenticates a user and accepts a flat member invite without setting auth cookies.",
+        "tags": [
+          "Flat Members"
+        ],
+        "summary": "Join flat via member invite",
+        "parameters": [
+          {
+            "description": "Member invite token",
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.JoinFlatMemberInviteRequest"
+              }
+            }
+          },
+          "description": "Join request",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Member joined successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.JoinFlatMemberInviteAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Member invite unavailable or resident conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/public/societies/{societyCode}/claim-options": {
       "get": {
         "description": "Public QR flow endpoint that resolves an active society code and returns safe society details plus active flats for resident claims.",
@@ -2871,6 +3037,14 @@
           {
             "description": "Search text",
             "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Search mode",
+            "name": "search_mode",
             "in": "query",
             "schema": {
               "type": "string"
@@ -3855,6 +4029,58 @@
           },
           "403": {
             "description": "Insufficient society role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/societies/{societyId}/flat-claims/stats": {
+      "get": {
+        "description": "[Owner/Admin/Staff] Returns flat claim counts by status for a society.",
+        "tags": [
+          "Flat Claims"
+        ],
+        "summary": "Get flat claim stats",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flat claim stats fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.FlatClaimStatsAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid society ID",
             "content": {
               "application/json": {
                 "schema": {
@@ -9673,6 +9899,91 @@
         }
       }
     },
+    "/v1/societies/{societyId}/visitor-entries/stats/daily": {
+      "get": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Returns daily visitor counts for charting.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Get visitor entry daily stats",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Number of days (default 7, max 90)",
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visitor entry daily stats fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntryDailyStatsAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid society ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/societies/{societyId}/visitor-entries/waiting-at-gate": {
       "get": {
         "security": [
@@ -9680,7 +9991,7 @@
             "AccessToken": []
           }
         ],
-        "description": "[Owner/Admin/Staff] Lists approved visitor entries ready for gate check-in, ordered by approval time.",
+        "description": "[Owner/Admin/Staff] Lists approved non-invite visitor entries awaiting manual check-in. Excludes resident-link QR guests (see Expected Guests).",
         "tags": [
           "Visitor Entries"
         ],
@@ -9851,6 +10162,121 @@
           },
           "404": {
             "description": "Visitor entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "security": [
+          {
+            "AccessToken": []
+          }
+        ],
+        "description": "[Owner/Admin/Staff] Updates visitor and entry details before check-in for approved or pending entries.",
+        "tags": [
+          "Visitor Entries"
+        ],
+        "summary": "Update visitor entry details",
+        "parameters": [
+          {
+            "description": "Society ID",
+            "name": "societyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Visitor entry ID",
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/models.UpdateGuardVisitorEntryRequest"
+              }
+            }
+          },
+          "description": "Visitor entry update payload",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Visitor entry updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.VisitorEntryMutationAPIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner, admin, or staff access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Visitor entry not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/models.ErrorResponseDoc"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Visitor entry is not in an editable state",
             "content": {
               "application/json": {
                 "schema": {
@@ -11141,6 +11567,62 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "Search mode",
+            "name": "search_mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only active subscriptions",
+            "name": "is_active_only",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only expired subscriptions",
+            "name": "expired_only",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Subscriptions ending before RFC3339 timestamp",
+            "name": "expiring_before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Subscriptions ending within N days",
+            "name": "expiring_days",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size",
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page offset",
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
             }
           }
         ],
@@ -12445,6 +12927,30 @@
           }
         }
       },
+      "models.FlatClaimStatsAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.FlatClaimStatsData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Flat claim stats fetched successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.FlatClaimStatsData": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/models.FlatClaimStatsResponse"
+          }
+        }
+      },
       "models.FlatClaimStatsResponse": {
         "type": "object",
         "properties": {
@@ -12832,6 +13338,9 @@
           },
           "is_active": {
             "type": "boolean"
+          },
+          "primary_resident_name": {
+            "type": "string"
           },
           "society_code": {
             "type": "string"
@@ -13230,8 +13739,22 @@
           "stats": {
             "$ref": "#/components/schemas/models.VisitorEntryStatsResponse"
           },
+          "visitor_settings": {
+            "$ref": "#/components/schemas/models.GuardDeskVisitorSettingsSummary"
+          },
           "waiting_at_gate_count": {
             "type": "integer"
+          }
+        }
+      },
+      "models.GuardDeskVisitorSettingsSummary": {
+        "type": "object",
+        "properties": {
+          "allow_guard_entry": {
+            "type": "boolean"
+          },
+          "allow_guard_on_behalf_approval": {
+            "type": "boolean"
           }
         }
       },
@@ -13270,6 +13793,71 @@
           "status": {
             "type": "string",
             "example": "not_ready"
+          }
+        }
+      },
+      "models.JoinFlatMemberInviteAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.JoinFlatMemberInviteData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Member joined successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.JoinFlatMemberInviteData": {
+        "type": "object",
+        "properties": {
+          "join": {
+            "$ref": "#/components/schemas/models.JoinFlatMemberInviteResponse"
+          }
+        }
+      },
+      "models.JoinFlatMemberInviteRequest": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "first_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2
+          },
+          "identifier": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        }
+      },
+      "models.JoinFlatMemberInviteResponse": {
+        "type": "object",
+        "properties": {
+          "acceptance": {
+            "$ref": "#/components/schemas/models.AcceptFlatMemberInviteResponse"
+          },
+          "user": {
+            "$ref": "#/components/schemas/models.UserResponse"
           }
         }
       },
@@ -13807,6 +14395,9 @@
           "block": {
             "type": "string"
           },
+          "email": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "string"
           },
@@ -13821,6 +14412,9 @@
           },
           "id": {
             "type": "integer"
+          },
+          "phone": {
+            "type": "string"
           },
           "role": {
             "$ref": "#/components/schemas/models.FlatMemberInviteRole"
@@ -14219,8 +14813,20 @@
           "society": {
             "$ref": "#/components/schemas/models.SocietyResponse"
           },
+          "subscription_health": {
+            "$ref": "#/components/schemas/models.SocietyDashboardSubscriptionHealthResponse"
+          },
           "subscription_usage": {
             "$ref": "#/components/schemas/models.SocietyDashboardSubscriptionUsageResponse"
+          },
+          "visitor_daily_last_7_days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/models.VisitorDailyCountResponse"
+            }
+          },
+          "visitor_stats": {
+            "$ref": "#/components/schemas/models.VisitorEntryStatsResponse"
           }
         }
       },
@@ -14258,6 +14864,23 @@
           },
           "used": {
             "type": "integer"
+          }
+        }
+      },
+      "models.SocietyDashboardSubscriptionHealthResponse": {
+        "type": "object",
+        "properties": {
+          "days_until_expiry": {
+            "type": "integer"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "is_expiring_soon": {
+            "type": "boolean"
+          },
+          "lifecycle_label": {
+            "type": "string"
           }
         }
       },
@@ -14910,6 +15533,9 @@
           "allow_guard_entry": {
             "type": "boolean"
           },
+          "allow_guard_on_behalf_approval": {
+            "type": "boolean"
+          },
           "allow_public_qr_entry": {
             "type": "boolean"
           },
@@ -15167,6 +15793,45 @@
           }
         }
       },
+      "models.UpdateGuardVisitorEntryRequest": {
+        "type": "object",
+        "properties": {
+          "companion_details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {}
+            }
+          },
+          "companions_count": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "flat_id": {
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "phone_number": {
+            "type": "string"
+          },
+          "photo_url": {
+            "type": "string"
+          },
+          "vehicle_number": {
+            "type": "string"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/models.VisitorVehicleType"
+          }
+        }
+      },
       "models.UpdatePlanRequest": {
         "type": "object",
         "properties": {
@@ -15276,6 +15941,9 @@
           "allow_guard_entry": {
             "type": "boolean"
           },
+          "allow_guard_on_behalf_approval": {
+            "type": "boolean"
+          },
           "allow_public_qr_entry": {
             "type": "boolean"
           },
@@ -15296,6 +15964,48 @@
           },
           "qr_expiry_minutes": {
             "type": "integer"
+          }
+        }
+      },
+      "models.UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "avatar_url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "date_of_birth": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "other",
+              "prefer_not_to_say"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "phone_number": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 100
           }
         }
       },
@@ -15435,6 +16145,17 @@
           "VisitorApprovalModeOptional",
           "VisitorApprovalModeHybrid"
         ]
+      },
+      "models.VisitorDailyCountResponse": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string"
+          }
+        }
       },
       "models.VisitorEntriesAPIResponse": {
         "type": "object",
@@ -15594,6 +16315,53 @@
           "success": {
             "type": "boolean",
             "example": true
+          }
+        }
+      },
+      "models.VisitorEntryDailyStatsAPIResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/models.VisitorEntryDailyStatsData"
+          },
+          "message": {
+            "type": "string",
+            "example": "Visitor entry daily stats fetched successfully"
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "models.VisitorEntryDailyStatsData": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/models.VisitorEntryDailyStatsResponse"
+          }
+        }
+      },
+      "models.VisitorEntryDailyStatsResponse": {
+        "type": "object",
+        "properties": {
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/models.VisitorDailyCountResponse"
+            }
+          },
+          "days": {
+            "type": "integer"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
           }
         }
       },
@@ -15758,6 +16526,9 @@
             "items": {
               "$ref": "#/components/schemas/models.VisitorEntryOptionsFlat"
             }
+          },
+          "has_more": {
+            "type": "boolean"
           },
           "purposes": {
             "type": "array",

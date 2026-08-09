@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	// "go-server/internal/middleware"
 	"go-server/internal/models"
@@ -32,7 +33,11 @@ func bindJSON(c *gin.Context, dst interface{}) bool {
 				),
 			)
 		} else {
-			utils.BadRequestResponse(c, "Invalid request payload")
+			message := "Invalid request payload"
+			if strings.Contains(err.Error(), "date_of_birth") {
+				message = err.Error()
+			}
+			utils.BadRequestResponse(c, message)
 		}
 		return false
 	}
