@@ -23,6 +23,7 @@ type UserRepository interface {
 	MarkEmailVerified(ctx context.Context, userID int64) error
 	UpdatePasswordHash(ctx context.Context, userID int64, passwordHash string) error
 	UpdateLastLogin(ctx context.Context, userID int64) error
+	UpdateProfile(ctx context.Context, userID int64, req *models.UpdateUserRequest) (*models.User, error)
 }
 
 type userRepository struct {
@@ -179,4 +180,49 @@ func (r *userRepository) UpdatePasswordHash(ctx context.Context, userID int64, p
 
 func (r *userRepository) UpdateLastLogin(ctx context.Context, userID int64) error {
 	return GetQueries(ctx, r.db).UpdateUserLastLogin(ctx, userID)
+}
+
+func (r *userRepository) UpdateProfile(ctx context.Context, userID int64, req *models.UpdateUserRequest) (*models.User, error) {
+	row, err := GetQueries(ctx, r.db).UpdateUserProfile(ctx, db.UpdateUserProfileParams{
+		ID:          userID,
+		FirstName:   req.FirstName,
+		LastName:    req.LastName,
+		PhoneNumber: req.PhoneNumber,
+		DateOfBirth: timePtrToPgDate(req.DateOfBirth),
+		Gender:      req.Gender,
+		Timezone:    req.Timezone,
+		Language:    req.Language,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return userFromUpdateProfileRow(row), nil
+}
+
+func userFromUpdateProfileRow(row db.UpdateUserProfileRow) *models.User {
+	metadata := map[string]any{}
+	if len(row.Metadata) > 0 {
+		_ = json.Unmarshal(row.Metadata, &metadata)
+	}
+	return &models.User{
+		ID: row.ID, FirstName: row.FirstName, LastName: row.LastName, FullName: row.FullName,
+		Email: row.Email, PhoneNumber: row.PhoneNumber, PasswordHash: row.PasswordHash,
+		AuthProvider: models.AuthProvider(row.AuthProvider), ProviderID: row.ProviderID,
+		GlobalRole: models.GlobalRole(row.GlobalRole), EmailVerified: row.EmailVerified,
+		PhoneVerified: row.PhoneVerified, IsActive: row.IsActive, IsBlocked: row.IsBlocked,
+		AvatarURL: row.AvatarUrl, DateOfBirth: pgDateToTimePtr(row.DateOfBirth), Gender: row.Gender,
+		Timezone: row.Timezone, Language: row.Language, LastLoginAt: pgTimestamptzToTimePtr(row.LastLoginAt),
+		PasswordChangedAt: pgTimestamptzToTimePtr(row.PasswordChangedAt), DeletedAt: pgTimestamptzToTimePtr(row.DeletedAt),
+		Metadata: metadata, CreatedAt: pgTimestamptzToTime(row.CreatedAt), UpdatedAt: pgTimestamptzToTime(row.UpdatedAt),
+	}
+}
+
+func timePtrToPgDate(value *time.Time) pgtype.Date {
+	if value == nil {
+		return pgtype.Date{}
+	}
+	return pgtype.Date{Time: *value, Valid: true}
 }

@@ -33,6 +33,7 @@ export type ProfileScreenProps = {
   gate?: ReactNode;
   isLoading?: boolean;
   modals?: ReactNode;
+  onEditProfile?: () => void;
   onRefreshAccess: () => void;
   supportAboutDescription?: string;
   user?: ModelsUserResponse | null;
@@ -46,6 +47,7 @@ export function ProfileScreen({
   gate,
   isLoading = false,
   modals,
+  onEditProfile,
   onRefreshAccess,
   supportAboutDescription,
   user,
@@ -53,6 +55,7 @@ export function ProfileScreen({
 }: ProfileScreenProps) {
   const { signOut, isLoading: isSigningOut } = useLogout();
   const { showComingSoon } = useProfileAction();
+  const handleEditProfile = onEditProfile ?? (() => showComingSoon("Edit profile"));
 
   if (gate) {
     return <>{gate}</>;
@@ -119,7 +122,7 @@ export function ProfileScreen({
 
               <ProfileQuickActions
                 onChangePhoto={() => showComingSoon("Change photo")}
-                onEditProfile={() => showComingSoon("Edit profile")}
+                onEditProfile={handleEditProfile}
               />
 
               {extraSections}

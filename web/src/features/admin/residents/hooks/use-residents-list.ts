@@ -20,7 +20,7 @@ type UseResidentsListOptions = {
 export function useResidentsList({ societyId }: UseResidentsListOptions) {
   const [search, setSearch] = useState("");
   const [searchMode, setSearchMode] = useState("all");
-  const debouncedSearch = useDebouncedValue(search, 2000);
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [role, setRole] = useState<ModelsSocietyMemberRole | "all">("all");
   const [status, setStatus] = useState<ModelsSocietyMemberStatus | "all">(
     "all",

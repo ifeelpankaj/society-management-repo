@@ -24,9 +24,20 @@ LIMIT 1;
 SELECT
     f.*,
     s.name AS society_name,
-    s.society_code AS society_code
+    s.society_code AS society_code,
+    primary_resident.full_name AS primary_resident_name
 FROM flats f
 JOIN societies s ON s.id = f.society_id
+LEFT JOIN LATERAL (
+    SELECT u.full_name
+    FROM flat_residents fr
+    JOIN users u ON u.id = fr.user_id
+    WHERE fr.society_id = f.society_id
+      AND fr.flat_id = f.id
+      AND fr.status = 'active'
+      AND fr.is_primary = TRUE
+    LIMIT 1
+) primary_resident ON TRUE
 WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
   AND (sqlc.narg('society_id')::bigint IS NULL OR f.society_id = sqlc.narg('society_id')::bigint)
   AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
@@ -42,6 +53,7 @@ WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
       OR f.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
       OR s.name ILIKE '%' || sqlc.arg('search')::text || '%'
       OR s.society_code ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR COALESCE(primary_resident.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
   )
 ORDER BY f.created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
@@ -98,6 +110,16 @@ RETURNING *;
 SELECT COUNT(*)
 FROM flats f
 JOIN societies s ON s.id = f.society_id
+LEFT JOIN LATERAL (
+    SELECT u.full_name
+    FROM flat_residents fr
+    JOIN users u ON u.id = fr.user_id
+    WHERE fr.society_id = f.society_id
+      AND fr.flat_id = f.id
+      AND fr.status = 'active'
+      AND fr.is_primary = TRUE
+    LIMIT 1
+) primary_resident ON TRUE
 WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
   AND (sqlc.narg('society_id')::bigint IS NULL OR f.society_id = sqlc.narg('society_id')::bigint)
   AND (sqlc.narg('block')::text IS NULL OR f.block = sqlc.narg('block')::text)
@@ -113,6 +135,7 @@ WHERE (sqlc.narg('id')::bigint IS NULL OR f.id = sqlc.narg('id')::bigint)
       OR f.status::text ILIKE '%' || sqlc.arg('search')::text || '%'
       OR s.name ILIKE '%' || sqlc.arg('search')::text || '%'
       OR s.society_code ILIKE '%' || sqlc.arg('search')::text || '%'
+      OR COALESCE(primary_resident.full_name, '') ILIKE '%' || sqlc.arg('search')::text || '%'
   );
 
 -- name: GetFlatStats :one

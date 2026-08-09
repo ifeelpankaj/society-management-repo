@@ -53,6 +53,7 @@ type VisitorEntryService interface {
 	CheckInByEntryID(ctx context.Context, societyID int64, entryID int64, guardUserID int64) (*models.VisitorEntry, error)
 	GetFlatVisitorContext(ctx context.Context, societyID int64, flatID int64) (*models.FlatVisitorContextResponse, error)
 	GetFlatVisitorContextForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64) (*models.FlatVisitorContextResponse, error)
+	UpdateGuardEntry(ctx context.Context, societyID int64, entryID int64, guardUserID int64, req models.UpdateGuardVisitorEntryRequest) (*models.VisitorEntry, error)
 	GetMemberVisitorApprovalStats(ctx context.Context, societyID int64, memberID int64) (*models.MemberVisitorApprovalStatsResponse, error)
 	ListPendingApprovals(ctx context.Context, societyID int64, flatID int64, actorUserID int64) ([]*models.VisitorEntry, error)
 	ListFlatEntriesForActor(ctx context.Context, societyID int64, flatID int64, actorUserID int64, filter models.VisitorEntryFilter) (*models.VisitorEntryListResult, error)
@@ -80,6 +81,7 @@ type visitorSettingRules interface {
 	GetFlatSettings(ctx context.Context, societyID int64, flatID int64) ([]models.FlatVisitorSettingsResponse, error)
 	EnsureDefaultFlatSettingsIfMissing(ctx context.Context, societyID int64, flatID int64, actorUserID int64) error
 	ResolveApprovalRequirement(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, source models.VisitorEntrySource) (bool, error)
+	ResolveVisitDurationMinutes(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose) (int32, error)
 }
 
 func NewVisitorService(

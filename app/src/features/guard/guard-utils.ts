@@ -490,3 +490,130 @@ export const DELIVERY_PARTNERS = [
 ] as const;
 
 export const DELIVERY_PARTNER_OTHER_LABEL = "Not listed";
+
+export type VisitorTimelineBlock = {
+  date?: string;
+  label: string;
+  time?: string;
+};
+
+export type VisitorDetailRow = {
+  label: string;
+  value: string;
+};
+
+export function getVisitorTimelineBlocks(
+  entry?: ModelsVisitorEntry | ModelsVisitorPendingEntry,
+): VisitorTimelineBlock[] {
+  const blocks: VisitorTimelineBlock[] = [];
+
+  if (entry?.checked_in_at) {
+    blocks.push({
+      label: "Check-in",
+      date: formatDateOnly(entry.checked_in_at),
+      time: formatTimeOfDay(entry.checked_in_at),
+    });
+  } else if (entry?.expected_at) {
+    blocks.push({
+      label: "Expected check-in",
+      date: formatDateOnly(entry.expected_at),
+      time: formatTimeOfDay(entry.expected_at),
+    });
+  }
+
+  if (entry?.checked_out_at) {
+    blocks.push({
+      label: "Checkout",
+      date: formatDateOnly(entry.checked_out_at),
+      time: formatTimeOfDay(entry.checked_out_at),
+    });
+  } else if (entry?.expected_checkout_at) {
+    blocks.push({
+      label: "Expected checkout",
+      date: formatDateOnly(entry.expected_checkout_at),
+      time: formatTimeOfDay(entry.expected_checkout_at),
+    });
+  }
+
+  return blocks;
+}
+
+export function getVisitorDetailRows(
+  entry?: ModelsVisitorEntry | ModelsVisitorPendingEntry,
+): VisitorDetailRow[] {
+  if (!entry) {
+    return [];
+  }
+
+  const rows: VisitorDetailRow[] = [];
+
+  if (entry.visitor?.phone_number) {
+    rows.push({ label: "Mobile", value: entry.visitor.phone_number });
+  }
+  if (entry.visitor?.email) {
+    rows.push({ label: "Email", value: entry.visitor.email });
+  }
+  if (entry.vehicle_number) {
+    rows.push({ label: "Vehicle", value: entry.vehicle_number });
+  }
+  if (entry.companions_count && entry.companions_count > 0) {
+    rows.push({ label: "Companions", value: String(entry.companions_count) });
+  }
+  if (entry.delivery_partner) {
+    rows.push({ label: "Partner", value: entry.delivery_partner });
+  }
+  if (entry.service_provider) {
+    rows.push({ label: "Provider", value: entry.service_provider });
+  }
+
+  return rows;
+}
+
+export function isVisitorCheckoutOverdue(
+  entry?: ModelsVisitorEntry | ModelsVisitorPendingEntry,
+): boolean {
+  if (entry?.status !== "checked_in" || !entry.expected_checkout_at) {
+    return false;
+  }
+
+  return new Date(entry.expected_checkout_at).getTime() < Date.now();
+}
+
+export function getVisitorStatusContextMessage(
+  entry?: ModelsVisitorEntry | ModelsVisitorPendingEntry,
+): string | null {
+  if (!entry?.status) {
+    return null;
+  }
+
+  switch (entry.status) {
+    case "expired":
+      if (entry.expected_checkout_at) {
+        return `This visit expired after the expected checkout window (${formatDateTime(entry.expected_checkout_at)}).`;
+      }
+      return "This visit is no longer active at the gate.";
+    case "checked_out":
+      return entry.checked_out_at
+        ? `Visitor checked out on ${formatDateTime(entry.checked_out_at)}.`
+        : "This visit has been completed.";
+    case "rejected":
+      return "This visit was declined and cannot be used for entry.";
+    case "cancelled":
+      return "This visit was cancelled before check-in.";
+    case "waiting_approval":
+      return "Waiting for resident approval before the visitor can enter.";
+    case "approved":
+      return entry.expected_at
+        ? `Approved for entry. Expected ${formatDateTime(entry.expected_at)}.`
+        : "Approved and ready for gate check-in.";
+    case "checked_in":
+      if (isVisitorCheckoutOverdue(entry)) {
+        return `Overdue checkout. Expected departure was ${formatDateTime(entry.expected_checkout_at!)}. Visitor remains checked in until guard checkout.`;
+      }
+      return entry.checked_in_at
+        ? `Currently inside since ${formatDateTime(entry.checked_in_at)}.`
+        : "Visitor is currently inside the society.";
+    default:
+      return null;
+  }
+}

@@ -13,8 +13,9 @@ type FlatResponse struct {
 	CreatedBy   *int64     `json:"created_by,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
-	SocietyName *string    `json:"society_name,omitempty"`
-	SocietyCode *string    `json:"society_code,omitempty"`
+	SocietyName         *string    `json:"society_name,omitempty"`
+	SocietyCode         *string    `json:"society_code,omitempty"`
+	PrimaryResidentName *string    `json:"primary_resident_name,omitempty"`
 }
 
 type BulkCreateFlatsResponse struct {

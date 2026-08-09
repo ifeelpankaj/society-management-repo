@@ -48,6 +48,16 @@ const countFlats = `-- name: CountFlats :one
 SELECT COUNT(*)
 FROM flats f
 JOIN societies s ON s.id = f.society_id
+LEFT JOIN LATERAL (
+    SELECT u.full_name
+    FROM flat_residents fr
+    JOIN users u ON u.id = fr.user_id
+    WHERE fr.society_id = f.society_id
+      AND fr.flat_id = f.id
+      AND fr.status = 'active'
+      AND fr.is_primary = TRUE
+    LIMIT 1
+) primary_resident ON TRUE
 WHERE ($1::bigint IS NULL OR f.id = $1::bigint)
   AND ($2::bigint IS NULL OR f.society_id = $2::bigint)
   AND ($3::text IS NULL OR f.block = $3::text)
@@ -63,6 +73,7 @@ WHERE ($1::bigint IS NULL OR f.id = $1::bigint)
       OR f.status::text ILIKE '%' || $8::text || '%'
       OR s.name ILIKE '%' || $8::text || '%'
       OR s.society_code ILIKE '%' || $8::text || '%'
+      OR COALESCE(primary_resident.full_name, '') ILIKE '%' || $8::text || '%'
   )
 `
 
@@ -266,9 +277,20 @@ const listFlats = `-- name: ListFlats :many
 SELECT
     f.id, f.society_id, f.block, f.floor, f.flat_number, f.status, f.is_active, f.metadata, f.created_by, f.created_at, f.updated_at,
     s.name AS society_name,
-    s.society_code AS society_code
+    s.society_code AS society_code,
+    primary_resident.full_name AS primary_resident_name
 FROM flats f
 JOIN societies s ON s.id = f.society_id
+LEFT JOIN LATERAL (
+    SELECT u.full_name
+    FROM flat_residents fr
+    JOIN users u ON u.id = fr.user_id
+    WHERE fr.society_id = f.society_id
+      AND fr.flat_id = f.id
+      AND fr.status = 'active'
+      AND fr.is_primary = TRUE
+    LIMIT 1
+) primary_resident ON TRUE
 WHERE ($1::bigint IS NULL OR f.id = $1::bigint)
   AND ($2::bigint IS NULL OR f.society_id = $2::bigint)
   AND ($3::text IS NULL OR f.block = $3::text)
@@ -284,6 +306,7 @@ WHERE ($1::bigint IS NULL OR f.id = $1::bigint)
       OR f.status::text ILIKE '%' || $8::text || '%'
       OR s.name ILIKE '%' || $8::text || '%'
       OR s.society_code ILIKE '%' || $8::text || '%'
+      OR COALESCE(primary_resident.full_name, '') ILIKE '%' || $8::text || '%'
   )
 ORDER BY f.created_at DESC
 LIMIT $10 OFFSET $9
@@ -303,19 +326,20 @@ type ListFlatsParams struct {
 }
 
 type ListFlatsRow struct {
-	ID          int64              `db:"id" json:"id"`
-	SocietyID   int64              `db:"society_id" json:"society_id"`
-	Block       *string            `db:"block" json:"block"`
-	Floor       *string            `db:"floor" json:"floor"`
-	FlatNumber  string             `db:"flat_number" json:"flat_number"`
-	Status      FlatStatus         `db:"status" json:"status"`
-	IsActive    bool               `db:"is_active" json:"is_active"`
-	Metadata    []byte             `db:"metadata" json:"metadata"`
-	CreatedBy   *int64             `db:"created_by" json:"created_by"`
-	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	SocietyName string             `db:"society_name" json:"society_name"`
-	SocietyCode string             `db:"society_code" json:"society_code"`
+	ID                  int64              `db:"id" json:"id"`
+	SocietyID           int64              `db:"society_id" json:"society_id"`
+	Block               *string            `db:"block" json:"block"`
+	Floor               *string            `db:"floor" json:"floor"`
+	FlatNumber          string             `db:"flat_number" json:"flat_number"`
+	Status              FlatStatus         `db:"status" json:"status"`
+	IsActive            bool               `db:"is_active" json:"is_active"`
+	Metadata            []byte             `db:"metadata" json:"metadata"`
+	CreatedBy           *int64             `db:"created_by" json:"created_by"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	SocietyName         string             `db:"society_name" json:"society_name"`
+	SocietyCode         string             `db:"society_code" json:"society_code"`
+	PrimaryResidentName string             `db:"primary_resident_name" json:"primary_resident_name"`
 }
 
 func (q *Queries) ListFlats(ctx context.Context, arg ListFlatsParams) ([]ListFlatsRow, error) {
@@ -352,6 +376,7 @@ func (q *Queries) ListFlats(ctx context.Context, arg ListFlatsParams) ([]ListFla
 			&i.UpdatedAt,
 			&i.SocietyName,
 			&i.SocietyCode,
+			&i.PrimaryResidentName,
 		); err != nil {
 			return nil, err
 		}

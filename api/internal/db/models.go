@@ -1245,7 +1245,7 @@ type Visitor struct {
 type VisitorEntry struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`

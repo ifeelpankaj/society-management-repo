@@ -19,6 +19,7 @@ type VisitorSettingService interface {
 	UpdateFlatPurposeSetting(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, req models.UpdateFlatVisitorSettingRequest, actorUserID int64) (*models.FlatVisitorSettingsResponse, error)
 	ResetFlatSettingsToDefault(ctx context.Context, societyID int64, flatID int64, actorUserID int64) error
 	ResolveApprovalRequirement(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose, source models.VisitorEntrySource) (bool, error)
+	ResolveVisitDurationMinutes(ctx context.Context, societyID int64, flatID int64, purpose models.VisitorPurpose) (int32, error)
 	ListSocietyFlatSettings(ctx context.Context, filter models.SocietyFlatVisitorSettingsFilter) (*models.SocietyFlatVisitorSettingsListResult, error)
 }
 

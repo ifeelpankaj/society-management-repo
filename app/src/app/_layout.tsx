@@ -8,6 +8,7 @@ import { Provider } from "react-redux";
 import "@/lib/api/enhanced-api";
 import "@/lib/api/resident-api-extensions";
 import "@/lib/api/guard-api-extensions";
+import "@/lib/api/auth-api-extensions";
 import { NotificationRegistrationProvider } from "@/features/notifications/notification-registration-provider";
 import { NotificationSyncProvider } from "@/features/notifications/notification-sync-provider";
 export default function RootLayout() {

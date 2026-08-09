@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SymbolView } from "expo-symbols";
 import type { SymbolViewProps } from "expo-symbols";
 
 import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
 
 export type DashboardOverviewTone = "green" | "orange" | "blue" | "purple" | "neutral";
@@ -59,11 +61,10 @@ export function DashboardOverviewStat({
   const toneStyle = toneStyles[tone] ?? toneStyles.neutral;
 
   const content = (
-    <View style={styles.card}>
-      <View style={styles.container}>
-        <Text style={[styles.value, { color: toneStyle.valueColor }]}>{value}</Text>
-        <Text style={styles.label}>{label}</Text>
-      </View>
+    <View style={[styles.card, { backgroundColor: toneStyle.backgroundColor }]}>
+      <SymbolView name={icon} size={18} tintColor={toneStyle.iconColor} />
+      <Text style={[styles.value, { color: toneStyle.valueColor }]}>{value}</Text>
+      <Text style={styles.label}>{label}</Text>
     </View>
   );
 
@@ -74,7 +75,7 @@ export function DashboardOverviewStat({
   return (
     <Pressable
       accessibilityRole="button"
-      style={({ pressed }) => [styles.card, { opacity: pressed ? 0.88 : 1 }]}
+      style={({ pressed }) => [{ flex: 1, minWidth: "46%", maxWidth: "48%", opacity: pressed ? 0.88 : 1 }]}
       onPress={onPress}
     >
       {content}
@@ -84,29 +85,27 @@ export function DashboardOverviewStat({
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
-    minWidth: "46%",
-  },
-  container: {
     alignItems: "center",
+    borderRadius: radius.xl,
     flex: 1,
+    gap: spacing.sm,
     justifyContent: "center",
-    paddingVertical: spacing.sm,
-    width: "100%",
+    minWidth: "46%",
+    maxWidth: "48%",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
-
-  value: {
-    fontSize: 30,
-    fontWeight: "800",
-    lineHeight: 34,
-    textAlign: "center",
-  },
-
   label: {
     color: colors.guard.textMuted,
     fontSize: 13,
-    fontWeight: "500",
-    marginTop: 2,
+    fontWeight: "600",
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  value: {
+    fontSize: 32,
+    fontWeight: "800",
+    lineHeight: 36,
     textAlign: "center",
   },
 });

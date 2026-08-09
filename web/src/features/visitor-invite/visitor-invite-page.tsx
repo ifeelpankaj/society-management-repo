@@ -134,8 +134,9 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
         <CardHeader>
           <CardTitle>Your details</CardTitle>
           <CardDescription>
-            Phone or email is required. Companion count is required (use 0 if
-            visiting alone). Vehicle and companion names are optional.
+            Phone or email is required. Expected check-in is required. Companion
+            count is required (use 0 if visiting alone). Vehicle and companion
+            names are optional.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -143,6 +144,8 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
             companionNames={form.companionNames}
             companionsCount={form.companionsCount}
             email={form.email}
+            expectedAt={form.expectedAt}
+            expectedCheckoutAt={form.expectedCheckoutAt}
             fullName={form.fullName}
             isSubmitting={submitState.isLoading}
             notes={form.notes}
@@ -152,6 +155,10 @@ export function VisitorInvitePage({ token }: VisitorInvitePageProps) {
             onCompanionNameChange={updateCompanionName}
             onCompanionsCountChange={updateCompanionsCount}
             onEmailChange={(value) => updateField("email", value)}
+            onExpectedAtChange={(value) => updateField("expectedAt", value)}
+            onExpectedCheckoutAtChange={(value) =>
+              updateField("expectedCheckoutAt", value)
+            }
             onFullNameChange={(value) => updateField("fullName", value)}
             onNotesChange={(value) => updateField("notes", value)}
             onPhoneNumberChange={(value) => updateField("phoneNumber", value)}

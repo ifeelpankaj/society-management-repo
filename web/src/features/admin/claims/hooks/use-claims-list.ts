@@ -40,7 +40,7 @@ function isEmptyClaimsResponse(error: unknown) {
 export function useClaimsList({ societyId }: UseClaimsListOptions) {
   const [search, setSearch] = useState("");
   const [searchMode, setSearchMode] = useState("all");
-  const debouncedSearch = useDebouncedValue(search, 2000);
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [status, setStatus] = useState<ModelsFlatClaimStatus | "all">("all");
   const [selectedClaimId, setSelectedClaimId] = useState<number | null>(null);
   const [rejectingClaim, setRejectingClaim] =

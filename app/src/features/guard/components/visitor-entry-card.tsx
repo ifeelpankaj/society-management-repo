@@ -1,20 +1,25 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Row } from "@/components/layout";
+import { Row, Stack } from "@/components/layout";
 import { Button, Card } from "@/components/ui";
-import type { ModelsVisitorEntry, ModelsVisitorPendingEntry, ModelsVisitorStatus } from "@/lib/api/generated-api";
-import { colors } from "@/theme/colors";
-import { radius } from "@/theme/radius";
-import { spacing } from "@/theme/spacing";
-
 import {
-  formatDateOnly,
   formatDateTime,
-  formatTimeOfDay,
   getFlatLabel,
   getVisitorName,
+  getVisitorStatusContextMessage,
+  getVisitorStatusMeta,
   titleize,
-} from "../guard-utils";
+} from "@/features/guard/guard-utils";
+import { VisitorTimelineRow } from "@/features/visitors/components/visitor-timeline-row";
+import type {
+  ModelsVisitorEntry,
+  ModelsVisitorPendingEntry,
+} from "@/lib/api/generated-api";
+import { colors } from "@/theme/colors";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 import type { WaitingDurationTone } from "../guard-utils";
 
 type VisitorEntryCardProps = {
@@ -30,57 +35,26 @@ type VisitorEntryCardProps = {
   waitingTone?: WaitingDurationTone;
 };
 
-function getVisitorStatusStyle(status?: ModelsVisitorStatus) {
-  switch (status) {
-    case "approved":
-      return {
-        backgroundColor: "#ecfdf5",
-        borderColor: "#a7f3d0",
-        color: "#065f46",
-      };
-    case "checked_in":
-      return {
-        backgroundColor: colors.guard.tealSoft,
-        borderColor: "#99f6e4",
-        color: "#115e59",
-      };
-    case "checked_out":
-      return {
-        backgroundColor: "#f1f5f9",
-        borderColor: colors.border.default,
-        color: colors.text.secondary,
-      };
-    case "waiting_approval":
-      return {
-        backgroundColor: colors.status.warningSoft,
-        borderColor: "#fde68a",
-        color: "#92400e",
-      };
-    case "rejected":
-    case "cancelled":
-    case "expired":
-      return {
-        backgroundColor: colors.status.errorSoft,
-        borderColor: "#fecdd3",
-        color: "#be123c",
-      };
-    default:
-      return {
-        backgroundColor: colors.surface.muted,
-        borderColor: colors.border.default,
-        color: colors.text.muted,
-      };
-  }
-}
-
 function waitingToneStyle(tone?: WaitingDurationTone) {
   switch (tone) {
     case "warning":
-      return { backgroundColor: colors.status.warningSoft, borderColor: "#fde68a", color: colors.status.warning };
+      return {
+        backgroundColor: colors.status.warningSoft,
+        borderColor: "#fde68a",
+        color: colors.status.warning,
+      };
     case "error":
-      return { backgroundColor: colors.status.errorSoft, borderColor: "#fecdd3", color: colors.status.error };
+      return {
+        backgroundColor: colors.status.errorSoft,
+        borderColor: "#fecdd3",
+        color: colors.status.error,
+      };
     default:
-      return { backgroundColor: "#ecfdf5", borderColor: "#a7f3d0", color: colors.status.success };
+      return {
+        backgroundColor: "#ecfdf5",
+        borderColor: "#a7f3d0",
+        color: colors.status.success,
+      };
   }
 }
 
@@ -97,24 +71,58 @@ export function VisitorEntryCard({
   waitingTone,
 }: VisitorEntryCardProps) {
   const isLoading = loading || loadingEntryId === entry.id;
-  const statusStyle = getVisitorStatusStyle(entry.status);
+  const statusMeta = getVisitorStatusMeta(entry.status);
   const waitStyle = waitingToneStyle(waitingTone);
   const hasActions = Boolean(primaryActionLabel || secondaryActionLabel);
-  const checkedInDate = formatDateOnly(entry.checked_in_at);
-  const checkedInTime = formatTimeOfDay(entry.checked_in_at);
+  const visitorName = getVisitorName(entry);
+  const contextMessage = getVisitorStatusContextMessage(entry);
+  const phone = entry.visitor?.phone_number;
+  const email = entry.visitor?.email;
 
   const header = (
     <View style={styles.header}>
-      <View style={styles.copy}>
-        <Text style={styles.visitorName}>{getVisitorName(entry)}</Text>
-        <Text style={styles.visitDetail}>
-          Visiting: {getFlatLabel(entry)}
-          {entry.purpose ? ` · ${titleize(entry.purpose)}` : ""}
-          {entry.delivery_partner ? ` · ${entry.delivery_partner}` : ""}
-        </Text>
+      <View style={styles.avatarRing}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{visitorName.charAt(0).toUpperCase()}</Text>
+        </View>
+      </View>
+
+      <Stack gap="xs" style={styles.copy}>
+        <Row align="flex-start" gap="sm" justify="space-between">
+          <View style={styles.titleBlock}>
+            <Text style={styles.visitorName}>{visitorName}</Text>
+            <Text style={styles.visitDetail}>
+              {entry.purpose ? titleize(entry.purpose) : "Visitor"} · {getFlatLabel(entry)}
+            </Text>
+          </View>
+          <View style={styles.badges}>
+            {waitingLabel ? (
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: waitStyle.backgroundColor,
+                    borderColor: waitStyle.borderColor,
+                  },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: waitStyle.color }]}>{waitingLabel}</Text>
+              </View>
+            ) : null}
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusMeta.bg, borderColor: statusMeta.border },
+              ]}
+            >
+              <Text style={[styles.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
+            </View>
+          </View>
+        </Row>
+
         <Text style={styles.timestamp}>
           {entry.checked_in_at
-            ? "Checked in"
+            ? `Checked in ${formatDateTime(entry.checked_in_at)}`
             : entry.expected_at
               ? `Expected ${formatDateTime(entry.expected_at)}`
               : entry.approved_at
@@ -123,45 +131,26 @@ export function VisitorEntryCard({
                   ? `Created ${formatDateTime(entry.created_at)}`
                   : "Gate record"}
         </Text>
-        {entry.checked_in_at ? (
-          <View style={styles.checkInMeta}>
-            {checkedInDate ? (
-              <View style={styles.checkInPill}>
-                <Text style={styles.checkInLabel}>Date</Text>
-                <Text style={styles.checkInValue}>{checkedInDate}</Text>
-              </View>
-            ) : null}
-            {checkedInTime ? (
-              <View style={styles.checkInPill}>
-                <Text style={styles.checkInLabel}>Time</Text>
-                <Text style={styles.checkInValue}>{checkedInTime}</Text>
-              </View>
+
+        {phone || email || entry.vehicle_number ? (
+          <View style={styles.quickFacts}>
+            {phone ? <Text style={styles.quickFact}>Mobile · {phone}</Text> : null}
+            {email ? <Text style={styles.quickFact}>Email · {email}</Text> : null}
+            {entry.vehicle_number ? (
+              <Text style={styles.quickFact}>Vehicle · {entry.vehicle_number}</Text>
             ) : null}
           </View>
         ) : null}
-      </View>
-      <View style={styles.badges}>
-        {waitingLabel ? (
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: waitStyle.backgroundColor, borderColor: waitStyle.borderColor },
-            ]}
-          >
-            <Text style={[styles.statusText, { color: waitStyle.color }]}>{waitingLabel}</Text>
-          </View>
+
+        {contextMessage &&
+        (entry.status === "expired" ||
+          entry.status === "rejected" ||
+          entry.status === "waiting_approval") ? (
+          <Text style={styles.contextLine}>{contextMessage}</Text>
         ) : null}
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusStyle.backgroundColor, borderColor: statusStyle.borderColor },
-          ]}
-        >
-          <Text style={[styles.statusText, { color: statusStyle.color }]}>
-            {titleize(entry.status)}
-          </Text>
-        </View>
-      </View>
+
+        <VisitorTimelineRow entry={entry} />
+      </Stack>
     </View>
   );
 
@@ -231,75 +220,91 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  avatar: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.full,
+    height: 52,
+    justifyContent: "center",
+    width: 52,
+  },
+  avatarRing: {
+    alignItems: "center",
+    backgroundColor: colors.brand.orangeSoft,
+    borderRadius: radius.full,
+    padding: 3,
+  },
+  avatarText: {
+    color: colors.brand.orange,
+    fontSize: 22,
+    fontWeight: "800",
+  },
   badges: {
     alignItems: "flex-end",
     gap: spacing.xs,
   },
   card: {
     gap: spacing.lg,
+    padding: spacing.xl,
+    ...shadows.card,
   },
-  checkInLabel: {
-    color: colors.guard.textMuted,
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  checkInMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  checkInPill: {
-    backgroundColor: colors.surface.secondary,
-    borderColor: colors.border.input,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: 2,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  checkInValue: {
-    color: colors.text.primary,
-    fontSize: 13,
-    fontWeight: "700",
+  contextLine: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
   copy: {
     flex: 1,
+    minWidth: 0,
   },
   header: {
-    alignItems: "flex-start",
     flexDirection: "row",
     gap: spacing.lg,
-    justifyContent: "space-between",
   },
   notes: {
+    ...typography.bodySmall,
+    backgroundColor: colors.brand.orangeSoft,
+    borderRadius: radius.lg,
+    color: colors.text.primary,
+    lineHeight: 20,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  quickFact: {
+    ...typography.bodySmall,
     color: colors.text.secondary,
-    fontSize: 14,
+  },
+  quickFacts: {
+    gap: 2,
   },
   statusBadge: {
     borderRadius: radius["2xl"],
     borderWidth: 1,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: 4,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   timestamp: {
+    ...typography.caption,
     color: colors.text.muted,
-    fontSize: 12,
-    marginTop: spacing.xs,
+  },
+  titleBlock: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
   },
   visitDetail: {
+    ...typography.bodySmall,
     color: colors.text.secondary,
-    fontSize: 14,
-    marginTop: spacing.xs,
   },
   visitorName: {
+    ...typography.subtitle,
     color: colors.text.primary,
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
   },
 });

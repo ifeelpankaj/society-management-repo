@@ -5,6 +5,7 @@ import { WorkspacePage } from "@/components/shared/workspace-page";
 import { useProfilePage } from "../hooks/use-profile-page";
 import { AccountDetailsCard } from "./account-details-card";
 import { ChangePasswordCard } from "./change-password-card";
+import { ProfileEditCard } from "./profile-edit-card";
 import { ProfileHeader } from "./profile-header";
 import { ProfileSummaryCard } from "./profile-summary-card";
 import { SocietyDetailsCard } from "./society-details-card";
@@ -31,6 +32,8 @@ export function ProfileLayout() {
             isChangingPassword={profile.isChangingPassword}
             onSubmit={profile.handleChangePassword}
           />
+
+          <ProfileEditCard isLoading={profile.isLoading} user={profile.user} />
         </div>
 
         <div className="space-y-4">

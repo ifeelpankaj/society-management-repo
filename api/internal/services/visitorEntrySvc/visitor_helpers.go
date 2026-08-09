@@ -228,3 +228,55 @@ func (s *VisitorEntrySvc) lockEntryForApproval(ctx context.Context, societyID in
 	}
 	return nil
 }
+
+func (s *VisitorEntrySvc) resolveExpectedCheckout(
+	ctx context.Context,
+	societyID int64,
+	flatID int64,
+	purpose models.VisitorPurpose,
+	expectedAt *time.Time,
+	provided *time.Time,
+) (*time.Time, error) {
+	if provided != nil {
+		if expectedAt != nil && provided.Before(*expectedAt) {
+			return nil, ErrInvalidVisitorRequest.WithCause(errors.New("expected_checkout_at must be after expected_at"))
+		}
+		return provided, nil
+	}
+
+	durationMinutes, err := s.settingSvc.ResolveVisitDurationMinutes(ctx, societyID, flatID, purpose)
+	if err != nil {
+		return nil, err
+	}
+
+	base := time.Now()
+	if expectedAt != nil {
+		base = *expectedAt
+	}
+	checkout := base.Add(time.Duration(durationMinutes) * time.Minute)
+	return &checkout, nil
+}
+
+func (s *VisitorEntrySvc) applyExpectedCheckout(
+	ctx context.Context,
+	societyID int64,
+	req *models.VisitorFormRequest,
+) error {
+	if req == nil {
+		return ErrInvalidVisitorRequest
+	}
+	checkout, err := s.resolveExpectedCheckout(ctx, societyID, req.FlatID, req.Purpose, req.ExpectedAt, req.ExpectedCheckoutAt)
+	if err != nil {
+		return err
+	}
+	req.ExpectedCheckoutAt = checkout
+	return nil
+}
+
+func entryFlatIDPtr(flatID int64) *int64 {
+	if flatID <= 0 {
+		return nil
+	}
+	value := flatID
+	return &value
+}

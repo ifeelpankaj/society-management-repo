@@ -82,16 +82,16 @@ INSERT INTO visitor_entries (
     metadata
 )
 VALUES (
-    $1,
-    $2,
-    $3,
+    sqlc.arg('society_id'),
+    sqlc.narg('flat_id'),
+    sqlc.arg('visitor_id'),
     sqlc.narg('invite_id'),
-    $4,
-    $5,
-    $6,
+    sqlc.arg('source'),
+    sqlc.arg('purpose'),
+    sqlc.arg('status'),
     sqlc.narg('vehicle_number'),
     sqlc.narg('vehicle_type'),
-    $7,
+    sqlc.arg('companions_count'),
     COALESCE(sqlc.narg('companion_details'), '[]'::jsonb),
     sqlc.narg('expected_at'),
     sqlc.narg('expected_checkout_at'),
@@ -633,13 +633,10 @@ WHERE id = $1
 RETURNING *;
 
 -- name: AutoCloseExpiredVisitorEntries :exec
+-- Checked-in visitors remain inside until explicit guard checkout.
 UPDATE visitor_entries
-SET status = 'auto_closed',
-    auto_closed_at = NOW(),
-    updated_at = NOW()
-WHERE status = 'checked_in'
-  AND expected_checkout_at IS NOT NULL
-  AND expected_checkout_at < NOW();
+SET updated_at = updated_at
+WHERE false;
 
 -- name: ExpireStaleWaitingApprovalEntries :exec
 UPDATE visitor_entries
@@ -653,8 +650,36 @@ UPDATE visitor_entries
 SET status = 'expired',
     updated_at = NOW()
 WHERE status = 'approved'
-  AND qr_expires_at IS NOT NULL
-  AND qr_expires_at < NOW();
+  AND checked_in_at IS NULL
+  AND (
+    (expected_checkout_at IS NOT NULL AND expected_checkout_at < NOW())
+    OR (expected_checkout_at IS NULL AND qr_expires_at IS NOT NULL AND qr_expires_at < NOW())
+  );
+
+-- name: UpdateVisitorProfile :one
+UPDATE visitors
+SET
+    full_name = COALESCE(sqlc.narg('full_name'), full_name),
+    phone_number = COALESCE(sqlc.narg('phone_number'), phone_number),
+    email = COALESCE(sqlc.narg('email'), email),
+    photo_url = COALESCE(sqlc.narg('photo_url'), photo_url),
+    updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateVisitorEntryDetails :one
+UPDATE visitor_entries
+SET
+    vehicle_number = COALESCE(sqlc.narg('vehicle_number'), vehicle_number),
+    vehicle_type = COALESCE(sqlc.narg('vehicle_type'), vehicle_type),
+    companions_count = COALESCE(sqlc.narg('companions_count'), companions_count),
+    companion_details = COALESCE(sqlc.narg('companion_details'), companion_details),
+    notes = COALESCE(sqlc.narg('notes'), notes),
+    updated_at = NOW()
+WHERE id = $1
+  AND society_id = $2
+  AND status IN ('waiting_approval', 'approved')
+RETURNING *;
 
 -- name: CreateVisitorEntryEvent :one
 INSERT INTO visitor_entry_events (visitor_entry_id, society_id, actor_user_id, event_type, message, metadata)

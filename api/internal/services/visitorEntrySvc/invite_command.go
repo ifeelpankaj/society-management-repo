@@ -64,7 +64,7 @@ func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string,
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
-	if err := req.Validate(false); err != nil {
+	if err := req.ValidateInviteSubmit(); err != nil {
 		return nil, ErrInvalidVisitorRequest.WithCause(err)
 	}
 	invite, err := s.GetInviteByToken(ctx, rawToken)
@@ -113,11 +113,10 @@ func (s *VisitorEntrySvc) SubmitInviteForm(ctx context.Context, rawToken string,
 			return visitorErr
 		}
 		entryReq := req
-		if entryReq.ExpectedAt == nil {
-			now := time.Now()
-			entryReq.ExpectedAt = &now
+		if err := s.applyExpectedCheckout(ctx, locked.SocietyID, &entryReq); err != nil {
+			return err
 		}
-		entry, createErr := s.entryRepo.Create(txCtx, entryReq, locked.SocietyID, locked.FlatID, visitor.ID, &locked.ID, models.VisitorEntrySourceResidentLink, locked.Purpose, models.VisitorStatusApproved, &locked.CreatedBy, nil, &qr.hash, &qr.expiresAt)
+		entry, createErr := s.entryRepo.Create(txCtx, entryReq, locked.SocietyID, entryFlatIDPtr(locked.FlatID), visitor.ID, &locked.ID, models.VisitorEntrySourceResidentLink, locked.Purpose, models.VisitorStatusApproved, &locked.CreatedBy, nil, &qr.hash, &qr.expiresAt)
 		if createErr != nil {
 			if isUniqueViolation(createErr) {
 				replay, replayErr := s.idempotentInviteSubmitResponse(txCtx, locked)

@@ -81,10 +81,11 @@ type Flat struct {
 	IsActive    bool           `json:"is_active" db:"is_active"`
 	Metadata    map[string]any `json:"metadata" db:"metadata"`
 	CreatedBy   *int64         `json:"created_by,omitempty" db:"created_by"`
-	CreatedAt   time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at" db:"updated_at"`
-	SocietyName *string        `json:"society_name,omitempty"`
-	SocietyCode *string        `json:"society_code,omitempty"`
+	CreatedAt           time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at" db:"updated_at"`
+	SocietyName         *string        `json:"society_name,omitempty"`
+	SocietyCode         *string        `json:"society_code,omitempty"`
+	PrimaryResidentName *string        `json:"primary_resident_name,omitempty"`
 }
 
 func (f *Flat) ToResponse() *FlatResponse {
@@ -95,6 +96,7 @@ func (f *Flat) ToResponse() *FlatResponse {
 		ID: f.ID, SocietyID: f.SocietyID, Block: f.Block, Floor: f.Floor, FlatNumber: f.FlatNumber,
 		Status: f.Status, IsActive: f.IsActive, CreatedBy: f.CreatedBy, CreatedAt: f.CreatedAt,
 		UpdatedAt: f.UpdatedAt, SocietyName: f.SocietyName, SocietyCode: f.SocietyCode,
+		PrimaryResidentName: f.PrimaryResidentName,
 	}
 }
 

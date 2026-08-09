@@ -86,3 +86,17 @@ export function buildCompanionDetails(names: string[], count: number) {
     .filter(Boolean)
     .map((full_name) => ({ full_name }));
 }
+
+export function toIsoFromDatetimeLocal(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return date.toISOString();
+}

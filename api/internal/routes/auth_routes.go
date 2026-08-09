@@ -29,6 +29,7 @@ func SetupAuthRoutesV1(rg *gin.RouterGroup, h *handlers.AuthHandler, g *guards.G
 	protected.Use(g.Authenticated()...)
 	{
 		protected.GET("/profile", h.GetProfile)
+		protected.PATCH("/profile", h.UpdateProfile)
 		protected.POST("/change-password", h.ChangePassword)
 	}
 }

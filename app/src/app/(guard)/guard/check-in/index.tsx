@@ -1,17 +1,18 @@
+import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  ActivityIndicator,
 } from "react-native";
-import { useEffect, useRef } from "react";
+import { SymbolView } from "expo-symbols";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { Card } from "@/components/ui";
+import { GuardEntryEditSheet } from "@/features/guard/components/guard-entry-edit-sheet";
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
-import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
 import {
   guardHomeRoute,
   guardScannerRoute,
@@ -24,8 +25,11 @@ import {
 } from "@/features/guard/hooks/use-guard-check-in";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
+import { VisitorDetailsCard } from "@/features/visitors/components/visitor-details-card";
+import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
 import { typography } from "@/theme/typography";
 
@@ -44,6 +48,10 @@ function getSubtitle(outcome: GuardScanOutcome) {
   }
 }
 
+function canEditEntry(entry?: ModelsVisitorEntry | null) {
+  return entry?.status === "waiting_approval" || entry?.status === "approved";
+}
+
 export default function GuardCheckInScreen() {
   const router = useRouter();
   const feedback = useGuardFeedback();
@@ -55,9 +63,18 @@ export default function GuardCheckInScreen() {
 
   const checkInInput = parseCheckInParams(params);
   const checkIn = useGuardCheckIn(checkInInput, selectedSocietyId);
+  const [editVisible, setEditVisible] = useState(false);
+  const [editedEntry, setEditedEntry] = useState<{
+    entry: ModelsVisitorEntry;
+    token: string;
+  } | null>(null);
   const checkInToastShownRef = useRef(false);
   const wasCheckingInRef = useRef(false);
   const redirectTriggeredRef = useRef(false);
+
+  const activeToken = checkInInput?.token ?? "";
+  const entry =
+    editedEntry?.token === activeToken ? editedEntry.entry : checkIn.entry;
 
   useEffect(() => {
     checkInToastShownRef.current = false;
@@ -90,7 +107,7 @@ export default function GuardCheckInScreen() {
       !redirectTriggeredRef.current
     ) {
       redirectTriggeredRef.current = true;
-      feedback.showError("QR not recognized", "", checkIn.entryError.message); //TODO fix me
+      feedback.showError("QR not recognized", "", checkIn.entryError.message);
       router.replace(guardWaitingAtGateRoute());
     }
   }, [
@@ -140,12 +157,24 @@ export default function GuardCheckInScreen() {
   }
 
   const { scanOutcome } = checkIn;
+  const showPrimaryCheckIn = scanOutcome === "ready" && entry;
+  const showEditDetails = canEditEntry(entry);
 
   return (
     <GuardSubScreen title="Check In">
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <Text style={styles.subtitle}>{getSubtitle(scanOutcome)}</Text>
+          <View style={styles.heroHeader}>
+            <View style={styles.heroIconWrap}>
+              <SymbolView
+                name={{ ios: "shield.fill", android: "security", web: "security" }}
+                size={28}
+                tintColor={colors.brand.orange}
+              />
+            </View>
+            <Text style={styles.heroTitle}>Visitor Check-In</Text>
+            <Text style={styles.subtitle}>{getSubtitle(scanOutcome)}</Text>
+          </View>
 
           {scanOutcome === "loading" ? (
             <View style={styles.inlineLoading}>
@@ -163,17 +192,41 @@ export default function GuardCheckInScreen() {
             </Card>
           ) : null}
 
-          {checkIn.entry ? (
-            <VisitorEntryCard
-              entry={checkIn.entry}
-              loading={checkIn.isCheckingIn}
-              primaryActionLabel={
-                scanOutcome === "ready" ? "Check In" : undefined
-              }
-              onPrimaryAction={() => {
-                void checkIn.checkIn();
-              }}
-            />
+          {entry ? <VisitorDetailsCard entry={entry} /> : null}
+
+          {showPrimaryCheckIn || showEditDetails ? (
+            <View style={styles.primaryActions}>
+              {showPrimaryCheckIn ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={checkIn.isCheckingIn}
+                  style={({ pressed }) => [
+                    styles.checkInButton,
+                    pressed && styles.buttonPressed,
+                    checkIn.isCheckingIn && styles.buttonDisabled,
+                  ]}
+                  onPress={() => void checkIn.checkIn()}
+                >
+                  {checkIn.isCheckingIn ? (
+                    <ActivityIndicator color={colors.text.inverse} />
+                  ) : (
+                    <Text style={styles.checkInButtonText}>Check In</Text>
+                  )}
+                </Pressable>
+              ) : null}
+              {showEditDetails ? (
+                <Pressable
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.editButton,
+                    pressed && styles.buttonPressed,
+                  ]}
+                  onPress={() => setEditVisible(true)}
+                >
+                  <Text style={styles.editButtonText}>Edit Details</Text>
+                </Pressable>
+              ) : null}
+            </View>
           ) : null}
 
           {scanOutcome === "pending_approval" ? (
@@ -212,7 +265,7 @@ export default function GuardCheckInScreen() {
           ) : null}
 
           {checkIn.entryError &&
-          checkIn.entry &&
+          entry &&
           scanOutcome !== "just_checked_in" ? (
             <Card style={styles.errorCard}>
               <Text style={styles.errorTitle}>Check-in failed</Text>
@@ -238,6 +291,19 @@ export default function GuardCheckInScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <GuardEntryEditSheet
+        entry={entry}
+        societyId={selectedSocietyId ?? 0}
+        visible={editVisible}
+        onClose={() => setEditVisible(false)}
+        onSaved={(updated) => {
+          if (activeToken) {
+            setEditedEntry({ token: activeToken, entry: updated });
+          }
+          feedback.showSuccess("Details updated", "Visitor information saved.");
+        }}
+      />
     </GuardSubScreen>
   );
 }
@@ -245,6 +311,12 @@ export default function GuardCheckInScreen() {
 const styles = StyleSheet.create({
   actions: {
     gap: spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
   cardBody: {
     ...typography.bodySmall,
@@ -256,9 +328,33 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: "700",
   },
+  checkInButton: {
+    alignItems: "center",
+    backgroundColor: colors.brand.orange,
+    borderRadius: radius.xl,
+    justifyContent: "center",
+    minHeight: layout.buttonHeight,
+  },
+  checkInButtonText: {
+    ...typography.button,
+    color: colors.text.inverse,
+  },
   content: {
     gap: spacing["2xl"],
     paddingBottom: layout.screenPaddingBottom,
+  },
+  editButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.brand.orange,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: layout.buttonHeight,
+  },
+  editButtonText: {
+    ...typography.button,
+    color: colors.brand.orange,
   },
   errorBody: {
     ...typography.bodySmall,
@@ -274,10 +370,30 @@ const styles = StyleSheet.create({
     color: colors.status.error,
     fontWeight: "700",
   },
+  heroHeader: {
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  heroIconWrap: {
+    alignItems: "center",
+    backgroundColor: colors.brand.orangeSoft,
+    borderRadius: radius.full,
+    height: 56,
+    justifyContent: "center",
+    width: 56,
+  },
+  heroTitle: {
+    ...typography.title,
+    color: colors.text.primary,
+    fontWeight: "800",
+  },
   inlineLoading: {
     alignItems: "center",
     gap: spacing.sm,
     paddingVertical: spacing["2xl"],
+  },
+  primaryActions: {
+    gap: spacing.md,
   },
   primaryButton: {
     alignItems: "center",
@@ -307,6 +423,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.bodySmall,
     color: colors.text.secondary,
+    textAlign: "center",
   },
   successBody: {
     ...typography.bodySmall,

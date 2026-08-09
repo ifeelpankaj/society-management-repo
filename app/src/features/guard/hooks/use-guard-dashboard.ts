@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { getApiMessage, isSubscriptionError } from "@/features/auth/api-error";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
+import type { GuardDeskVisitorSettings } from "@/lib/api/guard-api-extensions";
 import {
   useGetV1SocietiesBySocietyIdGuardDeskBootstrapQuery,
   usePostV1SocietiesBySocietyIdVisitorEntriesAndEntryIdCheckOutMutation,
@@ -56,6 +57,8 @@ export function useGuardDashboard() {
 
   const stats = desk?.stats;
   const pendingEntries = desk?.pending_preview ?? [];
+  const visitorSettings = (desk as { visitor_settings?: GuardDeskVisitorSettings } | undefined)
+    ?.visitor_settings;
 
   const resolvedSocietyName = useMemo(
     () => desk?.society?.name ?? societyName ?? `Society #${selectedSocietyId}`,
@@ -84,5 +87,6 @@ export function useGuardDashboard() {
     refetchAll,
     societyName: resolvedSocietyName,
     stats,
+    visitorSettings,
   };
 }

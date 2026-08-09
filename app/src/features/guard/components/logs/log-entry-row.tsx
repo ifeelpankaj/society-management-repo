@@ -1,9 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { VisitorTimelineRow } from "@/features/visitors/components/visitor-timeline-row";
 import {
-  formatActivityTimestamp,
-  formatDateOnly,
-  formatTimeOfDay,
   getFlatLabel,
   getVisitorName,
   getVisitorStatusMeta,
@@ -23,58 +21,10 @@ type LogEntryRowProps = {
   onPress?: () => void;
 };
 
-function TimeBlock({
-  date,
-  label,
-  time,
-}: {
-  date?: string;
-  label: string;
-  time?: string;
-}) {
-  if (!date && !time) {
-    return null;
-  }
-
-  return (
-    <View style={styles.timeBlock}>
-      <Text style={styles.timeBlockLabel}>{label}</Text>
-      {date ? <Text style={styles.timeBlockDate}>{date}</Text> : null}
-      {time ? <Text style={styles.timeBlockTime}>{time}</Text> : null}
-    </View>
-  );
-}
-
 export function LogEntryRow({ entry, isCheckingOut, onCheckOut, onPress }: LogEntryRowProps) {
   const statusMeta = getVisitorStatusMeta(entry.status);
-  const timestamp = formatActivityTimestamp(
-    entry.checked_out_at ?? entry.checked_in_at ?? entry.updated_at ?? entry.created_at,
-  );
   const purpose = entry.purpose ? titleize(entry.purpose) : "Visitor";
-  const hasTimeline = Boolean(entry.checked_in_at || entry.checked_out_at);
   const hasCheckoutAction = entry.status === "checked_in" && Boolean(onCheckOut);
-
-  const timeline = hasTimeline ? (
-    <View style={styles.timelineRow}>
-      {entry.checked_in_at ? (
-        <TimeBlock
-          date={formatDateOnly(entry.checked_in_at)}
-          label="Check-in"
-          time={formatTimeOfDay(entry.checked_in_at)}
-        />
-      ) : null}
-      {entry.checked_in_at && entry.checked_out_at ? <View style={styles.timelineDivider} /> : null}
-      {entry.checked_out_at ? (
-        <TimeBlock
-          date={formatDateOnly(entry.checked_out_at)}
-          label="Checkout"
-          time={formatTimeOfDay(entry.checked_out_at)}
-        />
-      ) : null}
-    </View>
-  ) : (
-    <Text style={styles.fallbackTime}>{timestamp || "—"}</Text>
-  );
 
   const mainContent = (
     <>
@@ -91,7 +41,7 @@ export function LogEntryRow({ entry, isCheckingOut, onCheckOut, onPress }: LogEn
           <Text style={[styles.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
         </View>
       </View>
-      {timeline}
+      <VisitorTimelineRow entry={entry} />
     </>
   );
 

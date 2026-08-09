@@ -316,6 +316,43 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	})
 }
 
+// UpdateProfile godoc
+// @Summary Update current user profile
+// @Description Updates authenticated user profile fields such as name, phone, and date of birth.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body models.UpdateUserRequest true "Profile update payload"
+// @Success 200 {object} models.GetProfileAPIResponse "Profile updated successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid request or validation error"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Account disabled"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/auth/profile [patch]
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "Authentication required")
+		return
+	}
+
+	var req models.UpdateUserRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	req.ID = userID
+
+	user, err := h.sessionSvc.UpdateProfile(c.Request.Context(), userID, &req)
+	if handleServiceError(c, err) {
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Profile updated successfully", gin.H{
+		"user": user,
+	})
+}
+
 // ForgotPassword godoc
 // @Summary Request password reset OTP
 // @Description Always returns a generic success message. If the email exists, sends a password reset OTP.

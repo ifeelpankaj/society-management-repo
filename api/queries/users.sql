@@ -192,3 +192,48 @@ SET
     updated_at = NOW()
 WHERE id = $1
   AND deleted_at IS NULL;
+
+-- name: UpdateUserProfile :one
+UPDATE users
+SET
+    first_name = COALESCE(sqlc.narg('first_name'), first_name),
+    last_name = COALESCE(sqlc.narg('last_name'), last_name),
+    full_name = TRIM(BOTH FROM CONCAT(
+        COALESCE(sqlc.narg('first_name'), first_name, ''),
+        ' ',
+        COALESCE(sqlc.narg('last_name'), last_name, '')
+    )),
+    phone_number = COALESCE(sqlc.narg('phone_number'), phone_number),
+    date_of_birth = COALESCE(sqlc.narg('date_of_birth'), date_of_birth),
+    gender = COALESCE(sqlc.narg('gender'), gender),
+    timezone = COALESCE(sqlc.narg('timezone'), timezone),
+    language = COALESCE(sqlc.narg('language'), language),
+    updated_at = NOW()
+WHERE id = sqlc.arg('id')
+  AND deleted_at IS NULL
+RETURNING
+    id,
+    first_name,
+    last_name,
+    full_name,
+    email,
+    phone_number,
+    password_hash,
+    auth_provider,
+    provider_id,
+    global_role,
+    email_verified,
+    phone_verified,
+    is_active,
+    is_blocked,
+    avatar_url,
+    date_of_birth,
+    gender,
+    timezone,
+    language,
+    last_login_at,
+    password_changed_at,
+    metadata,
+    created_at,
+    updated_at,
+    deleted_at;

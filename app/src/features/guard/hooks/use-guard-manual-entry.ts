@@ -49,6 +49,10 @@ function requiresName(purpose: ModelsVisitorPurpose) {
   return purpose !== "delivery";
 }
 
+function isStaffPurpose(purpose: ModelsVisitorPurpose) {
+  return purpose === "staff";
+}
+
 export function flatFromResponse(flat: ModelsFlatResponse): SelectedFlat | null {
   if (typeof flat.id !== "number" || flat.id <= 0) {
     return null;
@@ -119,7 +123,7 @@ export function useGuardManualEntry(societyId: number) {
       nextErrors.phoneNumber = "Enter a valid 10-digit phone number";
     }
 
-    if (!selectedFlat?.id) {
+    if (!isStaffPurpose(purpose) && !selectedFlat?.id) {
       nextErrors.flat = "Select a visiting flat";
     }
 
@@ -162,13 +166,16 @@ export function useGuardManualEntry(societyId: number) {
   ]);
 
   const isFormValid = useMemo(() => {
-    if (!selectedFlat?.id || !purpose) {
+    if (!purpose) {
       return false;
     }
-    if (requiresName(purpose) && !fullName.trim()) {
+    if (!isStaffPurpose(purpose) && !selectedFlat?.id) {
       return false;
     }
-    if (requiresPhone(purpose) && !isValidPhone(phoneNumber)) {
+    if ((requiresName(purpose) || isStaffPurpose(purpose)) && !fullName.trim()) {
+      return false;
+    }
+    if ((requiresPhone(purpose) || isStaffPurpose(purpose)) && !isValidPhone(phoneNumber)) {
       return false;
     }
     if (purpose === "delivery" && !deliveryPartner.trim()) {
@@ -231,7 +238,7 @@ export function useGuardManualEntry(societyId: number) {
           companions_count: resolvedCompanions,
           delivery_partner: deliveryPartner.trim() || undefined,
           email: email.trim() || undefined,
-          flat_id: selectedFlat!.id,
+          flat_id: isStaffPurpose(purpose) ? undefined : selectedFlat!.id,
           full_name: resolvedName,
           metadata: { created_from: "guard_mobile" },
           notes: notes.trim() || undefined,

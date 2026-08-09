@@ -27,28 +27,37 @@ func (s *VisitorEntrySvc) createEntryFromForm(ctx context.Context, societyID int
 	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
 	defer cancel()
 
+	isStaffEntry := req.Purpose == models.VisitorPurposeStaff
 	if err := req.Validate(true); err != nil {
 		return nil, ErrInvalidVisitorRequest.WithCause(err)
 	}
 	if err := req.ValidateForPurpose(); err != nil {
 		return nil, ErrInvalidVisitorRequest.WithCause(err)
 	}
-	if err := s.ensureEntryFlat(ctx, societyID, req.FlatID); err != nil {
-		return nil, err
+	if !isStaffEntry {
+		if err := s.ensureEntryFlat(ctx, societyID, req.FlatID); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.ensureSocietyActive(ctx, societyID); err != nil {
 		return nil, err
 	}
-	approvalRequired, err := s.settingSvc.ResolveApprovalRequirement(ctx, societyID, req.FlatID, req.Purpose, source)
-	if err != nil {
+	if err := s.applyExpectedCheckout(ctx, societyID, &req); err != nil {
 		return nil, err
 	}
+
 	status := models.VisitorStatusApproved
-	if approvalRequired {
-		status = models.VisitorStatusWaitingApproval
+	if !isStaffEntry {
+		approvalRequired, err := s.settingSvc.ResolveApprovalRequirement(ctx, societyID, req.FlatID, req.Purpose, source)
+		if err != nil {
+			return nil, err
+		}
+		if approvalRequired {
+			status = models.VisitorStatusWaitingApproval
+		}
 	}
 	var response *models.VisitorEntryMutationResponse
-	err = s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+	err := s.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
 		var qr *qrToken
 		if status == models.VisitorStatusApproved {
 			var err error
@@ -67,7 +76,7 @@ func (s *VisitorEntrySvc) createEntryFromForm(ctx context.Context, societyID int
 			qrHash = &qr.hash
 			qrExpiresAt = &qr.expiresAt
 		}
-		entry, err := s.entryRepo.Create(txCtx, req, societyID, req.FlatID, visitor.ID, nil, source, req.Purpose, status, actorUserID, guardActor(source, actorUserID), qrHash, qrExpiresAt)
+		entry, err := s.entryRepo.Create(txCtx, req, societyID, entryFlatIDPtr(req.FlatID), visitor.ID, nil, source, req.Purpose, status, actorUserID, guardActor(source, actorUserID), qrHash, qrExpiresAt)
 		if err != nil {
 			return err
 		}

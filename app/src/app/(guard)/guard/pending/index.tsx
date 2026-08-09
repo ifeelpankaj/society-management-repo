@@ -7,6 +7,7 @@ import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
 import { VisitorDetailSheet } from "@/features/guard/components/visitor-detail-sheet";
 import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
+import { useGuardDashboard } from "@/features/guard/hooks/use-guard-dashboard";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardPending } from "@/features/guard/hooks/use-guard-pending";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
@@ -20,6 +21,8 @@ export default function GuardPendingScreen() {
   const [search, setSearch] = useState("");
   const pending = useGuardPending(selectedSocietyId, search);
   const actions = useGuardActions(selectedSocietyId ?? 0);
+  const { visitorSettings } = useGuardDashboard();
+  const allowOnBehalfApproval = visitorSettings?.allow_guard_on_behalf_approval !== false;
   const [selectedEntry, setSelectedEntry] = useState<ModelsVisitorPendingEntry | null>(null);
   const [forceEntry, setForceEntry] = useState<ModelsVisitorPendingEntry | null>(null);
 
@@ -99,6 +102,17 @@ export default function GuardPendingScreen() {
                   void handleApproveAndCheckIn(item, false);
                   return;
                 }
+                if (!allowOnBehalfApproval) {
+                  feedback.showActionResult(
+                    {
+                      success: false,
+                      message:
+                        "Your admin has not allowed guard approval on behalf of residents.",
+                    },
+                    { errorTitle: "Action not allowed", successTitle: "Checked in" },
+                  );
+                  return;
+                }
                 setForceEntry(item);
               }}
               onSecondaryAction={() => void handleNotify(item)}
@@ -126,6 +140,17 @@ export default function GuardPendingScreen() {
           }
           if (selectedEntry.source === "guard_entry") {
             void handleApproveAndCheckIn(selectedEntry, false);
+            return;
+          }
+          if (!allowOnBehalfApproval) {
+            feedback.showActionResult(
+              {
+                success: false,
+                message:
+                  "Your admin has not allowed guard approval on behalf of residents.",
+              },
+              { errorTitle: "Action not allowed", successTitle: "Checked in" },
+            );
             return;
           }
           setForceEntry(selectedEntry);

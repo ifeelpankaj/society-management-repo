@@ -71,6 +71,16 @@ export function getFriendlyApiMessage(error: unknown, fallback: string) {
 }
 
 export function getVisitorActionErrorMessage(error: unknown, fallback: string) {
+  const code = getApiErrorCode(error);
+
+  if (code === "VISITOR_SOURCE_DISABLED") {
+    return "Your admin has not allowed guard entry for this society.";
+  }
+
+  if (code === "VISITOR_GUARD_ON_BEHALF_NOT_ALLOWED") {
+    return "Your admin has not allowed guard approval on behalf of residents.";
+  }
+
   if (error && typeof error === "object" && "status" in error && error.status === 403) {
     return "Only an active flat resident can perform this action.";
   }

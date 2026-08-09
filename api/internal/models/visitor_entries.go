@@ -278,11 +278,11 @@ func (r *VisitorFormRequest) Validate(requireFlatAndPurpose bool) error {
 	r.VehicleNumber = cleanPtr(r.VehicleNumber)
 	r.Notes = cleanPtr(r.Notes)
 	if requireFlatAndPurpose {
-		if r.FlatID <= 0 {
-			return errors.New("flat_id must be a positive integer")
-		}
 		if !r.Purpose.IsValid() {
 			return errors.New("invalid visitor purpose")
+		}
+		if r.Purpose != VisitorPurposeStaff && r.FlatID <= 0 {
+			return errors.New("flat_id must be a positive integer")
 		}
 	}
 	if r.VehicleType != nil && !r.VehicleType.IsValid() {
@@ -341,6 +341,24 @@ func (r *VisitorFormRequest) ValidateForPurpose() error {
 			return errors.New("service_provider is required for maintenance entries")
 		}
 		r.CompanionsCount = 0
+	case VisitorPurposeStaff:
+		if r.PhoneNumber == nil {
+			return errors.New("phone_number is required for staff entries")
+		}
+		r.FlatID = 0
+	}
+	return nil
+}
+
+func (r *VisitorFormRequest) ValidateInviteSubmit() error {
+	if r == nil {
+		return errors.New("visitor form request is required")
+	}
+	if err := r.Validate(false); err != nil {
+		return err
+	}
+	if r.ExpectedAt == nil {
+		return errors.New("expected_at is required for invite submissions")
 	}
 	return nil
 }
@@ -348,6 +366,45 @@ func (r *VisitorFormRequest) ValidateForPurpose() error {
 type GuardApproveEntryRequest struct {
 	OnBehalf *bool   `json:"on_behalf,omitempty"`
 	Reason   *string `json:"reason,omitempty"`
+}
+
+type UpdateGuardVisitorEntryRequest struct {
+	FullName           *string             `json:"full_name,omitempty"`
+	PhoneNumber        *string             `json:"phone_number,omitempty"`
+	Email              *string             `json:"email,omitempty"`
+	PhotoURL           *string             `json:"photo_url,omitempty"`
+	VehicleNumber      *string             `json:"vehicle_number,omitempty"`
+	VehicleType        *VisitorVehicleType `json:"vehicle_type,omitempty"`
+	CompanionsCount    *int32              `json:"companions_count,omitempty"`
+	CompanionDetails   []map[string]any    `json:"companion_details,omitempty"`
+	Notes              *string             `json:"notes,omitempty"`
+}
+
+func (r *UpdateGuardVisitorEntryRequest) Validate() error {
+	if r == nil {
+		return errors.New("update request is required")
+	}
+	if r.FullName == nil &&
+		r.PhoneNumber == nil &&
+		r.Email == nil &&
+		r.PhotoURL == nil &&
+		r.VehicleNumber == nil &&
+		r.VehicleType == nil &&
+		r.CompanionsCount == nil &&
+		r.CompanionDetails == nil &&
+		r.Notes == nil {
+		return errors.New("at least one field must be provided for update")
+	}
+	if r.FullName != nil && strings.TrimSpace(*r.FullName) == "" {
+		return errors.New("full_name cannot be empty")
+	}
+	if r.VehicleType != nil && !r.VehicleType.IsValid() {
+		return errors.New("invalid vehicle_type")
+	}
+	if r.CompanionsCount != nil && *r.CompanionsCount < 0 {
+		return errors.New("companions_count must be zero or positive")
+	}
+	return nil
 }
 
 type WaitingAtGateFilter struct {
@@ -488,12 +545,18 @@ type FlatRecentVisitorSummary struct {
 	VisitedOn time.Time      `json:"visited_on"`
 }
 
+type GuardDeskVisitorSettingsSummary struct {
+	AllowGuardEntry            bool `json:"allow_guard_entry"`
+	AllowGuardOnBehalfApproval bool `json:"allow_guard_on_behalf_approval"`
+}
+
 type GuardDeskBootstrapResponse struct {
-	Society             *SocietyResponse           `json:"society"`
-	Stats               *VisitorEntryStatsResponse `json:"stats"`
-	ExpectedGuestsCount int64                      `json:"expected_guests_count"`
-	WaitingAtGateCount  int64                      `json:"waiting_at_gate_count"`
-	PendingPreview      []*VisitorPendingEntry     `json:"pending_preview"`
+	Society             *SocietyResponse                  `json:"society"`
+	Stats               *VisitorEntryStatsResponse        `json:"stats"`
+	ExpectedGuestsCount int64                             `json:"expected_guests_count"`
+	WaitingAtGateCount  int64                             `json:"waiting_at_gate_count"`
+	PendingPreview      []*VisitorPendingEntry            `json:"pending_preview"`
+	VisitorSettings     *GuardDeskVisitorSettingsSummary  `json:"visitor_settings,omitempty"`
 }
 
 type SocietyFlatVisitorSettingRow struct {

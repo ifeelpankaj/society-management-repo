@@ -8,6 +8,7 @@ import {
 import { generatedApi } from "@/lib/api/generated-api";
 import "@/lib/api/member-invite-api-extensions";
 import "@/lib/api/visitor-invite-api-extensions";
+import "@/lib/api/auth-api-extensions";
 import { rootReducer } from "./root-reducer";
 
 export const store = configureStore({

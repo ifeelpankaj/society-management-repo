@@ -505,6 +505,47 @@ func (h *VisitorEntryHandler) GetEntry(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Visitor entry fetched successfully", gin.H{"entry": entry})
 }
 
+// UpdateGuardEntry godoc
+// @Summary Update visitor entry details
+// @Description [Owner/Admin/Staff] Updates visitor and entry details before check-in for approved or pending entries.
+// @Tags Visitor Entries
+// @Accept json
+// @Produce json
+// @Param societyId path int true "Society ID"
+// @Param entryId path int true "Visitor entry ID"
+// @Param request body models.UpdateGuardVisitorEntryRequest true "Visitor entry update payload"
+// @Success 200 {object} models.VisitorEntryMutationAPIResponse "Visitor entry updated successfully"
+// @Failure 400 {object} models.ErrorResponseDoc "Invalid request or validation error"
+// @Failure 401 {object} models.ErrorResponseDoc "Missing, invalid, or expired access token"
+// @Failure 403 {object} models.ErrorResponseDoc "Owner, admin, or staff access required"
+// @Failure 404 {object} models.ErrorResponseDoc "Visitor entry not found"
+// @Failure 409 {object} models.ErrorResponseDoc "Visitor entry is not in an editable state"
+// @Failure 500 {object} models.ErrorResponseDoc "Internal server error"
+// @Security AccessToken
+// @Router /v1/societies/{societyId}/visitor-entries/{entryId} [patch]
+func (h *VisitorEntryHandler) UpdateGuardEntry(c *gin.Context) {
+	societyID, entryID, ok := visitorEntryPath(c)
+	if !ok {
+		return
+	}
+	guardUserID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "Authentication required")
+		return
+	}
+
+	var req models.UpdateGuardVisitorEntryRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+
+	entry, err := h.entrySvc.UpdateGuardEntry(c.Request.Context(), societyID, entryID, guardUserID, req)
+	if handleServiceError(c, err) {
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, "Visitor entry updated successfully", gin.H{"entry": entry})
+}
+
 // ListEntries godoc
 // @Summary List visitor entries
 // @Description [Owner/Admin/Staff] Lists visitor entries for a society with optional flat, status, source, purpose, limit, and offset filters.

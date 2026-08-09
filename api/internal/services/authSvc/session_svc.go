@@ -16,6 +16,7 @@ type SessionSvc interface {
 	AuthenticateCredentials(ctx context.Context, req *models.LoginRequest) (*models.UserResponse, error)
 	Refresh(ctx context.Context, userID int64) (*RefreshResult, error)
 	GetProfile(ctx context.Context, userID int64) (*models.UserResponse, error)
+	UpdateProfile(ctx context.Context, userID int64, req *models.UpdateUserRequest) (*models.UserResponse, error)
 }
 
 type LoginResult struct {
@@ -206,4 +207,37 @@ func (s *sessionSvc) GetProfile(ctx context.Context, userID int64) (*models.User
 	}
 
 	return user.ToResponse(), nil
+}
+
+func (s *sessionSvc) UpdateProfile(ctx context.Context, userID int64, req *models.UpdateUserRequest) (*models.UserResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, service.DefaultTimeout)
+	defer cancel()
+
+	req.Sanitize()
+	if err := req.Validate(); err != nil {
+		return nil, ErrInvalidName.WithCause(err)
+	}
+
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, ErrUserNotFound.WithCause(err)
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+	if !user.IsActive {
+		return nil, ErrUserInactive
+	}
+	if user.IsBlocked {
+		return nil, ErrUserBlocked
+	}
+
+	updated, err := s.userRepo.UpdateProfile(ctx, userID, req)
+	if err != nil {
+		return nil, ErrUpdateUser.WithCause(err)
+	}
+	if updated == nil {
+		return nil, ErrUserNotFound
+	}
+	return updated.ToResponse(), nil
 }

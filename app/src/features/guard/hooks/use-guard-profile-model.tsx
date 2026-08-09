@@ -4,6 +4,7 @@ import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate
 import { useGuardSociety } from "@/features/guard/guard-context";
 import { guardHomeRoute } from "@/features/guard/guard-routes";
 import { SocietyAccessCard, SocietySwitchSheet } from "@/features/profile";
+import { ProfileEditSheet } from "@/features/profile/components/profile-edit-sheet";
 import type { ProfileScreenProps } from "@/features/profile/components/profile-screen";
 import { useGetV1SocietiesBySocietyIdQuery } from "@/lib/api/generated-api";
 
@@ -19,6 +20,7 @@ export function useGuardProfileModel(): ProfileScreenProps {
     user,
   } = useGuardSociety();
   const [switchSheetVisible, setSwitchSheetVisible] = useState(false);
+  const [editSheetVisible, setEditSheetVisible] = useState(false);
 
   const societyQuery = useGetV1SocietiesBySocietyIdQuery(
     { societyId: selectedSocietyId ?? 0 },
@@ -45,13 +47,21 @@ export function useGuardProfileModel(): ProfileScreenProps {
   ) : null;
 
   const modals = (
-    <SocietySwitchSheet
-      memberships={memberships}
-      selectedSocietyId={selectedSocietyId}
-      visible={switchSheetVisible}
-      onClose={() => setSwitchSheetVisible(false)}
-      onSelect={selectSociety}
-    />
+    <>
+      <SocietySwitchSheet
+        memberships={memberships}
+        selectedSocietyId={selectedSocietyId}
+        visible={switchSheetVisible}
+        onClose={() => setSwitchSheetVisible(false)}
+        onSelect={selectSociety}
+      />
+      <ProfileEditSheet
+        user={user}
+        visible={editSheetVisible}
+        onClose={() => setEditSheetVisible(false)}
+        onSaved={() => void refetch()}
+      />
+    </>
   );
 
   return useMemo(
@@ -61,6 +71,7 @@ export function useGuardProfileModel(): ProfileScreenProps {
       gate,
       isLoading,
       modals,
+      onEditProfile: () => setEditSheetVisible(true),
       onRefreshAccess: refetch,
       user,
       workspaceSlot,

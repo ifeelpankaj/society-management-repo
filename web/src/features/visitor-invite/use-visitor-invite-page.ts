@@ -18,9 +18,12 @@ import {
   MAX_VISITOR_COMPANIONS,
   normalizeCompanionNames,
   parseCompanionsCount,
+  toIsoFromDatetimeLocal,
 } from "./visitor-invite-utils";
 
 type VisitorInviteFormValues = {
+  expectedAt: string;
+  expectedCheckoutAt: string;
   fullName: string;
   phoneNumber: string;
   email: string;
@@ -41,6 +44,8 @@ export function useVisitorInvitePage(token: string) {
   const normalizedToken = decodeURIComponent(token).trim();
   const [showOptional, setShowOptional] = useState(false);
   const [form, setForm] = useState<VisitorInviteFormValues>({
+    expectedAt: "",
+    expectedCheckoutAt: "",
     fullName: "",
     phoneNumber: "",
     email: "",
@@ -86,6 +91,18 @@ export function useVisitorInvitePage(token: string) {
       return "Enter your full name";
     }
 
+    if (!form.expectedAt.trim()) {
+      return "Select your expected check-in time";
+    }
+
+    if (!toIsoFromDatetimeLocal(form.expectedAt)) {
+      return "Enter a valid expected check-in time";
+    }
+
+    if (form.expectedCheckoutAt.trim() && !toIsoFromDatetimeLocal(form.expectedCheckoutAt)) {
+      return "Enter a valid expected checkout time";
+    }
+
     const phone = form.phoneNumber.trim();
     const email = form.email.trim();
 
@@ -102,7 +119,14 @@ export function useVisitorInvitePage(token: string) {
     }
 
     return null;
-  }, [form.email, form.fullName, form.phoneNumber, parsedCompanionsCount]);
+  }, [
+    form.email,
+    form.expectedAt,
+    form.expectedCheckoutAt,
+    form.fullName,
+    form.phoneNumber,
+    parsedCompanionsCount,
+  ]);
 
   const updateField = <K extends keyof VisitorInviteFormValues>(
     key: K,
@@ -154,6 +178,8 @@ export function useVisitorInvitePage(token: string) {
           companions_count: parsedCompanionsCount,
           companion_details:
             companionDetails.length > 0 ? companionDetails : undefined,
+          expected_at: toIsoFromDatetimeLocal(form.expectedAt),
+          expected_checkout_at: toIsoFromDatetimeLocal(form.expectedCheckoutAt),
         },
       }).unwrap();
 

@@ -80,6 +80,16 @@
 "message": "Visitor entry created successfully",
 "success": true
 } this field should be handled correctly according to the entry type
+# add routes to chnage date of bith edit profile chnage photo url can wait but other things can be updated 
+
+# Also in mobile app is showing only 2 section  in visitor over view guard dashboard and resident one due to styling issue 
+
+# Make seach in ..web folder little more advance like if i am searching for pankaj and type pan give matching results and all 
+
+# write clean code and try to re use the thing if possible 
+
+# Below is the reference images i want for my app 
+
 
 ![alt text](image-1.png)
 

@@ -291,7 +291,12 @@ function FlatSearchModal({
                   {item.flat_number ?? `#${item.id}`}
                 </Text>
                 <Text style={styles.flatListItemMeta}>
-                  {item.block ? `Wing ${item.block}` : item.floor ? `Floor ${item.floor}` : ""}
+                  {[
+                    item.primary_resident_name,
+                    item.block ? `Wing ${item.block}` : item.floor ? `Floor ${item.floor}` : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </Text>
               </Pressable>
             )}
@@ -569,6 +574,7 @@ function InviteLinkSuccessCard({
 }
 
 type ManualEntryFormProps = {
+  allowGuardEntry?: boolean;
   societyId: number;
   societyName?: string | null;
   onEntryCreated?: (result: { entry?: ModelsVisitorEntry; qrToken?: string }) => void;
@@ -577,6 +583,7 @@ type ManualEntryFormProps = {
 };
 
 export function ManualEntryForm({
+  allowGuardEntry = true,
   societyId,
   societyName,
   onEntryCreated,
@@ -607,7 +614,7 @@ export function ManualEntryForm({
   const isFormLinkMode = entryMode === "form_link";
   const canSubmit = isFormLinkMode
     ? inviteForm.isFormValid && !inviteForm.createInviteState.isLoading
-    : form.isFormValid && !form.createEntryState.isLoading;
+    : allowGuardEntry && form.isFormValid && !form.createEntryState.isLoading;
   const isSubmitting = isFormLinkMode
     ? inviteForm.createInviteState.isLoading
     : form.createEntryState.isLoading;
@@ -644,12 +651,23 @@ export function ManualEntryForm({
           />
         </Row>
 
-        <FlatPicker
-          error={flatError}
-          selected={selectedFlat}
-          societyId={societyId}
-          onSelect={setSelectedFlat}
-        />
+        {!allowGuardEntry ? (
+          <View style={styles.permissionBanner}>
+            <Text style={styles.permissionBannerTitle}>Guard entry disabled</Text>
+            <Text style={styles.permissionBannerBody}>
+              Your admin has not allowed guard entry for this society.
+            </Text>
+          </View>
+        ) : null}
+
+        {purpose !== "staff" ? (
+          <FlatPicker
+            error={flatError}
+            selected={selectedFlat}
+            societyId={societyId}
+            onSelect={setSelectedFlat}
+          />
+        ) : null}
 
         <PurposePicker value={purpose} onChange={setPurpose} />
 
@@ -888,7 +906,7 @@ export function ManualEntryForm({
                 !canSubmit && styles.submitButtonTextDisabled,
               ]}
             >
-              {isFormLinkMode ? "Create link" : "Create Entry"}
+              {isFormLinkMode ? "Create link" : allowGuardEntry ? "Create Entry" : "Guard entry disabled"}
             </Text>
           )}
         </Pressable>
@@ -1155,6 +1173,24 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
     marginTop: 40,
     textAlign: "center",
+  },
+  permissionBanner: {
+    backgroundColor: colors.status.warningSoft,
+    borderColor: "#fde68a",
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: 4,
+    padding: spacing.lg,
+  },
+  permissionBannerBody: {
+    color: "#92400e",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  permissionBannerTitle: {
+    color: "#78350f",
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalScreen: {
     backgroundColor: colors.guard.screenBg,

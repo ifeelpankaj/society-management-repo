@@ -53,6 +53,23 @@ export type GuardVisitorStatsQuery = {
   eventTo?: string;
 };
 
+export type GuardDeskVisitorSettings = {
+  allow_guard_entry?: boolean;
+  allow_guard_on_behalf_approval?: boolean;
+};
+
+export type UpdateGuardVisitorEntryBody = {
+  companion_details?: Record<string, string>[];
+  companions_count?: number;
+  email?: string;
+  full_name?: string;
+  notes?: string;
+  phone_number?: string;
+  photo_url?: string;
+  vehicle_number?: string;
+  vehicle_type?: ModelsVisitorEntry["vehicle_type"];
+};
+
 export const guardApiExtensions = enhancedApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
@@ -108,6 +125,17 @@ export const guardApiExtensions = enhancedApi.injectEndpoints({
       }),
       providesTags: ["VisitorStats", "Visitor Entries"],
     }),
+    patchV1SocietiesBySocietyIdVisitorEntriesAndEntryId: build.mutation<
+      ApiEnvelope<{ entry?: ModelsVisitorEntry }>,
+      { societyId: number; entryId: number; body: UpdateGuardVisitorEntryBody }
+    >({
+      query: ({ societyId, entryId, body }) => ({
+        url: `/v1/societies/${societyId}/visitor-entries/${entryId}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Visitor Entries"],
+    }),
   }),
 });
 
@@ -116,4 +144,5 @@ export const {
   useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery,
   useGetV1SocietiesBySocietyIdVisitorEntriesStatsExtendedQuery,
   useLazyGetV1SocietiesBySocietyIdVisitorEntriesStatsExtendedQuery,
+  usePatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdMutation,
 } = guardApiExtensions;

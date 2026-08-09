@@ -49,12 +49,21 @@ func (s *VisitorEntrySvc) GetGuardDeskBootstrap(ctx context.Context, societyID i
 		return nil, err
 	}
 
+	visitorSettings, err := s.settingSvc.GetSocietySettings(ctx, societyID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &models.GuardDeskBootstrapResponse{
 		Society:             society.ToResponse(),
 		Stats:               stats,
 		ExpectedGuestsCount: expectedGuestsCount,
 		WaitingAtGateCount:  waitingAtGateCount,
 		PendingPreview:      pending,
+		VisitorSettings: &models.GuardDeskVisitorSettingsSummary{
+			AllowGuardEntry:            visitorSettings.AllowGuardEntry,
+			AllowGuardOnBehalfApproval: visitorSettings.AllowGuardOnBehalfApproval,
+		},
 	}, nil
 }
 

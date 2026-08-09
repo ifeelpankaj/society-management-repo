@@ -81,14 +81,11 @@ func (q *Queries) ApproveVisitorEntry(ctx context.Context, arg ApproveVisitorEnt
 
 const autoCloseExpiredVisitorEntries = `-- name: AutoCloseExpiredVisitorEntries :exec
 UPDATE visitor_entries
-SET status = 'auto_closed',
-    auto_closed_at = NOW(),
-    updated_at = NOW()
-WHERE status = 'checked_in'
-  AND expected_checkout_at IS NOT NULL
-  AND expected_checkout_at < NOW()
+SET updated_at = updated_at
+WHERE false
 `
 
+// Checked-in visitors remain inside until explicit guard checkout.
 func (q *Queries) AutoCloseExpiredVisitorEntries(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, autoCloseExpiredVisitorEntries)
 	return err
@@ -589,13 +586,13 @@ VALUES (
     $1,
     $2,
     $3,
-    $8,
     $4,
     $5,
     $6,
+    $7,
+    $8,
     $9,
     $10,
-    $7,
     COALESCE($11, '[]'::jsonb),
     $12,
     $13,
@@ -615,15 +612,15 @@ RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, statu
 
 type CreateVisitorEntryParams struct {
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
+	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
 	Purpose            VisitorPurpose      `db:"purpose" json:"purpose"`
 	Status             VisitorStatus       `db:"status" json:"status"`
-	CompanionsCount    int32               `db:"companions_count" json:"companions_count"`
-	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	VehicleNumber      *string             `db:"vehicle_number" json:"vehicle_number"`
 	VehicleType        *VisitorVehicleType `db:"vehicle_type" json:"vehicle_type"`
+	CompanionsCount    int32               `db:"companions_count" json:"companions_count"`
 	CompanionDetails   interface{}         `db:"companion_details" json:"companion_details"`
 	ExpectedAt         pgtype.Timestamptz  `db:"expected_at" json:"expected_at"`
 	ExpectedCheckoutAt pgtype.Timestamptz  `db:"expected_checkout_at" json:"expected_checkout_at"`
@@ -644,13 +641,13 @@ func (q *Queries) CreateVisitorEntry(ctx context.Context, arg CreateVisitorEntry
 		arg.SocietyID,
 		arg.FlatID,
 		arg.VisitorID,
+		arg.InviteID,
 		arg.Source,
 		arg.Purpose,
 		arg.Status,
-		arg.CompanionsCount,
-		arg.InviteID,
 		arg.VehicleNumber,
 		arg.VehicleType,
+		arg.CompanionsCount,
 		arg.CompanionDetails,
 		arg.ExpectedAt,
 		arg.ExpectedCheckoutAt,
@@ -803,8 +800,11 @@ UPDATE visitor_entries
 SET status = 'expired',
     updated_at = NOW()
 WHERE status = 'approved'
-  AND qr_expires_at IS NOT NULL
-  AND qr_expires_at < NOW()
+  AND checked_in_at IS NULL
+  AND (
+    (expected_checkout_at IS NOT NULL AND expected_checkout_at < NOW())
+    OR (expected_checkout_at IS NULL AND qr_expires_at IS NOT NULL AND qr_expires_at < NOW())
+  )
 `
 
 func (q *Queries) ExpireStaleApprovedEntries(ctx context.Context) error {
@@ -935,7 +935,7 @@ type GetVisitorEntryParams struct {
 type GetVisitorEntryRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -1040,7 +1040,7 @@ WHERE ve.invite_id = $1
 type GetVisitorEntryByInviteIDRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -1145,7 +1145,7 @@ WHERE ve.qr_token_hash = $1
 type GetVisitorEntryByQRHashRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -1539,7 +1539,7 @@ type ListExpectedGuestEntriesParams struct {
 type ListExpectedGuestEntriesRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -1666,15 +1666,15 @@ LIMIT $3
 `
 
 type ListPendingVisitorApprovalsParams struct {
-	SocietyID int64 `db:"society_id" json:"society_id"`
-	FlatID    int64 `db:"flat_id" json:"flat_id"`
-	Limit     int32 `db:"limit" json:"limit"`
+	SocietyID int64  `db:"society_id" json:"society_id"`
+	FlatID    *int64 `db:"flat_id" json:"flat_id"`
+	Limit     int32  `db:"limit" json:"limit"`
 }
 
 type ListPendingVisitorApprovalsRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -1793,15 +1793,15 @@ LIMIT $3
 `
 
 type ListRecentVisitorEntriesByFlatParams struct {
-	SocietyID int64 `db:"society_id" json:"society_id"`
-	FlatID    int64 `db:"flat_id" json:"flat_id"`
-	Limit     int32 `db:"limit" json:"limit"`
+	SocietyID int64  `db:"society_id" json:"society_id"`
+	FlatID    *int64 `db:"flat_id" json:"flat_id"`
+	Limit     int32  `db:"limit" json:"limit"`
 }
 
 type ListRecentVisitorEntriesByFlatRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -1940,7 +1940,7 @@ type ListSocietyPendingVisitorApprovalsParams struct {
 type ListSocietyPendingVisitorApprovalsRow struct {
 	ID                  int64               `db:"id" json:"id"`
 	SocietyID           int64               `db:"society_id" json:"society_id"`
-	FlatID              int64               `db:"flat_id" json:"flat_id"`
+	FlatID              *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID           int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID            *int64              `db:"invite_id" json:"invite_id"`
 	Source              VisitorSource       `db:"source" json:"source"`
@@ -2145,7 +2145,7 @@ type ListVisitorEntriesParams struct {
 type ListVisitorEntriesRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -2342,7 +2342,7 @@ type ListWaitingAtGateVisitorEntriesParams struct {
 type ListWaitingAtGateVisitorEntriesRow struct {
 	ID                 int64               `db:"id" json:"id"`
 	SocietyID          int64               `db:"society_id" json:"society_id"`
-	FlatID             int64               `db:"flat_id" json:"flat_id"`
+	FlatID             *int64              `db:"flat_id" json:"flat_id"`
 	VisitorID          int64               `db:"visitor_id" json:"visitor_id"`
 	InviteID           *int64              `db:"invite_id" json:"invite_id"`
 	Source             VisitorSource       `db:"source" json:"source"`
@@ -2591,6 +2591,121 @@ func (q *Queries) RejectVisitorEntry(ctx context.Context, arg RejectVisitorEntry
 		&i.ApprovedAt,
 		&i.DeliveryPartner,
 		&i.ServiceProvider,
+	)
+	return i, err
+}
+
+const updateVisitorEntryDetails = `-- name: UpdateVisitorEntryDetails :one
+UPDATE visitor_entries
+SET
+    vehicle_number = COALESCE($3, vehicle_number),
+    vehicle_type = COALESCE($4, vehicle_type),
+    companions_count = COALESCE($5, companions_count),
+    companion_details = COALESCE($6, companion_details),
+    notes = COALESCE($7, notes),
+    updated_at = NOW()
+WHERE id = $1
+  AND society_id = $2
+  AND status IN ('waiting_approval', 'approved')
+RETURNING id, society_id, flat_id, visitor_id, invite_id, source, purpose, status, vehicle_number, vehicle_type, companions_count, companion_details, expected_at, expected_checkout_at, checked_in_at, checked_out_at, auto_closed_at, approved_by, rejected_by, handled_by_guard_id, created_by, qr_token_hash, qr_expires_at, qr_used_at, notes, rejection_reason, metadata, created_at, updated_at, approved_at, delivery_partner, service_provider
+`
+
+type UpdateVisitorEntryDetailsParams struct {
+	ID               int64               `db:"id" json:"id"`
+	SocietyID        int64               `db:"society_id" json:"society_id"`
+	VehicleNumber    *string             `db:"vehicle_number" json:"vehicle_number"`
+	VehicleType      *VisitorVehicleType `db:"vehicle_type" json:"vehicle_type"`
+	CompanionsCount  *int32              `db:"companions_count" json:"companions_count"`
+	CompanionDetails []byte              `db:"companion_details" json:"companion_details"`
+	Notes            *string             `db:"notes" json:"notes"`
+}
+
+func (q *Queries) UpdateVisitorEntryDetails(ctx context.Context, arg UpdateVisitorEntryDetailsParams) (VisitorEntry, error) {
+	row := q.db.QueryRow(ctx, updateVisitorEntryDetails,
+		arg.ID,
+		arg.SocietyID,
+		arg.VehicleNumber,
+		arg.VehicleType,
+		arg.CompanionsCount,
+		arg.CompanionDetails,
+		arg.Notes,
+	)
+	var i VisitorEntry
+	err := row.Scan(
+		&i.ID,
+		&i.SocietyID,
+		&i.FlatID,
+		&i.VisitorID,
+		&i.InviteID,
+		&i.Source,
+		&i.Purpose,
+		&i.Status,
+		&i.VehicleNumber,
+		&i.VehicleType,
+		&i.CompanionsCount,
+		&i.CompanionDetails,
+		&i.ExpectedAt,
+		&i.ExpectedCheckoutAt,
+		&i.CheckedInAt,
+		&i.CheckedOutAt,
+		&i.AutoClosedAt,
+		&i.ApprovedBy,
+		&i.RejectedBy,
+		&i.HandledByGuardID,
+		&i.CreatedBy,
+		&i.QrTokenHash,
+		&i.QrExpiresAt,
+		&i.QrUsedAt,
+		&i.Notes,
+		&i.RejectionReason,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ApprovedAt,
+		&i.DeliveryPartner,
+		&i.ServiceProvider,
+	)
+	return i, err
+}
+
+const updateVisitorProfile = `-- name: UpdateVisitorProfile :one
+UPDATE visitors
+SET
+    full_name = COALESCE($2, full_name),
+    phone_number = COALESCE($3, phone_number),
+    email = COALESCE($4, email),
+    photo_url = COALESCE($5, photo_url),
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, full_name, phone_number, email, photo_url, metadata, created_at, updated_at
+`
+
+type UpdateVisitorProfileParams struct {
+	ID          int64   `db:"id" json:"id"`
+	FullName    *string `db:"full_name" json:"full_name"`
+	PhoneNumber *string `db:"phone_number" json:"phone_number"`
+	Email       *string `db:"email" json:"email"`
+	PhotoUrl    *string `db:"photo_url" json:"photo_url"`
+}
+
+func (q *Queries) UpdateVisitorProfile(ctx context.Context, arg UpdateVisitorProfileParams) (Visitor, error) {
+	row := q.db.QueryRow(ctx, updateVisitorProfile,
+		arg.ID,
+		arg.FullName,
+		arg.PhoneNumber,
+		arg.Email,
+		arg.PhotoUrl,
+	)
+	var i Visitor
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.PhoneNumber,
+		&i.Email,
+		&i.PhotoUrl,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

@@ -257,6 +257,7 @@ export function ResidentCommandCenter() {
               isLoading={activityFeed.isLoading}
               isLoadingMore={activityFeed.isLoadingMore}
               items={activityFeed.items}
+              onItemPress={openEntryDetail}
               onLoadMore={() => {
                 void activityFeed.loadMore();
               }}

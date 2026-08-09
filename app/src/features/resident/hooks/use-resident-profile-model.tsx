@@ -8,6 +8,7 @@ import {
   ResidenceAccessCard,
   ResidenceSwitchSheet,
 } from "@/features/profile";
+import { ProfileEditSheet } from "@/features/profile/components/profile-edit-sheet";
 import type { ProfileScreenProps } from "@/features/profile/components/profile-screen";
 import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
 import { useResident } from "@/features/resident/resident-context";
@@ -36,6 +37,7 @@ function formatFlatLabel(residence?: {
 export function useResidentProfileModel(): ProfileScreenProps {
   const router = useRouter();
   const [switchSheetVisible, setSwitchSheetVisible] = useState(false);
+  const [editSheetVisible, setEditSheetVisible] = useState(false);
   const {
     canManageFlatVisitors,
     flatId,
@@ -94,13 +96,21 @@ export function useResidentProfileModel(): ProfileScreenProps {
   );
 
   const modals = (
-    <ResidenceSwitchSheet
-      residences={residences}
-      selectedFlatId={flatId}
-      visible={switchSheetVisible}
-      onClose={() => setSwitchSheetVisible(false)}
-      onSelect={selectResidence}
-    />
+    <>
+      <ResidenceSwitchSheet
+        residences={residences}
+        selectedFlatId={flatId}
+        visible={switchSheetVisible}
+        onClose={() => setSwitchSheetVisible(false)}
+        onSelect={selectResidence}
+      />
+      <ProfileEditSheet
+        user={user}
+        visible={editSheetVisible}
+        onClose={() => setEditSheetVisible(false)}
+        onSaved={() => void refetch()}
+      />
+    </>
   );
 
   return useMemo(
@@ -111,6 +121,7 @@ export function useResidentProfileModel(): ProfileScreenProps {
       gate,
       isLoading,
       modals,
+      onEditProfile: () => setEditSheetVisible(true),
       onRefreshAccess: refetch,
       supportAboutDescription: `${titleize(selectedResidence?.role ?? "resident")} access`,
       user,

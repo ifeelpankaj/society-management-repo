@@ -17,10 +17,10 @@ export function useFlatsList({ societyId }: UseFlatsListOptions) {
   const [floor, setFloor] = useState("");
   const [flatNumber, setFlatNumber] = useState("");
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search, 2000);
-  const debouncedBlock = useDebouncedValue(block, 2000);
-  const debouncedFloor = useDebouncedValue(floor, 2000);
-  const debouncedFlatNumber = useDebouncedValue(flatNumber, 2000);
+  const debouncedSearch = useDebouncedValue(search, 350);
+  const debouncedBlock = useDebouncedValue(block, 350);
+  const debouncedFloor = useDebouncedValue(floor, 350);
+  const debouncedFlatNumber = useDebouncedValue(flatNumber, 350);
   const [status, setStatus] = useState<ModelsFlatStatus | "all">("all");
   const [isActive, setIsActive] = useState<"all" | "true" | "false">("all");
   const [pageSize, setPageSize] = useState(10);

@@ -11,7 +11,7 @@ import { LogEntryDivider, LogEntryRow } from "@/features/guard/components/logs/l
 import { LogsDateSheet } from "@/features/guard/components/logs/logs-date-sheet";
 import { LogsFilterSheet } from "@/features/guard/components/logs/logs-filter-sheet";
 import { LogsSearchHeader } from "@/features/guard/components/logs/logs-search-header";
-import { LogsStatsSummary } from "@/features/guard/components/logs/logs-stats-summary";
+import { VisitorLogSummaryStrip } from "@/features/visitors/components/visitor-log-summary-strip";
 import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
@@ -102,10 +102,10 @@ export function GuardLogsScreen() {
               onSegmentChange={logs.selectSegment}
             />
             {!logs.isSearchActive ? (
-              <LogsStatsSummary
-                checkedOutToday={checkedOutCount}
-                pendingCount={stats?.pending_approvals ?? 0}
-                visitorsInside={stats?.visitors_inside ?? 0}
+              <VisitorLogSummaryStrip
+                checkedIn={stats?.visitors_inside ?? 0}
+                checkedOut={checkedOutCount}
+                pending={stats?.pending_approvals ?? 0}
               />
             ) : null}
           </Stack>

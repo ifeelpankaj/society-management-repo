@@ -166,12 +166,17 @@ func flatFromGetRow(row db.GetFlatRow) *models.Flat {
 
 func flatFromListRow(row db.ListFlatsRow) *models.Flat {
 	societyName, societyCode := row.SocietyName, row.SocietyCode
+	var primaryResidentName *string
+	if row.PrimaryResidentName != "" {
+		name := row.PrimaryResidentName
+		primaryResidentName = &name
+	}
 	return &models.Flat{
 		ID: row.ID, SocietyID: row.SocietyID, Block: row.Block, Floor: row.Floor,
 		FlatNumber: row.FlatNumber, Status: models.FlatStatus(row.Status), IsActive: row.IsActive,
 		Metadata: metadataFromJSON(row.Metadata), CreatedBy: row.CreatedBy,
 		CreatedAt: pgTimestamptzToTime(row.CreatedAt), UpdatedAt: pgTimestamptzToTime(row.UpdatedAt),
-		SocietyName: &societyName, SocietyCode: &societyCode,
+		SocietyName: &societyName, SocietyCode: &societyCode, PrimaryResidentName: primaryResidentName,
 	}
 }
 

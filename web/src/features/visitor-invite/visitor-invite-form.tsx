@@ -2,6 +2,7 @@
 
 import {
   Car,
+  CalendarClock,
   ChevronDown,
   ChevronUp,
   Mail,
@@ -23,12 +24,16 @@ type VisitorInviteFormProps = {
   companionNames: string[];
   companionsCount: string;
   email: string;
+  expectedAt: string;
+  expectedCheckoutAt: string;
   fullName: string;
   isSubmitting: boolean;
   notes: string;
   onCompanionNameChange: (index: number, value: string) => void;
   onCompanionsCountChange: (value: string) => void;
   onEmailChange: (value: string) => void;
+  onExpectedAtChange: (value: string) => void;
+  onExpectedCheckoutAtChange: (value: string) => void;
   onFullNameChange: (value: string) => void;
   onNotesChange: (value: string) => void;
   onPhoneNumberChange: (value: string) => void;
@@ -44,12 +49,16 @@ export function VisitorInviteForm({
   companionNames,
   companionsCount,
   email,
+  expectedAt,
+  expectedCheckoutAt,
   fullName,
   isSubmitting,
   notes,
   onCompanionNameChange,
   onCompanionsCountChange,
   onEmailChange,
+  onExpectedAtChange,
+  onExpectedCheckoutAtChange,
   onFullNameChange,
   onNotesChange,
   onPhoneNumberChange,
@@ -83,6 +92,26 @@ export function VisitorInviteForm({
         required
         value={fullName}
         onChange={(event) => onFullNameChange(event.target.value)}
+      />
+
+      <FormField
+        icon={<CalendarClock className="size-4" />}
+        id="visitor-expected-at"
+        label="Expected check-in"
+        required
+        type="datetime-local"
+        value={expectedAt}
+        onChange={(event) => onExpectedAtChange(event.target.value)}
+      />
+
+      <FormField
+        hint="Optional. If omitted, checkout time is calculated from society settings."
+        icon={<CalendarClock className="size-4" />}
+        id="visitor-expected-checkout-at"
+        label="Expected checkout"
+        type="datetime-local"
+        value={expectedCheckoutAt}
+        onChange={(event) => onExpectedCheckoutAtChange(event.target.value)}
       />
 
       <FormField

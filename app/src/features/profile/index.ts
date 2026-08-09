@@ -16,5 +16,8 @@ export {
   formatLanguage,
   formatPhoneDisplay,
   formatTimezone,
+  normalizeProfileDateInput,
+  PROFILE_GENDER_OPTIONS,
+  type ProfileGenderValue,
 } from "./profile-formatters";
 export { useProfileAction } from "./use-profile-action";

@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -409,4 +411,131 @@ type UpdateUserPasswordHashParams struct {
 func (q *Queries) UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error {
 	_, err := q.db.Exec(ctx, updateUserPasswordHash, arg.ID, arg.PasswordHash)
 	return err
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE users
+SET
+    first_name = COALESCE($1, first_name),
+    last_name = COALESCE($2, last_name),
+    full_name = TRIM(BOTH FROM CONCAT(
+        COALESCE($1, first_name, ''),
+        ' ',
+        COALESCE($2, last_name, '')
+    )),
+    phone_number = COALESCE($3, phone_number),
+    date_of_birth = COALESCE($4, date_of_birth),
+    gender = COALESCE($5, gender),
+    timezone = COALESCE($6, timezone),
+    language = COALESCE($7, language),
+    updated_at = NOW()
+WHERE id = $8
+  AND deleted_at IS NULL
+RETURNING
+    id,
+    first_name,
+    last_name,
+    full_name,
+    email,
+    phone_number,
+    password_hash,
+    auth_provider,
+    provider_id,
+    global_role,
+    email_verified,
+    phone_verified,
+    is_active,
+    is_blocked,
+    avatar_url,
+    date_of_birth,
+    gender,
+    timezone,
+    language,
+    last_login_at,
+    password_changed_at,
+    metadata,
+    created_at,
+    updated_at,
+    deleted_at
+`
+
+type UpdateUserProfileParams struct {
+	FirstName   *string     `db:"first_name" json:"first_name"`
+	LastName    *string     `db:"last_name" json:"last_name"`
+	PhoneNumber *string     `db:"phone_number" json:"phone_number"`
+	DateOfBirth pgtype.Date `db:"date_of_birth" json:"date_of_birth"`
+	Gender      *string     `db:"gender" json:"gender"`
+	Timezone    *string     `db:"timezone" json:"timezone"`
+	Language    *string     `db:"language" json:"language"`
+	ID          int64       `db:"id" json:"id"`
+}
+
+type UpdateUserProfileRow struct {
+	ID                int64              `db:"id" json:"id"`
+	FirstName         *string            `db:"first_name" json:"first_name"`
+	LastName          *string            `db:"last_name" json:"last_name"`
+	FullName          string             `db:"full_name" json:"full_name"`
+	Email             *string            `db:"email" json:"email"`
+	PhoneNumber       *string            `db:"phone_number" json:"phone_number"`
+	PasswordHash      *string            `db:"password_hash" json:"password_hash"`
+	AuthProvider      AuthProvider       `db:"auth_provider" json:"auth_provider"`
+	ProviderID        *string            `db:"provider_id" json:"provider_id"`
+	GlobalRole        GlobalRole         `db:"global_role" json:"global_role"`
+	EmailVerified     bool               `db:"email_verified" json:"email_verified"`
+	PhoneVerified     bool               `db:"phone_verified" json:"phone_verified"`
+	IsActive          bool               `db:"is_active" json:"is_active"`
+	IsBlocked         bool               `db:"is_blocked" json:"is_blocked"`
+	AvatarUrl         *string            `db:"avatar_url" json:"avatar_url"`
+	DateOfBirth       pgtype.Date        `db:"date_of_birth" json:"date_of_birth"`
+	Gender            *string            `db:"gender" json:"gender"`
+	Timezone          string             `db:"timezone" json:"timezone"`
+	Language          string             `db:"language" json:"language"`
+	LastLoginAt       pgtype.Timestamptz `db:"last_login_at" json:"last_login_at"`
+	PasswordChangedAt pgtype.Timestamptz `db:"password_changed_at" json:"password_changed_at"`
+	Metadata          []byte             `db:"metadata" json:"metadata"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	DeletedAt         pgtype.Timestamptz `db:"deleted_at" json:"deleted_at"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (UpdateUserProfileRow, error) {
+	row := q.db.QueryRow(ctx, updateUserProfile,
+		arg.FirstName,
+		arg.LastName,
+		arg.PhoneNumber,
+		arg.DateOfBirth,
+		arg.Gender,
+		arg.Timezone,
+		arg.Language,
+		arg.ID,
+	)
+	var i UpdateUserProfileRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.FullName,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.PasswordHash,
+		&i.AuthProvider,
+		&i.ProviderID,
+		&i.GlobalRole,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.IsActive,
+		&i.IsBlocked,
+		&i.AvatarUrl,
+		&i.DateOfBirth,
+		&i.Gender,
+		&i.Timezone,
+		&i.Language,
+		&i.LastLoginAt,
+		&i.PasswordChangedAt,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }
