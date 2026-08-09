@@ -1,4 +1,5 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
+import type { ReactNode } from "react";
 import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -10,10 +11,17 @@ import { typography } from "@/theme/typography";
 
 type QrCameraProps = {
   active?: boolean;
+  enableTorch?: boolean;
+  overlay?: ReactNode;
   onScanned?: (data: string) => void;
 };
 
-export function QrCamera({ active = true, onScanned }: QrCameraProps) {
+export function QrCamera({
+  active = true,
+  enableTorch = false,
+  overlay,
+  onScanned,
+}: QrCameraProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const hasScannedRef = useRef(false);
 
@@ -37,31 +45,35 @@ export function QrCamera({ active = true, onScanned }: QrCameraProps) {
   }
 
   return (
-    <CameraView
-      active={active}
-      barcodeScannerSettings={{
-        barcodeTypes: ["qr"],
-      }}
-      style={styles.camera}
-      facing="back"
-      onBarcodeScanned={({ data }) => {
-        if (hasScannedRef.current || !active) {
-          return;
-        }
+    <View style={styles.wrapper}>
+      <CameraView
+        active={active}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr"],
+        }}
+        enableTorch={enableTorch}
+        facing="back"
+        style={styles.camera}
+        onBarcodeScanned={({ data }) => {
+          if (hasScannedRef.current || !active) {
+            return;
+          }
 
-        hasScannedRef.current = true;
-        onScanned?.(data);
-        setTimeout(() => {
-          hasScannedRef.current = false;
-        }, 1800);
-      }}
-    />
+          hasScannedRef.current = true;
+          onScanned?.(data);
+          setTimeout(() => {
+            hasScannedRef.current = false;
+          }, 1800);
+        }}
+      />
+      {overlay ? <View pointerEvents="box-none" style={styles.overlay}>{overlay}</View> : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   allowButton: {
-    backgroundColor: colors.status.info,
+    backgroundColor: colors.brand.orange,
     borderRadius: radius.md,
     paddingHorizontal: layout.footerPaddingHorizontal,
     paddingVertical: spacing.md,
@@ -72,6 +84,9 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
   },
   permissionContainer: {
     alignItems: "center",
@@ -87,5 +102,9 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text.inverse,
     textAlign: "center",
+  },
+  wrapper: {
+    flex: 1,
+    overflow: "hidden",
   },
 });

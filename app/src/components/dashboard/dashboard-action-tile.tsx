@@ -47,19 +47,19 @@ export function DashboardActionTile({
   icon,
   onPress,
   subtitle,
-  // title,
+  title,
   tone,
 }: DashboardActionTileProps) {
   const toneStyle = dashboardActionToneStyles[tone];
 
   return (
     <Pressable
-      // accessibilityLabel={title}
+      accessibilityLabel={title}
       accessibilityRole="button"
       style={({ pressed }) => [
         styles.tile,
         {
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? 0.88 : 1,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
@@ -71,11 +71,11 @@ export function DashboardActionTile({
           { backgroundColor: toneStyle.backgroundColor },
         ]}
       >
-        <SymbolView name={icon} size={24} tintColor={toneStyle.iconColor} />
+        <SymbolView name={icon} size={22} tintColor={toneStyle.iconColor} />
       </View>
-      {/* <Text numberOfLines={2} style={styles.title}>
+      <Text numberOfLines={1} style={styles.title}>
         {title}
-      </Text> */}
+      </Text>
       <Text numberOfLines={2} style={styles.subtitle}>
         {subtitle}
       </Text>
@@ -86,28 +86,35 @@ export function DashboardActionTile({
 const styles = StyleSheet.create({
   iconWrap: {
     alignItems: "center",
-    borderRadius: radius.lg,
-    height: 48,
+    borderRadius: 999,
+    height: 44,
     justifyContent: "center",
-    width: 48,
+    width: 44,
   },
   subtitle: {
     color: colors.guard.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
+    lineHeight: 14,
     textAlign: "center",
   },
   tile: {
     alignItems: "center",
-
+    backgroundColor: colors.surface.card,
+    borderColor: colors.dashboard.cardBorder,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
     flex: 1,
     gap: spacing.sm,
     justifyContent: "center",
-    // ...shadows.sm,
+    minHeight: layout.actionTileMinHeight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+    ...shadows.card,
   },
   title: {
-    color: colors.guard.text,
-    fontSize: 14,
+    color: colors.brand.navy,
+    fontSize: 13,
     fontWeight: "700",
     textAlign: "center",
   },

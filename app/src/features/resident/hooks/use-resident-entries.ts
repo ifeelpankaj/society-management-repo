@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { isExpectedTodayEntry } from "@/features/guard/guard-utils";
+import { isExpectedTodayEntry } from "@/features/visitors/visitor-utils";
 import {
   getDateRange,
   type DateRangePreset,
-} from "@/features/guard/guard-routes";
+} from "@/features/visitors/visitor-date-ranges";
 import { useResident } from "@/features/resident/resident-context";
 import {
   parseResidentEntriesPreset,

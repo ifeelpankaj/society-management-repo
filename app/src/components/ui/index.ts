@@ -3,6 +3,7 @@ export { AppText } from "./app-text";
 export { Badge } from "./badge";
 export { Button } from "./button";
 export { Card } from "./card";
+export { ConfirmDialog } from "./confirm-dialog";
 export { EmptyState } from "./empty-state";
 export { FilterChip, FilterChipCell, FilterChipGrid } from "./filter-chip";
 export { Input } from "./input";

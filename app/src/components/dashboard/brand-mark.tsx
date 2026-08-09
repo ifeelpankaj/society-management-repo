@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 import { Row } from "@/components/layout";
 import { colors } from "@/theme/colors";
@@ -10,24 +10,24 @@ type BrandMarkProps = {
 };
 
 export function BrandMark({ size = "md" }: BrandMarkProps) {
-  const iconSize = size === "sm" ? 28 : 32;
+  const iconSize = size === "sm" ? 32 : 36;
   const fontSize = size === "sm" ? 18 : 20;
 
   return (
     <Row align="center" gap="sm" justify="flex-start">
       <Image
-        accessibilityLabel="ApnaGate logo"
-        source={require("@/assets/images/logo-glow.png")}
+        accessibilityLabel="Apna Gate logo"
+        source={require("@/assets/images/public/logo.png")}
         style={{ height: iconSize, width: iconSize }}
       />
-      <Text style={[styles.brandText, { fontSize }]}>ApnaGate</Text>
+      <Text style={[styles.brandText, { fontSize }]}>Apna Gate</Text>
     </Row>
   );
 }
 
 const styles = StyleSheet.create({
   brandText: {
-    color: colors.text.primary,
+    color: colors.brand.navy,
     fontWeight: "800",
     letterSpacing: -0.5,
   },

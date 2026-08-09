@@ -102,6 +102,13 @@ module.exports = {
           barcodeScannerEnabled: true,
         },
       ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "Allow $(PRODUCT_NAME) to access photos to scan QR codes from your gallery.",
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

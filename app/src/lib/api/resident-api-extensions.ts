@@ -176,7 +176,6 @@ export const residentApiExtensions = enhancedApi.injectEndpoints({
       ],
     }),
   }),
-  overrideExisting: true,
 });
 
 export const {

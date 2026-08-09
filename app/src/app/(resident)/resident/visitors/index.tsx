@@ -2,14 +2,16 @@ import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Button, PaginatedList } from "@/components/ui";
+import { DashboardHeroCard } from "@/components/dashboard";
+import { PaginatedList } from "@/components/ui";
 import { getVisitorActionErrorMessage } from "@/features/auth/api-error";
-import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
 import { ResidentSubScreen } from "@/features/resident/components/resident-sub-screen";
 import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
 import { useResident } from "@/features/resident/resident-context";
 import { residentVisitorInviteRoute } from "@/features/resident/resident-routes";
 import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
+import { VisitorEntryCard } from "@/features/visitors/components/visitor-entry-card";
+import { VisitorQueueEmptyState } from "@/features/visitors/components/visitor-queue-empty-state";
 import {
   type ModelsVisitorEntry,
   generatedApi,
@@ -99,17 +101,26 @@ export default function ResidentVisitorsScreen() {
     }
   };
 
+  const emptyTitle = canManageFlatVisitors ? "No pending visitors" : "Nothing to review";
+  const emptyMessage = canManageFlatVisitors
+    ? "Visitors waiting for your approval will appear here."
+    : "You do not have permission to approve or reject visitor entries.";
+
   return (
     <ResidentSubScreen title="Approvals">
       <PaginatedList
         contentContainerStyle={styles.listContent}
         data={pagination.items}
-        emptyMessage={
-          canManageFlatVisitors
-            ? "Visitors waiting for your approval will appear here."
-            : "You do not have permission to approve or reject visitor entries."
+        emptyComponent={
+          <VisitorQueueEmptyState
+            message={emptyMessage}
+            refreshing={pagination.isRefreshing}
+            title={emptyTitle}
+            onRefresh={() => {
+              void pagination.refresh();
+            }}
+          />
         }
-        emptyTitle={canManageFlatVisitors ? "No pending visitors" : "Nothing to review"}
         footer={<View style={styles.footerSpacer} />}
         hasMore={pagination.hasMore}
         header={
@@ -123,7 +134,13 @@ export default function ResidentVisitorsScreen() {
               </Text>
             </View>
             {canManageFlatVisitors ? (
-              <Button
+              <DashboardHeroCard
+                icon={{
+                  ios: "person.badge.plus",
+                  android: "person_add",
+                  web: "person_add",
+                }}
+                subtitle="Invite a guest or share a visit link"
                 title="Create visitor invite"
                 onPress={() => router.push(residentVisitorInviteRoute())}
               />
@@ -135,14 +152,16 @@ export default function ResidentVisitorsScreen() {
         isRefreshing={pagination.isRefreshing}
         keyExtractor={(item) => `resident-pending-${item.id}`}
         renderItem={({ item }) => (
-          <VisitorEntryCard
-            entry={item}
-            loading={approveState.isLoading || rejectState.isLoading}
-            primaryActionLabel={canManageFlatVisitors ? "Approve" : undefined}
-            secondaryActionLabel={canManageFlatVisitors ? "Reject" : undefined}
-            onPrimaryAction={canManageFlatVisitors ? () => void handleApprove(item.id) : undefined}
-            onSecondaryAction={canManageFlatVisitors ? () => void handleReject(item.id) : undefined}
-          />
+          <View style={styles.itemWrap}>
+            <VisitorEntryCard
+              entry={item}
+              loading={approveState.isLoading || rejectState.isLoading}
+              primaryActionLabel={canManageFlatVisitors ? "Approve" : undefined}
+              secondaryActionLabel={canManageFlatVisitors ? "Reject" : undefined}
+              onPrimaryAction={canManageFlatVisitors ? () => void handleApprove(item.id) : undefined}
+              onSecondaryAction={canManageFlatVisitors ? () => void handleReject(item.id) : undefined}
+            />
+          </View>
         )}
         onLoadMore={pagination.loadMore}
         onRefresh={pagination.refresh}
@@ -163,8 +182,14 @@ const styles = StyleSheet.create({
   intro: {
     gap: spacing.xs,
   },
+  itemWrap: {
+    paddingHorizontal: layout.screenPaddingHorizontal,
+  },
   listContent: {
+    gap: spacing.lg,
     paddingBottom: layout.screenPaddingBottom,
+    paddingHorizontal: 0,
+    paddingTop: spacing.md,
   },
   pageSubtitle: {
     ...typography.bodySmall,

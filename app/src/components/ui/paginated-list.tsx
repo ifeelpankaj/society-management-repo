@@ -26,8 +26,9 @@ type PaginatedListProps<T> = {
   hasMore?: boolean;
   onRefresh?: () => void;
   onLoadMore?: () => void;
-  emptyTitle: string;
-  emptyMessage: string;
+  emptyComponent?: ReactNode;
+  emptyTitle?: string;
+  emptyMessage?: string;
   header?: ReactNode;
   footer?: ReactNode;
   contentContainerStyle?: ViewStyle;
@@ -44,6 +45,7 @@ export function PaginatedList<T>({
   hasMore,
   onRefresh,
   onLoadMore,
+  emptyComponent,
   emptyTitle,
   emptyMessage,
   header,
@@ -91,9 +93,20 @@ export function PaginatedList<T>({
       }
       ListFooterComponent={listFooter}
       ListEmptyComponent={
-        <EmptyState title={emptyTitle} message={emptyMessage} onAction={onRefresh} actionLabel="Refresh" />
+        emptyComponent ?? (
+          <EmptyState
+            title={emptyTitle ?? "Nothing here yet"}
+            message={emptyMessage ?? ""}
+            onAction={onRefresh}
+            actionLabel="Refresh"
+          />
+        )
       }
-      contentContainerStyle={[styles.content, contentContainerStyle]}
+      contentContainerStyle={[
+        styles.content,
+        data.length === 0 && styles.contentEmpty,
+        contentContainerStyle,
+      ]}
       refreshControl={
         onRefresh ? (
           <RefreshControl
@@ -119,6 +132,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing["2xl"],
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing["2xl"],
+  },
+  contentEmpty: {
+    flexGrow: 1,
   },
   flex: {
     flex: 1,

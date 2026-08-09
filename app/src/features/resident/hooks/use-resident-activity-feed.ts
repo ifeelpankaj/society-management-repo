@@ -1,9 +1,8 @@
 import { useCallback } from "react";
 
-import { getTodayRange } from "@/features/guard/guard-routes";
 import { useResident } from "@/features/resident/resident-context";
-import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
-import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
+import { getTodayRange } from "@/features/visitors/visitor-date-ranges";
+import { useVisitorActivityFeed } from "@/features/visitors/hooks/use-visitor-activity-feed";
 import { useLazyGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorEntriesQuery } from "@/lib/api/resident-api-extensions";
 
 const ACTIVITY_PAGE_SIZE = 5;
@@ -39,7 +38,7 @@ export function useResidentActivityFeed() {
     [fetchEntries, flatId, societyId],
   );
 
-  return usePaginatedQuery<ModelsVisitorEntry>({
+  return useVisitorActivityFeed({
     pageSize: ACTIVITY_PAGE_SIZE,
     skip: !societyId || !flatId,
     fetchPage,

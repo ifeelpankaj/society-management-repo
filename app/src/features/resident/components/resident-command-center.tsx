@@ -1,30 +1,34 @@
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Stack } from "@/components/layout";
 import {
-  DashboardActionGrid,
+  DashboardActionRow,
   DashboardActivityFeed,
   DashboardAlertBar,
   DashboardAnnouncement,
+  DashboardErrorBanner,
   DashboardHeader,
+  DashboardHeroCard,
   DashboardOverviewGrid,
   DashboardSection,
   DashboardSkeleton,
   SubscriptionExpiredBanner,
+  getTimeGreeting,
   type DashboardActionTileConfig,
   type DashboardOverviewStatConfig,
 } from "@/components/dashboard";
-import { VisitorDetailSheet } from "@/features/guard/components/visitor-detail-sheet";
-import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
+import { VisitorDetailSheet } from "@/features/visitors/components/visitor-detail-sheet";
 import { ResidentScreenShell } from "@/features/resident/components/resident-screen-shell";
 import { useResidentActivityFeed } from "@/features/resident/hooks/use-resident-activity-feed";
 import { useResidentDashboard } from "@/features/resident/hooks/use-resident-dashboard";
 import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
+import { useResident } from "@/features/resident/resident-context";
 import {
   residentEntriesRoute,
   residentMembersRoute,
+  residentProfileRoute,
   residentVisitorInviteRoute,
   residentVisitorSettingsRoute,
   residentVisitorsRoute,
@@ -34,29 +38,9 @@ import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 
-function getGreeting(name: string) {
-  const hour = new Date().getHours();
-  const firstName = name.split(" ")[0] ?? name;
-  if (hour < 12) {
-    return `Good Morning, ${firstName}`;
-  }
-  if (hour < 17) {
-    return `Good Afternoon, ${firstName}`;
-  }
-  return `Good Evening, ${firstName}`;
-}
-
-function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" style={styles.errorBanner} onPress={onRetry}>
-      <Text style={styles.errorBannerMessage}>{message}</Text>
-      <Text style={styles.errorBannerAction}>Retry</Text>
-    </Pressable>
-  );
-}
-
 export function ResidentCommandCenter() {
   const router = useRouter();
+  const { user } = useResident();
   const feedback = useResidentFeedback();
   const activityFeed = useResidentActivityFeed();
   const dashboard = useResidentDashboard();
@@ -67,6 +51,7 @@ export function ResidentCommandCenter() {
   const goApprovals = () => router.push(residentVisitorsRoute());
   const goEntries = (preset?: "expected" | "recent") =>
     router.push(residentEntriesRoute(preset ?? "today"));
+  const goProfile = () => router.push(residentProfileRoute());
 
   const handleRefresh = useCallback(() => {
     refetchAll();
@@ -77,6 +62,17 @@ export function ResidentCommandCenter() {
     setDetailEntry(entry);
     setDetailVisible(true);
   }, []);
+
+  const goInvite = useCallback(() => {
+    if (!dashboard.canManageFlatVisitors) {
+      feedback.showInfo(
+        "Permission required",
+        "Only active flat residents with visitor access can invite guests.",
+      );
+      return;
+    }
+    router.push(residentVisitorInviteRoute());
+  }, [dashboard.canManageFlatVisitors, feedback, router]);
 
   const handleStatPress = useCallback(
     (id: string) => {
@@ -103,25 +99,8 @@ export function ResidentCommandCenter() {
   const actions = useMemo(() => {
     const tiles: DashboardActionTileConfig[] = [
       {
-        id: "invite",
-        title: "Invite visitor",
-        subtitle: "Pre-approve guest",
-        tone: "blue",
-        icon: { ios: "person.badge.plus", android: "person_add", web: "person_add" },
-        onPress: () => {
-          if (!dashboard.canManageFlatVisitors) {
-            feedback.showInfo(
-              "Permission required",
-              "Only active flat residents with visitor access can invite guests.",
-            );
-            return;
-          }
-          router.push(residentVisitorInviteRoute());
-        },
-      },
-      {
         id: "members",
-        title: "Flat members",
+        title: "Flat Members",
         subtitle: "People in your flat",
         tone: "blue",
         icon: { ios: "person.2.fill", android: "group", web: "group" },
@@ -137,22 +116,23 @@ export function ResidentCommandCenter() {
       },
       {
         id: "entries",
-        title: "Entries",
-        subtitle: "View history",
+        title: "View History",
+        subtitle: "Recent visitor activity",
         tone: "neutral",
-        icon: { ios: "list.bullet.rectangle", android: "list_alt", web: "list_alt" },
+        icon: { ios: "clock", android: "history", web: "history" },
         onPress: () => goEntries(),
       },
     ];
 
     return tiles;
-  }, [dashboard.canManageFlatVisitors, feedback, goEntries, router]);
+  }, [goEntries, router]);
 
   const overviewStats = useMemo<DashboardOverviewStatConfig[]>(
     () => [
       {
         id: "pending",
         label: "Pending Approval",
+        subtext: "Awaiting your action",
         value: dashboard.pendingCount,
         tone: "orange",
         icon: { ios: "hourglass", android: "hourglass_top", web: "hourglass_top" },
@@ -160,6 +140,7 @@ export function ResidentCommandCenter() {
       {
         id: "expected",
         label: "Expected Today",
+        subtext: "Expected today",
         value: dashboard.expectedCount,
         tone: "blue",
         icon: { ios: "calendar", android: "calendar_today", web: "calendar_today" },
@@ -167,6 +148,7 @@ export function ResidentCommandCenter() {
       {
         id: "visitors",
         label: "Recent Visitors",
+        subtext: "Recently visited",
         value: dashboard.visitorsCount,
         tone: "green",
         icon: { ios: "person.2.fill", android: "groups", web: "groups" },
@@ -174,6 +156,7 @@ export function ResidentCommandCenter() {
       {
         id: "members",
         label: "Flat Members",
+        subtext: "In your flat",
         value: dashboard.membersCount,
         tone: "neutral",
         icon: { ios: "person.2.fill", android: "group", web: "group" },
@@ -208,13 +191,19 @@ export function ResidentCommandCenter() {
                         ? `${dashboard.pendingCount} visitors awaiting approval`
                         : "Visitor approvals",
                     icon: { ios: "bell", android: "notifications_none", web: "notifications_none" },
+                    notificationCount:
+                      dashboard.pendingCount > 0 ? dashboard.pendingCount : undefined,
                     onPress: goApprovals,
-                    showBadge: dashboard.pendingCount > 0,
                   },
                 ]}
-                greeting={getGreeting(dashboard.displayName)}
+                greeting={getTimeGreeting(user?.full_name ?? dashboard.displayName)}
+                profileAvatar={{
+                  imageUrl: user?.avatar_url,
+                  name: user?.full_name ?? dashboard.displayName,
+                  onPress: goProfile,
+                  showOnlineDot: true,
+                }}
                 statusItems={[
-                  { label: "Resident" },
                   {
                     label: dashboard.isSubscriptionBlocked ? "Limited" : "Live",
                     live: !dashboard.hasError && !dashboard.isSubscriptionBlocked,
@@ -228,7 +217,7 @@ export function ResidentCommandCenter() {
             {dashboard.isSubscriptionBlocked ? <SubscriptionExpiredBanner /> : null}
 
             {dashboard.hasError ? (
-              <ErrorBanner
+              <DashboardErrorBanner
                 message={dashboard.errorMessage ?? "Unable to load data."}
                 onRetry={handleRefresh}
               />
@@ -244,53 +233,43 @@ export function ResidentCommandCenter() {
 
             {!dashboard.isSubscriptionBlocked ? (
               <>
-            <DashboardSection title="Quick Actions">
-              <DashboardActionGrid actions={actions} />
-            </DashboardSection>
-
-            <DashboardSection title="Overview">
-              <DashboardOverviewGrid stats={overviewStats} onStatPress={handleStatPress} />
-            </DashboardSection>
-
-            <DashboardActivityFeed
-              hasMore={activityFeed.hasMore}
-              isLoading={activityFeed.isLoading}
-              isLoadingMore={activityFeed.isLoadingMore}
-              items={activityFeed.items}
-              onItemPress={openEntryDetail}
-              onLoadMore={() => {
-                void activityFeed.loadMore();
-              }}
-              onViewAll={() => goEntries()}
-            />
-
-            {dashboard.pendingEntries.length > 0 ? (
-              <DashboardSection actionLabel="View all" title="Pending Approval" onAction={goApprovals}>
                 <Stack gap="md">
-                  {dashboard.pendingEntries.slice(0, 2).map((entry) => (
-                    <VisitorEntryCard
-                      key={`home-pending-${entry.id}`}
-                      entry={entry}
-                      loading={dashboard.isActionLoading}
-                      loadingEntryId={dashboard.actionEntryId ?? undefined}
-                      primaryActionLabel={dashboard.canManageFlatVisitors ? "Approve" : undefined}
-                      secondaryActionLabel={dashboard.canManageFlatVisitors ? "Reject" : undefined}
-                      onPress={() => openEntryDetail(entry)}
-                      onPrimaryAction={
-                        dashboard.canManageFlatVisitors
-                          ? () => dashboard.handleApprove(entry.id)
-                          : undefined
-                      }
-                      onSecondaryAction={
-                        dashboard.canManageFlatVisitors
-                          ? () => dashboard.handleReject(entry.id)
-                          : undefined
-                      }
-                    />
-                  ))}
+                  <DashboardHeroCard
+                    icon={{
+                      ios: "person.badge.plus",
+                      android: "person_add",
+                      web: "person_add",
+                    }}
+                    subtitle="Pre-approve a guest for entry"
+                    title="Invite Visitor"
+                    onPress={goInvite}
+                  />
+                  <DashboardActionRow actions={actions} />
                 </Stack>
-              </DashboardSection>
-            ) : null}
+
+                <DashboardSection
+                  actionLabel="View details >"
+                  title="Overview"
+                  onAction={() => goEntries()}
+                >
+                  <DashboardOverviewGrid stats={overviewStats} onStatPress={handleStatPress} />
+                </DashboardSection>
+
+                <DashboardActivityFeed
+                  emptyAction={{
+                    label: "Invite Visitor",
+                    onPress: goInvite,
+                  }}
+                  hasMore={activityFeed.hasMore}
+                  isLoading={activityFeed.isLoading}
+                  isLoadingMore={activityFeed.isLoadingMore}
+                  items={activityFeed.items}
+                  onItemPress={openEntryDetail}
+                  onLoadMore={() => {
+                    void activityFeed.loadMore();
+                  }}
+                  onViewAll={() => goEntries()}
+                />
               </>
             ) : null}
           </Stack>
@@ -331,27 +310,6 @@ export function ResidentCommandCenter() {
 }
 
 const styles = StyleSheet.create({
-  errorBanner: {
-    alignItems: "center",
-    backgroundColor: colors.status.errorSoft,
-    borderRadius: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  errorBannerAction: {
-    color: colors.status.error,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  errorBannerMessage: {
-    color: colors.status.error,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "500",
-    paddingRight: spacing.md,
-  },
   screen: {
     backgroundColor: colors.guard.screenBg,
     flex: 1,

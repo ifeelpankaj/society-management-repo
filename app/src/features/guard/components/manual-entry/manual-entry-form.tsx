@@ -46,6 +46,7 @@ import {
 import { buildVisitorInviteUrl } from "@/lib/config";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
+import { androidCompactText } from "@/theme/platform-styles";
 import { radius } from "@/theme/radius";
 import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
@@ -79,56 +80,98 @@ const PURPOSE_TONES: Record<ModelsVisitorPurpose, DashboardActionTone> = {
   other: "neutral",
 };
 
-function SectionHeader({ title }: { title: string }) {
+const FIELD_ICONS = {
+  person: { ios: "person.fill", android: "person", web: "person" },
+  phone: { ios: "phone.fill", android: "phone", web: "phone" },
+  email: { ios: "envelope.fill", android: "email", web: "email" },
+  note: { ios: "note.text", android: "note", web: "note" },
+  car: { ios: "car.fill", android: "directions_car", web: "directions_car" },
+  tag: { ios: "number", android: "tag", web: "tag" },
+  building: { ios: "building.2.fill", android: "business", web: "business" },
+} as const;
+
+function SectionHeader({ accent, title }: { accent?: boolean; title: string }) {
+  if (accent) {
+    return (
+      <Row align="center" gap="sm">
+        <View style={styles.sectionAccent} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </Row>
+    );
+  }
+
   return <Text style={styles.sectionTitle}>{title}</Text>;
 }
 
 function Field({
   label,
   error,
+  icon,
   multiline,
   style,
   onBlur,
   onFocus,
   ...props
-}: TextInputProps & { label: string; error?: string }) {
+}: TextInputProps & {
+  error?: string;
+  icon?: (typeof FIELD_ICONS)[keyof typeof FIELD_ICONS];
+  label: string;
+}) {
   const [focused, setFocused] = useState(false);
 
   return (
     <Stack gap={6}>
-      <Text style={styles.fieldLabel}>{label}</Text>
       <View
         style={[
-          styles.fieldInputWrapper,
-          multiline && styles.fieldInputWrapperMultiline,
+          styles.fieldCard,
+          multiline && styles.fieldCardMultiline,
+          focused && styles.fieldCardFocused,
           {
             borderColor: error ? "#fca5a5" : focused ? colors.brand.orange : colors.guard.border,
-            ...(focused ? styles.fieldInputWrapperFocused : shadows.sm),
           },
+          !focused && !error ? shadows.sm : null,
         ]}
       >
-        <TextInput
-          cursorColor={colors.brand.orange}
-          multiline={multiline}
-          placeholderTextColor={colors.guard.textMuted}
-          selectionColor={colors.accent.selection}
-          underlineColorAndroid="transparent"
-          onBlur={(e) => {
-            setFocused(false);
-            onBlur?.(e);
-          }}
-          onFocus={(e) => {
-            setFocused(true);
-            onFocus?.(e);
-          }}
-          style={[
-            styles.fieldInput,
-            multiline && styles.fieldInputMultiline,
-            webNoOutline,
-            style,
-          ]}
-          {...props}
-        />
+        <Row
+          align={multiline ? "flex-start" : "center"}
+          gap="md"
+          style={multiline ? styles.fieldRowMultiline : styles.fieldRow}
+        >
+          {icon ? (
+            <View style={styles.fieldIconBadge}>
+              <SymbolView
+                name={{ ios: icon.ios, android: icon.android, web: icon.web }}
+                size={18}
+                tintColor={colors.brand.orange}
+              />
+            </View>
+          ) : null}
+          <View style={styles.fieldCopy}>
+            <Text style={styles.fieldFloatingLabel}>{label}</Text>
+            <TextInput
+              cursorColor={colors.brand.orange}
+              multiline={multiline}
+              placeholderTextColor={colors.guard.textMuted}
+              selectionColor={colors.accent.selection}
+              underlineColorAndroid="transparent"
+              onBlur={(e) => {
+                setFocused(false);
+                onBlur?.(e);
+              }}
+              onFocus={(e) => {
+                setFocused(true);
+                onFocus?.(e);
+              }}
+              style={[
+                styles.fieldInput,
+                multiline && styles.fieldInputMultiline,
+                webNoOutline,
+                style,
+              ]}
+              {...props}
+            />
+          </View>
+        </Row>
       </View>
       {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </Stack>
@@ -160,8 +203,8 @@ function SearchField({
           styles.searchFieldWrapper,
           {
             borderColor: focused ? colors.brand.orange : colors.guard.border,
-            ...(focused ? styles.fieldInputWrapperFocused : shadows.sm),
           },
+          focused ? styles.fieldCardFocused : shadows.sm,
         ]}
       >
         <SymbolView
@@ -379,8 +422,6 @@ function FlatPicker({
 
   return (
     <Stack gap="md">
-      <SectionHeader title="Select flat" />
-
       {selected ? (
         <ResidentPreviewCard
           flat={selected}
@@ -393,21 +434,18 @@ function FlatPicker({
           style={[styles.flatSearchCard, error && styles.flatSearchCardError]}
           onPress={() => setOpen(true)}
         >
-          <View
-            style={[
-              styles.flatSearchIcon,
-              { backgroundColor: dashboardActionToneStyles.blue.backgroundColor },
-            ]}
-          >
+          <View style={[styles.flatSearchIcon, styles.flatSearchIconOrange]}>
             <SymbolView
               name={{ ios: "magnifyingglass", android: "search", web: "search" }}
               size={24}
-              tintColor={dashboardActionToneStyles.blue.iconColor}
+              tintColor={colors.brand.orange}
             />
           </View>
           <Stack gap={2} style={styles.flatSearchCopy}>
             <Text style={styles.flatSearchTitle}>Search flat</Text>
-            <Text style={styles.flatSearchSubtitle}>Flat no., resident, or wing</Text>
+            <Text style={styles.flatSearchSubtitle}>
+              Search by flat no., resident name or wing
+            </Text>
           </Stack>
           <SymbolView
             name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
@@ -452,6 +490,7 @@ function PurposePicker({
               accessibilityState={{ selected: active }}
               style={({ pressed }) => [
                 styles.purposeTile,
+                active && styles.purposeTileActive,
                 {
                   opacity: pressed ? 0.85 : 1,
                   transform: [{ scale: pressed ? 0.97 : 1 }],
@@ -463,7 +502,6 @@ function PurposePicker({
                 style={[
                   styles.purposeIconWrap,
                   { backgroundColor: toneStyle.backgroundColor },
-                  active && styles.purposeIconWrapActive,
                 ]}
               >
                 <SymbolView
@@ -474,7 +512,11 @@ function PurposePicker({
               </View>
               <Text
                 numberOfLines={1}
-                style={[styles.purposeTileLabel, active && styles.purposeTileLabelActive]}
+                style={[
+                  styles.purposeTileLabel,
+                  active && styles.purposeTileLabelActive,
+                  { color: active ? toneStyle.iconColor : colors.guard.textMuted },
+                ]}
               >
                 {meta.label}
               </Text>
@@ -627,14 +669,19 @@ export function ManualEntryForm({
   return (
     <View style={styles.formRoot}>
       <ScrollView
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={styles.formScrollContent}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         style={styles.formScroll}
       >
-        <Row align="center" justify="space-between">
+        <Row align="flex-start" justify="space-between">
           <Stack gap="xs" style={styles.formTitleBlock}>
-            <Text style={styles.formTitle}>Add Visitor</Text>
+            <Row align="baseline" gap={4} justify="flex-start">
+              <Text style={styles.formTitleAdd}>Add</Text>
+              <Text style={styles.formTitleVisitor}>Visitor</Text>
+            </Row>
             <Text style={styles.formSubtitle}>
               {isFormLinkMode
                 ? "Visitor fills details online and gets a gate QR code."
@@ -674,11 +721,12 @@ export function ManualEntryForm({
         {!isFormLinkMode ? (
           <>
             <Stack gap="lg">
-              <SectionHeader title="Visitor details" />
+              <SectionHeader accent title="Visitor details" />
               {form.purpose !== "delivery" ? (
                 <Field
                   autoCapitalize="words"
                   error={form.errors.fullName}
+                  icon={FIELD_ICONS.person}
                   label={form.purpose === "cab" ? "Driver name" : "Visitor name"}
                   placeholder="Full name"
                   value={form.fullName}
@@ -687,6 +735,7 @@ export function ManualEntryForm({
               ) : null}
               <Field
                 error={form.errors.phoneNumber}
+                icon={FIELD_ICONS.phone}
                 keyboardType="phone-pad"
                 label="Phone number"
                 placeholder={form.purpose === "cab" ? "Optional" : "10-digit mobile"}
@@ -696,6 +745,7 @@ export function ManualEntryForm({
               {form.purpose === "guest" ? (
                 <Field
                   error={form.errors.companionsCount}
+                  icon={FIELD_ICONS.tag}
                   keyboardType="number-pad"
                   label="Companion count"
                   placeholder="0"
@@ -743,6 +793,7 @@ export function ManualEntryForm({
                     <Field
                       autoCapitalize="words"
                       error={form.errors.deliveryPartner}
+                      icon={FIELD_ICONS.building}
                       label="Delivery from"
                       placeholder="Company or service name"
                       value={form.deliveryPartner}
@@ -759,6 +810,7 @@ export function ManualEntryForm({
                   <Field
                     autoCapitalize="characters"
                     error={form.errors.vehicleNumber}
+                    icon={FIELD_ICONS.car}
                     label="Vehicle number"
                     placeholder="Required"
                     value={form.vehicleNumber}
@@ -789,6 +841,7 @@ export function ManualEntryForm({
               {form.purpose === "service" || form.purpose === "maintenance" ? (
                 <Field
                   error={form.errors.serviceProvider}
+                  icon={FIELD_ICONS.building}
                   label={form.purpose === "maintenance" ? "Vendor / company" : "Service provider"}
                   placeholder="Required"
                   value={form.serviceProvider}
@@ -798,29 +851,41 @@ export function ManualEntryForm({
             </Stack>
 
             <Pressable style={styles.extraToggle} onPress={() => setShowExtra((v) => !v)}>
-              <SymbolView
-                name={{
-                  ios: showExtra ? "minus.circle" : "plus.circle",
-                  android: showExtra ? "remove_circle" : "add_circle",
-                  web: showExtra ? "remove_circle" : "add_circle",
-                }}
-                size={18}
-                tintColor={colors.brand.orange}
-              />
+              <View style={styles.extraToggleIcon}>
+                <SymbolView
+                  name={{
+                    ios: showExtra ? "minus" : "plus",
+                    android: showExtra ? "remove" : "add",
+                    web: showExtra ? "remove" : "add",
+                  }}
+                  size={14}
+                  tintColor={colors.brand.orange}
+                />
+              </View>
               <Text style={styles.extraToggleText}>
-                {showExtra ? "Hide details" : "Additional details"}
+                {showExtra ? "Hide details" : "Additional details (optional)"}
               </Text>
               {form.optionalFieldsCount > 0 ? (
                 <View style={styles.optionalCountBadge}>
                   <Text style={styles.optionalCountText}>{form.optionalFieldsCount}</Text>
                 </View>
               ) : null}
+              <SymbolView
+                name={{
+                  ios: showExtra ? "chevron.up" : "chevron.down",
+                  android: showExtra ? "expand_less" : "expand_more",
+                  web: showExtra ? "expand_less" : "expand_more",
+                }}
+                size={16}
+                tintColor={colors.guard.textMuted}
+              />
             </Pressable>
 
             {showExtra ? (
               <Stack gap="lg">
                 <Field
                   autoCapitalize="none"
+                  icon={FIELD_ICONS.email}
                   keyboardType="email-address"
                   label="Email"
                   placeholder="Optional"
@@ -829,12 +894,14 @@ export function ManualEntryForm({
                 />
                 <Field
                   autoCapitalize="characters"
+                  icon={FIELD_ICONS.car}
                   label="Vehicle number"
                   placeholder="Optional"
                   value={form.vehicleNumber}
                   onChangeText={form.setVehicleNumber}
                 />
                 <Field
+                  icon={FIELD_ICONS.note}
                   label="Notes"
                   multiline
                   placeholder="Optional"
@@ -900,14 +967,34 @@ export function ManualEntryForm({
           {isSubmitting ? (
             <ActivityIndicator color={colors.text.inverse} />
           ) : (
-            <Text
-              style={[
-                styles.submitButtonText,
-                !canSubmit && styles.submitButtonTextDisabled,
-              ]}
-            >
-              {isFormLinkMode ? "Create link" : allowGuardEntry ? "Create Entry" : "Guard entry disabled"}
-            </Text>
+            <Row align="center" gap="sm" justify="center">
+              <SymbolView
+                name={{
+                  ios: "checkmark.shield.fill",
+                  android: "verified_user",
+                  web: "verified_user",
+                }}
+                size={20}
+                tintColor={canSubmit ? colors.text.inverse : colors.guard.textMuted}
+              />
+              <Text
+                style={[
+                  styles.submitButtonText,
+                  !canSubmit && styles.submitButtonTextDisabled,
+                ]}
+              >
+                {isFormLinkMode ? "Create link" : allowGuardEntry ? "Create Entry" : "Guard entry disabled"}
+              </Text>
+              <SymbolView
+                name={{
+                  ios: "chevron.right",
+                  android: "chevron_right",
+                  web: "chevron_right",
+                }}
+                size={16}
+                tintColor={canSubmit ? colors.text.inverse : colors.guard.textMuted}
+              />
+            </Row>
           )}
         </Pressable>
       </View>
@@ -953,6 +1040,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 48,
   },
+  flatSearchIconOrange: {
+    backgroundColor: colors.brand.orangeSoft,
+  },
   flatSearchSubtitle: {
     color: colors.guard.textMuted,
     fontSize: 13,
@@ -971,45 +1061,75 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  extraToggleIcon: {
+    alignItems: "center",
+    backgroundColor: colors.brand.orangeSoft,
+    borderRadius: 999,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
   },
   extraToggleText: {
-    color: colors.brand.orange,
+    color: colors.guard.textMuted,
+    flex: 1,
     fontSize: 14,
     fontWeight: "500",
+  },
+  fieldCard: {
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  fieldCardFocused: {
+    borderWidth: 1.5,
+  },
+  fieldCardMultiline: {
+    minHeight: 112,
+  },
+  fieldCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   fieldError: {
     color: colors.status.error,
     fontSize: 14,
   },
+  fieldFloatingLabel: {
+    color: colors.guard.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  fieldIconBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 24,
+  },
   fieldInput: {
-    backgroundColor: "transparent",
-    borderWidth: 0,
     color: colors.guard.text,
+    flex: 1,
     fontSize: 16,
     lineHeight: 22,
-    paddingVertical: 0,
+    minHeight: Platform.OS === "android" ? 28 : 24,
+    paddingVertical: Platform.OS === "android" ? 2 : 0,
+    textAlignVertical: "center",
+    ...androidCompactText,
     width: "100%",
   },
   fieldInputMultiline: {
+    minHeight: 72,
     textAlignVertical: "top",
   },
-  fieldInputWrapper: {
-    backgroundColor: colors.surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: layout.inputHeight,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
+  fieldRow: {
+    minHeight: 48,
   },
-  fieldInputWrapperFocused: {
-    boxShadow: `0 0 0 3px ${colors.brand.orangeSoft}`,
-  },
-  fieldInputWrapperMultiline: {
-    height: undefined,
-    justifyContent: "flex-start",
-    minHeight: 96,
-    paddingVertical: spacing.md,
+  fieldRowMultiline: {
+    alignItems: "flex-start",
+    paddingTop: spacing.xs,
   },
   partnerChip: {
     backgroundColor: colors.dashboard.actionNeutralSoft,
@@ -1094,16 +1214,23 @@ const styles = StyleSheet.create({
   formSubtitle: {
     color: colors.guard.textMuted,
     fontSize: 14,
+    marginTop: spacing.xs,
   },
-  formTitle: {
-    color: colors.guard.text,
-    fontSize: 26,
+  formTitleAdd: {
+    color: colors.brand.navy,
+    fontSize: 28,
     fontWeight: "700",
     letterSpacing: -0.5,
   },
   formTitleBlock: {
     flex: 1,
     paddingRight: spacing.md,
+  },
+  formTitleVisitor: {
+    color: colors.brand.orange,
+    fontSize: 28,
+    fontWeight: "700",
+    letterSpacing: -0.5,
   },
   linkModeButton: {
     alignItems: "center",
@@ -1234,19 +1361,25 @@ const styles = StyleSheet.create({
   purposeIconWrap: {
     alignItems: "center",
     borderRadius: radius.lg,
-    height: 48,
+    height: 44,
     justifyContent: "center",
-    width: 48,
-  },
-  purposeIconWrapActive: {
-    borderColor: colors.brand.orange,
-    borderWidth: 2,
+    width: 44,
   },
   purposeTile: {
     alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.guard.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     gap: spacing.sm,
-    width: "22%",
     minWidth: 72,
+    paddingVertical: spacing.md,
+    width: "22%",
+    ...shadows.sm,
+  },
+  purposeTileActive: {
+    borderColor: colors.brand.orange,
+    borderWidth: 2,
   },
   purposeTileLabel: {
     color: colors.guard.textMuted,
@@ -1268,9 +1401,15 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     fontWeight: "600",
   },
+  sectionAccent: {
+    backgroundColor: colors.brand.orange,
+    borderRadius: 999,
+    height: 18,
+    width: 4,
+  },
   sectionTitle: {
-    color: colors.guard.text,
-    fontSize: 18,
+    color: colors.brand.navy,
+    fontSize: 17,
     fontWeight: "700",
     letterSpacing: -0.2,
   },

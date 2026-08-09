@@ -1,10 +1,12 @@
-import { View, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
+
+import { Stack } from "@/components/layout";
+import { spacing } from "@/theme/spacing";
 
 import {
   DashboardOverviewStat,
   type DashboardOverviewStatConfig,
-} from "@/components/dashboard/dashboard-overview-stat";
-import { spacing } from "@/theme/spacing";
+} from "./dashboard-overview-stat";
 
 type DashboardOverviewGridProps = {
   onStatPress?: (id: string) => void;
@@ -12,26 +14,39 @@ type DashboardOverviewGridProps = {
 };
 
 export function DashboardOverviewGrid({ onStatPress, stats }: DashboardOverviewGridProps) {
+  const rows = [stats.slice(0, 2), stats.slice(2, 4)];
+
   return (
-    <View style={styles.grid}>
-      {stats.map((stat) => (
-        <DashboardOverviewStat
-          key={stat.id}
-          icon={stat.icon}
-          label={stat.label}
-          tone={stat.tone}
-          value={stat.value}
-          onPress={onStatPress ? () => onStatPress(stat.id) : undefined}
-        />
+    <Stack gap="md">
+      {rows.map((row, rowIndex) => (
+        <View key={`overview-row-${rowIndex}`} style={styles.row}>
+          {row.map((stat) => (
+            <View key={stat.id} style={styles.cell}>
+              <DashboardOverviewStat
+                icon={stat.icon}
+                label={stat.label}
+                subtext={stat.subtext}
+                tone={stat.tone}
+                value={stat.value}
+                onPress={onStatPress ? () => onStatPress(stat.id) : undefined}
+              />
+            </View>
+          ))}
+        </View>
       ))}
-    </View>
+    </Stack>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: {
+  cell: {
+    alignSelf: "stretch",
+    flex: 1,
+    minWidth: 0,
+  },
+  row: {
+    alignItems: "stretch",
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.md,
   },
 });

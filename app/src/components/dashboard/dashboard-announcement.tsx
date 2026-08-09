@@ -19,30 +19,32 @@ export function DashboardAnnouncement({
   title = "Society Announcement",
 }: DashboardAnnouncementProps) {
   const content = (
-    <Row align="center" gap="md" justify="flex-start">
-      <View style={styles.iconWrap}>
-        <SymbolView
-          name={{ ios: "megaphone.fill", android: "campaign", web: "campaign" }}
-          size={18}
-          tintColor={colors.brand.orange}
-        />
-      </View>
-      <View style={styles.copy}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.message}>{message}</Text>
-      </View>
-      {onPress ? (
-        <SymbolView
-          name={{
-            ios: "chevron.right",
-            android: "chevron_right",
-            web: "chevron_right",
-          }}
-          size={16}
-          tintColor={colors.brand.orange}
-        />
-      ) : null}
-    </Row>
+    <View style={styles.container}>
+      <Row align="center" gap="md" justify="flex-start">
+        <View style={styles.iconWrap}>
+          <SymbolView
+            name={{ ios: "megaphone.fill", android: "campaign", web: "campaign" }}
+            size={18}
+            tintColor={colors.brand.orange}
+          />
+        </View>
+        <View style={styles.copy}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
+        </View>
+        {onPress ? (
+          <SymbolView
+            name={{
+              ios: "chevron.right",
+              android: "chevron_right",
+              web: "chevron_right",
+            }}
+            size={16}
+            tintColor={colors.brand.orange}
+          />
+        ) : null}
+      </Row>
+    </View>
   );
 
   if (!onPress) {
@@ -62,10 +64,13 @@ export function DashboardAnnouncement({
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: colors.surface.card,
+    borderColor: colors.dashboard.cardBorder,
     borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    ...shadows.sm,
+    ...shadows.card,
   },
   copy: {
     flex: 1,
@@ -73,14 +78,14 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     alignItems: "center",
-    backgroundColor: colors.surface.card,
+    backgroundColor: colors.brand.orangeSoft,
     borderRadius: radius.md,
     height: 40,
     justifyContent: "center",
     width: 40,
   },
   message: {
-    color: colors.text.primary,
+    color: colors.brand.navy,
     fontSize: 15,
     fontWeight: "700",
     lineHeight: 20,

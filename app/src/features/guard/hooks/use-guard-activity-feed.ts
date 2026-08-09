@@ -1,9 +1,8 @@
 import { useCallback } from "react";
 
-import { getTodayRange } from "@/features/guard/guard-routes";
+import { getTodayRange } from "@/features/visitors/visitor-date-ranges";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
-import { ACTIVITY_PAGE_SIZE } from "@/features/shared/activity-feed-config";
-import { usePaginatedQuery } from "@/features/shared/use-paginated-query";
+import { useVisitorActivityFeed } from "@/features/visitors/hooks/use-visitor-activity-feed";
 import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { useLazyGetV1SocietiesBySocietyIdVisitorEntriesExtendedQuery } from "@/lib/api/guard-api-extensions";
 
@@ -37,8 +36,7 @@ export function useGuardActivityFeed() {
     [fetchEntries, selectedSocietyId],
   );
 
-  return usePaginatedQuery<ModelsVisitorEntry>({
-    pageSize: ACTIVITY_PAGE_SIZE,
+  return useVisitorActivityFeed({
     skip: !selectedSocietyId,
     fetchPage,
   });
@@ -48,4 +46,4 @@ export {
   ACTIVITY_LIST_HEIGHT,
   ACTIVITY_ROW_HEIGHT,
   ACTIVITY_VISIBLE_ROWS,
-} from "@/features/shared/activity-feed-config";
+} from "@/features/visitors/hooks/use-visitor-activity-feed";

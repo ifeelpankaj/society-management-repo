@@ -39,19 +39,19 @@ export const shadows = {
     },
   })!,
   hero: Platform.select<ShadowStyle>({
-    web: { boxShadow: "0 8px 28px rgba(13, 148, 136, 0.14)" },
+    web: { boxShadow: "0 8px 28px rgba(255, 106, 26, 0.22)" },
     default: {
-      shadowColor: colors.guard.teal,
+      shadowColor: colors.brand.orange,
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.14,
+      shadowOpacity: 0.22,
       shadowRadius: 28,
       elevation: 6,
     },
   })!,
   cta: Platform.select<ShadowStyle>({
-    web: { boxShadow: "0 10px 28px rgba(13, 148, 136, 0.32)" },
+    web: { boxShadow: "0 10px 28px rgba(255, 106, 26, 0.32)" },
     default: {
-      shadowColor: colors.guard.teal,
+      shadowColor: colors.brand.orange,
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.32,
       shadowRadius: 28,

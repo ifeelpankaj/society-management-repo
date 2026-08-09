@@ -1,9 +1,8 @@
-import { usePathname, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 
-import { NotchedTabBar } from "@/components/layout/notched-tab-bar";
-import { GuardTabIcon } from "@/features/guard/components/guard-tab-icons";
-import { useResidentFeedback } from "@/features/resident/hooks/use-resident-feedback";
+import { RoleTabBar } from "@/components/layout/role-tab-bar";
+import { useAppFeedback } from "@/features/shared/use-app-feedback";
 import { useResident } from "@/features/resident/resident-context";
 import {
   residentDashboardRoute,
@@ -17,35 +16,10 @@ type TabBarState = {
   routes: Array<{ name: string }>;
 };
 
-type ResidentTab = "home" | "profile";
-
-function resolveActiveTab(pathname: string, state: TabBarState): ResidentTab {
-  if (pathname.includes("/profile")) {
-    return "profile";
-  }
-
-  const routeName = state.routes[state.index]?.name;
-  if (routeName === "profile") {
-    return "profile";
-  }
-
-  return "home";
-}
-
 export function ResidentTabBar({ state }: { state: TabBarState }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const feedback = useResidentFeedback();
+  const feedback = useAppFeedback();
   const { canManageFlatVisitors } = useResident();
-  const activeTab = resolveActiveTab(pathname, state);
-
-  const goToTab = (tab: ResidentTab) => {
-    if (tab === activeTab) {
-      return;
-    }
-
-    router.replace(tab === "profile" ? residentProfileRoute() : residentDashboardRoute());
-  };
 
   const goToInvite = () => {
     if (!canManageFlatVisitors) {
@@ -60,7 +34,7 @@ export function ResidentTabBar({ state }: { state: TabBarState }) {
   };
 
   return (
-    <NotchedTabBar
+    <RoleTabBar
       fab={{
         accessibilityLabel: "Invite visitor",
         icon: (
@@ -73,28 +47,9 @@ export function ResidentTabBar({ state }: { state: TabBarState }) {
         label: "Invite",
         onPress: goToInvite,
       }}
-      leftTab={{
-        active: activeTab === "home",
-        icon: (
-          <GuardTabIcon
-            color={activeTab === "home" ? colors.brand.orange : colors.text.placeholder}
-            name="dashboard"
-          />
-        ),
-        label: "Home",
-        onPress: () => goToTab("home"),
-      }}
-      rightTab={{
-        active: activeTab === "profile",
-        icon: (
-          <GuardTabIcon
-            color={activeTab === "profile" ? colors.brand.orange : colors.text.placeholder}
-            name="profile"
-          />
-        ),
-        label: "Profile",
-        onPress: () => goToTab("profile"),
-      }}
+      homeRoute={residentDashboardRoute()}
+      profileRoute={residentProfileRoute()}
+      state={state}
     />
   );
 }

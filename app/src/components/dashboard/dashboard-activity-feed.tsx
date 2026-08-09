@@ -16,7 +16,14 @@ import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 import { typography } from "@/theme/typography";
 
+type DashboardActivityFeedEmptyAction = {
+  accessibilityLabel?: string;
+  label: string;
+  onPress: () => void;
+};
+
 type DashboardActivityFeedProps = {
+  emptyAction?: DashboardActivityFeedEmptyAction;
   hasMore: boolean;
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -27,6 +34,27 @@ type DashboardActivityFeedProps = {
   showFlat?: boolean;
   title?: string;
 };
+
+function ActivityEmptyIllustration() {
+  return (
+    <View style={styles.illustrationWrap}>
+      <View style={styles.clipboardBody}>
+        <SymbolView
+          name={{ ios: "list.clipboard", android: "assignment", web: "assignment" }}
+          size={32}
+          tintColor={colors.brand.orange}
+        />
+      </View>
+      <View style={styles.clockBadge}>
+        <SymbolView
+          name={{ ios: "clock.fill", android: "schedule", web: "schedule" }}
+          size={14}
+          tintColor={colors.brand.orange}
+        />
+      </View>
+    </View>
+  );
+}
 
 function ActivityPreviewCard({
   item,
@@ -93,6 +121,7 @@ function ActivityPreviewCard({
 }
 
 export function DashboardActivityFeed({
+  emptyAction,
   hasMore,
   isLoading,
   isLoadingMore,
@@ -104,25 +133,39 @@ export function DashboardActivityFeed({
   title = "Today's Activity",
 }: DashboardActivityFeedProps) {
   return (
-    <DashboardSection actionLabel="View All" title={title} onAction={onViewAll}>
+    <DashboardSection actionLabel="View all >" title={title} onAction={onViewAll}>
       <View style={styles.panel}>
         {isLoading && items.length === 0 ? (
-          <View style={styles.centeredState}>
-            <ActivityIndicator color={colors.guard.teal} size="small" />
+          <View style={styles.loadingState}>
+            <ActivityIndicator color={colors.brand.orange} size="small" />
           </View>
         ) : items.length === 0 ? (
-          <View style={styles.centeredState}>
-            <View style={styles.emptyIconWrap}>
-              <SymbolView
-                name={{ ios: "clock.fill", android: "schedule", web: "schedule" }}
-                size={22}
-                tintColor={colors.guard.teal}
-              />
+          <View style={styles.emptyState}>
+            <ActivityEmptyIllustration />
+            <View style={styles.emptyCopy}>
+              <Text style={styles.emptyTitle}>No visitor activity yet</Text>
+              <Text style={styles.emptyText}>
+                Visitor check-ins and movements will appear here.
+              </Text>
+              {emptyAction ? (
+                <Pressable
+                  accessibilityLabel={emptyAction.accessibilityLabel ?? emptyAction.label}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.emptyAction,
+                    pressed && styles.emptyActionPressed,
+                  ]}
+                  onPress={emptyAction.onPress}
+                >
+                  <SymbolView
+                    name={{ ios: "person.badge.plus", android: "person_add", web: "person_add" }}
+                    size={16}
+                    tintColor={colors.brand.orange}
+                  />
+                  <Text style={styles.emptyActionText}>{emptyAction.label}</Text>
+                </Pressable>
+              ) : null}
             </View>
-            <Text style={styles.emptyTitle}>No activity yet today</Text>
-            <Text style={styles.emptyText}>
-              Visitor check-ins and movement will appear here as they happen.
-            </Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -136,7 +179,7 @@ export function DashboardActivityFeed({
             ))}
             {isLoadingMore ? (
               <View style={styles.loadingMore}>
-                <ActivityIndicator color={colors.guard.teal} size="small" />
+                <ActivityIndicator color={colors.brand.orange} size="small" />
               </View>
             ) : hasMore ? (
               <Pressable
@@ -155,43 +198,96 @@ export function DashboardActivityFeed({
 }
 
 const styles = StyleSheet.create({
-  centeredState: {
+  clipboardBody: {
     alignItems: "center",
+    backgroundColor: "#FFF4EB",
+    borderColor: "#FFE0C7",
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 80,
+    justifyContent: "center",
+    width: 72,
+  },
+  clockBadge: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: "#FFE0C7",
+    borderRadius: 999,
+    borderWidth: 1,
+    bottom: -2,
+    height: 30,
+    justifyContent: "center",
+    position: "absolute",
+    right: -4,
+    width: 30,
+    ...shadows.sm,
+  },
+  emptyAction: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#FFF8F3",
+    borderColor: "#F1E4DA",
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: "row",
     gap: spacing.sm,
     justifyContent: "center",
-    minHeight: 220,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing["2xl"],
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  emptyIconWrap: {
-    alignItems: "center",
-    backgroundColor: colors.guard.tealSoft,
-    borderRadius: radius.full,
-    height: 52,
+  emptyActionPressed: {
+    opacity: 0.85,
+  },
+  emptyActionText: {
+    color: colors.brand.orange,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  emptyCopy: {
+    flex: 1,
+    gap: spacing.xs,
     justifyContent: "center",
-    marginBottom: spacing.sm,
-    width: 52,
+    minWidth: 0,
+  },
+  emptyState: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   emptyText: {
     ...typography.bodySmall,
     color: colors.guard.textMuted,
     lineHeight: 20,
-    textAlign: "center",
   },
   emptyTitle: {
-    ...typography.subtitle,
-    color: colors.text.primary,
+    color: colors.brand.navy,
+    fontSize: 16,
     fontWeight: "700",
-    textAlign: "center",
+    lineHeight: 22,
+  },
+  illustrationWrap: {
+    height: 84,
+    position: "relative",
+    width: 76,
   },
   list: {
     gap: spacing.sm,
     paddingBottom: spacing.sm,
-    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
   },
   loadingMore: {
     alignItems: "center",
     paddingVertical: spacing.md,
+  },
+  loadingState: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 160,
+    paddingVertical: spacing["2xl"],
   },
   loadMoreButton: {
     alignItems: "center",
@@ -201,21 +297,22 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   loadMoreText: {
-    color: colors.guard.teal,
+    color: colors.brand.orange,
     fontSize: 13,
     fontWeight: "600",
   },
   panel: {
     backgroundColor: colors.surface.card,
-    borderRadius: radius["2xl"],
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    borderColor: colors.dashboard.cardBorder,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
     ...shadows.card,
   },
   previewAvatar: {
     alignItems: "center",
     backgroundColor: colors.brand.orangeSoft,
-    borderRadius: radius.full,
+    borderRadius: 999,
     height: 44,
     justifyContent: "center",
     width: 44,

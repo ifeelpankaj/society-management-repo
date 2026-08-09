@@ -1,8 +1,8 @@
 import type { PropsWithChildren, ReactNode } from "react";
 
-import { ScreenShell } from "@/components/layout";
 import { ResidentSocietyGate } from "@/features/resident/components/resident-society-gate";
 import { useResident } from "@/features/resident/resident-context";
+import { RoleScreenShell } from "@/features/shared/role-screen-shell";
 import { colors } from "@/theme/colors";
 
 type ResidentScreenShellProps = PropsWithChildren<{
@@ -26,7 +26,7 @@ export function ResidentScreenShell({
   const { isLoading, requiresSelection, selectedResidence } = useResident();
 
   return (
-    <ScreenShell
+    <RoleScreenShell
       backgroundColor={backgroundColor}
       contentPaddingBottom={contentPaddingBottom}
       footer={footer}
@@ -38,6 +38,6 @@ export function ResidentScreenShell({
       refreshing={refreshing}
     >
       {children}
-    </ScreenShell>
+    </RoleScreenShell>
   );
 }

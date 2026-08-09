@@ -1,11 +1,17 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { Platform, StyleSheet, TextInput, View } from "react-native";
+import { SymbolView } from "expo-symbols";
+import { useRouter } from "expo-router";
 
 import { PaginatedList } from "@/components/ui";
 import { GuardConfirmDialog } from "@/features/guard/components/guard-confirm-dialog";
+import {
+  GuardQueueEntryCard,
+  GuardQueueEntryDivider,
+} from "@/features/guard/components/guard-queue-entry-card";
+import { GuardQueueEmptyState } from "@/features/guard/components/guard-queue-empty-state";
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
-import { VisitorDetailSheet } from "@/features/guard/components/visitor-detail-sheet";
-import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
+import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
 import { useGuardDashboard } from "@/features/guard/hooks/use-guard-dashboard";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
@@ -13,9 +19,13 @@ import { useGuardPending } from "@/features/guard/hooks/use-guard-pending";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import type { ModelsVisitorPendingEntry } from "@/lib/api/generated-api";
 import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 
 export default function GuardPendingScreen() {
+  const router = useRouter();
   const { selectedSocietyId } = useGuardScreen();
   const feedback = useGuardFeedback();
   const [search, setSearch] = useState("");
@@ -23,7 +33,6 @@ export default function GuardPendingScreen() {
   const actions = useGuardActions(selectedSocietyId ?? 0);
   const { visitorSettings } = useGuardDashboard();
   const allowOnBehalfApproval = visitorSettings?.allow_guard_on_behalf_approval !== false;
-  const [selectedEntry, setSelectedEntry] = useState<ModelsVisitorPendingEntry | null>(null);
   const [forceEntry, setForceEntry] = useState<ModelsVisitorPendingEntry | null>(null);
 
   const handleNotify = useCallback(
@@ -54,7 +63,6 @@ export default function GuardPendingScreen() {
       });
 
       if (result.success) {
-        setSelectedEntry(null);
         setForceEntry(null);
       }
     },
@@ -62,28 +70,48 @@ export default function GuardPendingScreen() {
   );
 
   return (
-    <GuardSubScreen
-      headerExtra={
-        <TextInput
-          placeholder="Search name, phone, flat, vehicle..."
-          placeholderTextColor={colors.guard.textMuted}
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-        />
-      }
-      title="Pending Approvals"
-    >
+    <GuardSubScreen title="Pending Approvals">
       <PaginatedList
+        ItemSeparatorComponent={GuardQueueEntryDivider}
+        contentContainerStyle={styles.listContent}
         data={pending.items}
-        emptyMessage={
-          search
-            ? "Try a different name, phone, flat, or vehicle."
-            : "Visitors waiting for resident approval will appear here."
+        emptyComponent={
+          <GuardQueueEmptyState
+            message={
+              search
+                ? "Try a different name, phone, flat, or vehicle."
+                : "Visitors waiting for resident approval will appear here."
+            }
+            refreshing={pending.isRefreshing}
+            title={search ? "No matching approvals" : "No pending approvals"}
+            onRefresh={() => {
+              void pending.refresh();
+            }}
+          />
         }
-        emptyTitle={search ? "No matching approvals" : "No pending approvals"}
         footer={<View style={styles.footerSpacer} />}
         hasMore={pending.hasMore}
+        header={
+          <View style={styles.searchWrap}>
+            <View style={styles.searchRow}>
+              <SymbolView
+                name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+                size={18}
+                tintColor={colors.brand.orange}
+              />
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Search name, phone, flat, vehicle..."
+                placeholderTextColor={colors.guard.textMuted}
+                selectionColor={colors.brand.orange}
+                style={[styles.searchInput, Platform.OS === "web" ? styles.searchInputWeb : null]}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+          </View>
+        }
         isLoading={pending.isLoading}
         isLoadingMore={pending.isLoadingMore}
         isRefreshing={pending.isRefreshing}
@@ -91,12 +119,16 @@ export default function GuardPendingScreen() {
         renderItem={({ item }) => {
           const isGuardEntry = item.source === "guard_entry";
           return (
-            <VisitorEntryCard
+            <GuardQueueEntryCard
               entry={item}
               loading={actions.activeEntryId === item.id}
               primaryActionLabel={isGuardEntry ? "Approve & Check In" : "Force Check In"}
-              secondaryActionLabel="Notify"
-              onPress={() => setSelectedEntry(item)}
+              secondaryActionLabel="Notify Resident"
+              onPress={() => {
+                if (item.id) {
+                  router.push(guardEntryDetailRoute(item.id));
+                }
+              }}
               onPrimaryAction={() => {
                 if (isGuardEntry) {
                   void handleApproveAndCheckIn(item, false);
@@ -125,40 +157,6 @@ export default function GuardPendingScreen() {
         }}
       />
 
-      <VisitorDetailSheet
-        entry={selectedEntry}
-        loading={actions.activeEntryId === selectedEntry?.id}
-        primaryActionLabel={
-          selectedEntry?.source === "guard_entry" ? "Approve & Check In" : "Force Check In"
-        }
-        secondaryActionLabel="Notify"
-        visible={Boolean(selectedEntry)}
-        onClose={() => setSelectedEntry(null)}
-        onPrimaryAction={() => {
-          if (!selectedEntry) {
-            return;
-          }
-          if (selectedEntry.source === "guard_entry") {
-            void handleApproveAndCheckIn(selectedEntry, false);
-            return;
-          }
-          if (!allowOnBehalfApproval) {
-            feedback.showActionResult(
-              {
-                success: false,
-                message:
-                  "Your admin has not allowed guard approval on behalf of residents.",
-              },
-              { errorTitle: "Action not allowed", successTitle: "Checked in" },
-            );
-            return;
-          }
-          setForceEntry(selectedEntry);
-          setSelectedEntry(null);
-        }}
-        onSecondaryAction={() => selectedEntry && void handleNotify(selectedEntry)}
-      />
-
       <GuardConfirmDialog
         confirmLabel="Allow Visitor"
         loading={actions.isLoading}
@@ -176,17 +174,39 @@ export default function GuardPendingScreen() {
 
 const styles = StyleSheet.create({
   footerSpacer: {
-    height: spacing.lg,
+    height: spacing.sm,
+  },
+  listContent: {
+    gap: spacing.xs,
+    paddingBottom: spacing["2xl"],
+    paddingHorizontal: 0,
+    paddingTop: spacing.md,
   },
   searchInput: {
-    backgroundColor: colors.surface.input,
-    borderColor: colors.border.input,
-    borderRadius: 14,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    color: colors.guard.text,
+    flex: 1,
+    fontSize: 14,
+    marginLeft: spacing.sm,
+    minHeight: 40,
+    paddingVertical: 0,
+  },
+  searchInputWeb: {
+    outlineWidth: 0,
+  },
+  searchRow: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: "#F1E4DA",
+    borderRadius: radius.xl,
     borderWidth: 1,
-    color: colors.text.primary,
-    fontSize: 15,
-    fontWeight: "600",
+    flexDirection: "row",
+    minHeight: 48,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 12,
+    ...shadows.sm,
+  },
+  searchWrap: {
+    paddingHorizontal: layout.screenPaddingHorizontal,
   },
 });

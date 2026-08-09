@@ -15,9 +15,9 @@ export type GuardActionOptions = {
   reason?: string;
 };
 
-function toApproveRequest(opts?: GuardActionOptions): ModelsGuardApproveEntryRequest | undefined {
+function toApproveRequest(opts?: GuardActionOptions): ModelsGuardApproveEntryRequest {
   if (!opts?.onBehalf && !opts?.reason) {
-    return undefined;
+    return {};
   }
   return { on_behalf: opts.onBehalf, reason: opts.reason };
 }

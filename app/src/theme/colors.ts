@@ -6,6 +6,8 @@ export const colors = {
     orange: "#ff6a1a",
     orangeSoft: "#fff7f1",
     orangeShadow: "rgba(255, 106, 26, 0.18)",
+    navy: "#101D36",
+    navySoft: "#E8EAF4",
   },
   text: {
     primary: "#0f172a",
@@ -61,9 +63,9 @@ export const colors = {
     tealSoft: "#f0fdfa",
     tealShadow: "rgba(13, 148, 136, 0.18)",
     sectionBg: "#fafafa",
-    screenBg: "#f8fafc",
-    text: "#0f172a",
-    textMuted: "#64748b",
+    screenBg: "#ffffff",
+    text: "#101D36",
+    textMuted: "#808080",
     border: "#e2e8f0",
   },
   selection: {
@@ -71,6 +73,8 @@ export const colors = {
     cardBorder: "#f1e4da",
   },
   dashboard: {
+    screenBg: "#ffffff",
+    cardBorder: "rgba(16, 29, 54, 0.06)",
     actionOrange: "#ff6a1a",
     actionOrangeSoft: "#fff4eb",
     actionBlue: "#2563eb",

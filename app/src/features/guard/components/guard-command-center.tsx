@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Stack } from "@/components/layout";
 import {
@@ -8,21 +8,26 @@ import {
   DashboardActivityFeed,
   DashboardAlertBar,
   DashboardAnnouncement,
+  DashboardErrorBanner,
   DashboardHeader,
+  DashboardHeroCard,
   DashboardOverviewGrid,
   DashboardSection,
   DashboardSkeleton,
   SubscriptionExpiredBanner,
+  getTimeGreeting,
   type DashboardActionTileConfig,
   type DashboardOverviewStatConfig,
 } from "@/components/dashboard";
 import { GuardScreenShell } from "@/features/guard/components/guard-screen-shell";
+import { useGuardSociety } from "@/features/guard/guard-context";
 import { useGuardActivityFeed } from "@/features/guard/hooks/use-guard-activity-feed";
 import { useGuardDashboard } from "@/features/guard/hooks/use-guard-dashboard";
 import {
   guardAddEntryRoute,
   guardEntriesRoute,
   guardPendingRoute,
+  guardProfileRoute,
   guardScannerRoute,
   guardWaitingAtGateRoute,
 } from "@/features/guard/guard-routes";
@@ -30,38 +35,9 @@ import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { spacing } from "@/theme/spacing";
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) {
-    return "Good Morning, Guard";
-  }
-  if (hour < 17) {
-    return "Good Afternoon, Guard";
-  }
-  return "Good Evening, Guard";
-}
-
-function ErrorBanner({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      style={styles.errorBanner}
-      onPress={onRetry}
-    >
-      <Text style={styles.errorBannerMessage}>{message}</Text>
-      <Text style={styles.errorBannerAction}>Retry</Text>
-    </Pressable>
-  );
-}
-
 export function GuardCommandCenter() {
   const router = useRouter();
+  const { user } = useGuardSociety();
   const activityFeed = useGuardActivityFeed();
   const {
     errorMessage,
@@ -81,6 +57,7 @@ export function GuardCommandCenter() {
 
   const goPending = () => router.push(guardPendingRoute());
   const goLogs = () => router.push(guardEntriesRoute("today"));
+  const goProfile = () => router.push(guardProfileRoute());
 
   const handleRefresh = useCallback(() => {
     refetchAll();
@@ -112,22 +89,10 @@ export function GuardCommandCenter() {
   const actions = useMemo<DashboardActionTileConfig[]>(
     () => [
       {
-        id: "scan",
-        title: "Scan QR",
-        subtitle: "Scan Visitor",
-        tone: "orange",
-        icon: {
-          ios: "qrcode.viewfinder",
-          android: "qr_code_scanner",
-          web: "qr_code_scanner",
-        },
-        onPress: () => router.push(guardScannerRoute()),
-      },
-      {
         id: "entry",
-        title: "New Entry",
-        subtitle: "Add Visitor",
-        tone: "blue",
+        title: "Add Visitor",
+        subtitle: "Register new visitor",
+        tone: "orange",
         icon: {
           ios: "person.badge.plus",
           android: "person_add",
@@ -137,9 +102,9 @@ export function GuardCommandCenter() {
       },
       {
         id: "waiting-at-gate",
-        title: "At Gate",
-        subtitle: "Check In",
-        tone: "purple",
+        title: "Check In",
+        subtitle: "Check-in visitor",
+        tone: "blue",
         icon: {
           ios: "door.left.hand.open",
           android: "meeting_room",
@@ -149,13 +114,13 @@ export function GuardCommandCenter() {
       },
       {
         id: "logs",
-        title: "Logs",
-        subtitle: "View History",
-        tone: "neutral",
+        title: "View History",
+        subtitle: "Recent visitor activity",
+        tone: "purple",
         icon: {
-          ios: "list.bullet.rectangle",
-          android: "list_alt",
-          web: "list_alt",
+          ios: "clock",
+          android: "history",
+          web: "history",
         },
         onPress: () => router.push(guardEntriesRoute("today")),
       },
@@ -168,13 +133,15 @@ export function GuardCommandCenter() {
       {
         id: "inside",
         label: "Inside Visitors",
+        subtext: "Currently inside",
         value: insideCount,
         tone: "green",
         icon: { ios: "person.2.fill", android: "groups", web: "groups" },
       },
       {
         id: "pending",
-        label: "Pending Approval",
+        label: "Awaiting Approval",
+        subtext: "Pending approval",
         value: pendingCount,
         tone: "orange",
         icon: {
@@ -186,8 +153,9 @@ export function GuardCommandCenter() {
       {
         id: "expected-guests",
         label: "Expected Guests",
+        subtext: "Expected today",
         value: expectedGuestsCount,
-        tone: "purple",
+        tone: "blue",
         icon: {
           ios: "calendar.badge.clock",
           android: "event_available",
@@ -197,6 +165,7 @@ export function GuardCommandCenter() {
       {
         id: "checked-out",
         label: "Checked Out",
+        subtext: "Today",
         value: checkedOutCount,
         tone: "neutral",
         icon: { ios: "arrow.right.square", android: "logout", web: "logout" },
@@ -230,14 +199,22 @@ export function GuardCommandCenter() {
                       android: "notifications_none",
                       web: "notifications_none",
                     },
+                    notificationCount: pendingCount > 0 ? pendingCount : undefined,
                     onPress: goPending,
-                    showBadge: pendingCount > 0,
                   },
                 ]}
-                greeting={getGreeting()}
+                greeting={getTimeGreeting(user?.full_name, "Guard")}
+                profileAvatar={{
+                  imageUrl: user?.avatar_url,
+                  name: user?.full_name,
+                  onPress: goProfile,
+                  showOnlineDot: true,
+                }}
                 statusItems={[
-                  { label: "Guard Desk" },
-                  { label: isSubscriptionBlocked ? "Limited" : "Live", live: !hasError && !isSubscriptionBlocked },
+                  {
+                    label: isSubscriptionBlocked ? "Limited" : "On duty",
+                    live: !hasError && !isSubscriptionBlocked,
+                  },
                 ]}
                 title={societyName}
               />
@@ -247,7 +224,7 @@ export function GuardCommandCenter() {
             {isSubscriptionBlocked ? <SubscriptionExpiredBanner /> : null}
 
             {hasError ? (
-              <ErrorBanner
+              <DashboardErrorBanner
                 message={errorMessage ?? "Unable to load data."}
                 onRetry={handleRefresh}
               />
@@ -259,28 +236,42 @@ export function GuardCommandCenter() {
 
             {!isSubscriptionBlocked ? (
               <>
-            <DashboardSection title="Quick Actions">
-              <DashboardActionRow actions={actions} />
-            </DashboardSection>
+                <Stack gap="md">
+                  <DashboardHeroCard
+                    icon={{
+                      ios: "qrcode.viewfinder",
+                      android: "qr_code_scanner",
+                      web: "qr_code_scanner",
+                    }}
+                    subtitle="Scan QR code to verify entry"
+                    title="Scan Visitor"
+                    onPress={() => router.push(guardScannerRoute())}
+                  />
+                  <DashboardActionRow actions={actions} />
+                </Stack>
 
-            <DashboardSection title="Visitor Overview">
-              <DashboardOverviewGrid
-                stats={overviewStats}
-                onStatPress={handleStatPress}
-              />
-            </DashboardSection>
+                <DashboardSection title="Visitor Overview">
+                  <DashboardOverviewGrid
+                    stats={overviewStats}
+                    onStatPress={handleStatPress}
+                  />
+                </DashboardSection>
 
-            <DashboardActivityFeed
-              hasMore={activityFeed.hasMore}
-              isLoading={activityFeed.isLoading}
-              isLoadingMore={activityFeed.isLoadingMore}
-              items={activityFeed.items}
-              showFlat
-              onLoadMore={() => {
-                void activityFeed.loadMore();
-              }}
-              onViewAll={goLogs}
-            />
+                <DashboardActivityFeed
+                  emptyAction={{
+                    label: "Add Visitor",
+                    onPress: () => router.push(guardAddEntryRoute()),
+                  }}
+                  hasMore={activityFeed.hasMore}
+                  isLoading={activityFeed.isLoading}
+                  isLoadingMore={activityFeed.isLoadingMore}
+                  items={activityFeed.items}
+                  showFlat
+                  onLoadMore={() => {
+                    void activityFeed.loadMore();
+                  }}
+                  onViewAll={goLogs}
+                />
               </>
             ) : null}
           </Stack>
@@ -291,27 +282,6 @@ export function GuardCommandCenter() {
 }
 
 const styles = StyleSheet.create({
-  errorBanner: {
-    alignItems: "center",
-    backgroundColor: colors.status.errorSoft,
-    borderRadius: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  errorBannerAction: {
-    color: colors.status.error,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  errorBannerMessage: {
-    color: colors.status.error,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "500",
-    paddingRight: spacing.md,
-  },
   screen: {
     backgroundColor: colors.guard.screenBg,
     flex: 1,

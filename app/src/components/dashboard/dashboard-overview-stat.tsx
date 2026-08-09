@@ -4,6 +4,7 @@ import type { SymbolViewProps } from "expo-symbols";
 
 import { colors } from "@/theme/colors";
 import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 
 export type DashboardOverviewTone = "green" | "orange" | "blue" | "purple" | "neutral";
@@ -33,9 +34,9 @@ const toneStyles: Record<
     valueColor: colors.dashboard.statPurple,
   },
   neutral: {
-    backgroundColor: colors.dashboard.statNeutralSoft,
-    iconColor: colors.dashboard.statNeutral,
-    valueColor: colors.dashboard.statNeutral,
+    backgroundColor: colors.brand.navySoft,
+    iconColor: colors.brand.navy,
+    valueColor: colors.brand.navy,
   },
 };
 
@@ -43,6 +44,7 @@ export type DashboardOverviewStatConfig = {
   icon: SymbolViewProps["name"];
   id: string;
   label: string;
+  subtext?: string;
   tone: DashboardOverviewTone;
   value: number | string;
 };
@@ -55,16 +57,30 @@ export function DashboardOverviewStat({
   icon,
   label,
   onPress,
+  subtext,
   tone,
   value,
 }: DashboardOverviewStatProps) {
   const toneStyle = toneStyles[tone] ?? toneStyles.neutral;
 
   const content = (
-    <View style={[styles.card, { backgroundColor: toneStyle.backgroundColor }]}>
-      <SymbolView name={icon} size={18} tintColor={toneStyle.iconColor} />
-      <Text style={[styles.value, { color: toneStyle.valueColor }]}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+    <View style={styles.card}>
+      <View style={styles.row}>
+        <View style={[styles.iconWrap, { backgroundColor: toneStyle.backgroundColor }]}>
+          <SymbolView name={icon} size={26} tintColor={toneStyle.iconColor} />
+        </View>
+        <View style={styles.copy}>
+          <Text style={[styles.value, { color: toneStyle.valueColor }]}>{value}</Text>
+          <Text numberOfLines={2} style={styles.label}>
+            {label}
+          </Text>
+          {subtext ? (
+            <Text numberOfLines={1} style={styles.subtext}>
+              {subtext}
+            </Text>
+          ) : null}
+        </View>
+      </View>
     </View>
   );
 
@@ -75,7 +91,7 @@ export function DashboardOverviewStat({
   return (
     <Pressable
       accessibilityRole="button"
-      style={({ pressed }) => [{ flex: 1, minWidth: "46%", maxWidth: "48%", opacity: pressed ? 0.88 : 1 }]}
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
       onPress={onPress}
     >
       {content}
@@ -85,27 +101,57 @@ export function DashboardOverviewStat({
 
 const styles = StyleSheet.create({
   card: {
-    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: colors.dashboard.cardBorder,
     borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
     flex: 1,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    width: "100%",
+    ...shadows.card,
+  },
+  copy: {
+    flex: 1,
+    gap: 1,
     justifyContent: "center",
-    minWidth: "46%",
-    maxWidth: "48%",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    minWidth: 0,
+  },
+  iconWrap: {
+    alignItems: "center",
+    borderRadius: radius.lg,
+    height: 50,
+    justifyContent: "center",
+    width: 50,
   },
   label: {
+    color: colors.brand.navy,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  pressed: {
+    opacity: 0.88,
+  },
+  pressable: {
+    flex: 1,
+    width: "100%",
+  },
+  row: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  subtext: {
     color: colors.guard.textMuted,
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-    textAlign: "center",
+    fontSize: 10,
+    fontWeight: "500",
+    lineHeight: 14,
   },
   value: {
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: "800",
-    lineHeight: 36,
-    textAlign: "center",
+    letterSpacing: -0.4,
+    lineHeight: 26,
   },
 });

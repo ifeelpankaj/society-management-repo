@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Row, Stack } from "@/components/layout";
+import { Stack } from "@/components/layout";
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 
@@ -23,19 +23,19 @@ export function DashboardSection({
   trailing,
 }: DashboardSectionProps) {
   return (
-    <Stack gap="lg">
-      <Row align="flex-start" gap="md">
-        <Stack gap="xs" style={styles.copy}>
+    <Stack gap="md">
+      <View style={styles.header}>
+        <View style={styles.copy}>
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-        </Stack>
+        </View>
         {actionLabel && onAction ? (
           <Pressable accessibilityRole="button" hitSlop={8} onPress={onAction}>
             <Text style={styles.action}>{actionLabel}</Text>
           </Pressable>
         ) : null}
         {trailing ? <Text style={styles.action}>{trailing}</Text> : null}
-      </Row>
+      </View>
       {children}
     </Stack>
   );
@@ -49,13 +49,21 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
+    paddingRight: spacing.sm,
+  },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
   },
   subtitle: {
     color: colors.text.secondary,
     fontSize: 14,
+    marginTop: 2,
   },
   title: {
-    color: colors.guard.text,
+    color: colors.brand.navy,
     fontSize: 18,
     fontWeight: "700",
     letterSpacing: -0.2,

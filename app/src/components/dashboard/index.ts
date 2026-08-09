@@ -1,6 +1,11 @@
 export { BrandMark } from "./brand-mark";
 export { DashboardHeader } from "./dashboard-header";
-export type { DashboardHeaderAction, DashboardStatusItem } from "./dashboard-header";
+export type {
+  DashboardHeaderAction,
+  DashboardProfileAvatar,
+  DashboardStatusItem,
+} from "./dashboard-header";
+export { DashboardHeroCard } from "./dashboard-hero-card";
 export { DashboardAnnouncement } from "./dashboard-announcement";
 export { DashboardAlertBar } from "./dashboard-alert-bar";
 export { DashboardSection } from "./dashboard-section";
@@ -16,3 +21,5 @@ export { DashboardActivityRow } from "./dashboard-activity-row";
 export { DashboardActivityFeed } from "./dashboard-activity-feed";
 export { DashboardSkeleton } from "./dashboard-skeleton";
 export { SubscriptionExpiredBanner } from "./subscription-expired-banner";
+export { DashboardErrorBanner } from "./dashboard-error-banner";
+export { getTimeGreeting } from "./dashboard-greeting";

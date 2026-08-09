@@ -1,9 +1,8 @@
-import type { PropsWithChildren, ReactNode } from "react";
-
-import { ScreenShell } from "@/components/layout";
 import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
+import { RoleScreenShell } from "@/features/shared/role-screen-shell";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { colors } from "@/theme/colors";
+import type { PropsWithChildren, ReactNode } from "react";
 
 type GuardScreenShellProps = PropsWithChildren<{
   backgroundColor?: string;
@@ -26,7 +25,7 @@ export function GuardScreenShell({
   const { isLoading, isReady } = useGuardScreen();
 
   return (
-    <ScreenShell
+    <RoleScreenShell
       backgroundColor={backgroundColor}
       contentPaddingBottom={contentPaddingBottom}
       footer={footer}
@@ -38,6 +37,6 @@ export function GuardScreenShell({
       refreshing={refreshing}
     >
       {children}
-    </ScreenShell>
+    </RoleScreenShell>
   );
 }

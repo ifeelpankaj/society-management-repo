@@ -1,37 +1,22 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AppStatusBar } from "@/components/layout/app-status-bar";
-import { Stack } from "@/components/layout";
-import { PaginatedList } from "@/components/ui";
 import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
-import { LogEntryDivider, LogEntryRow } from "@/features/guard/components/logs/log-entry-row";
-import { LogsDateSheet } from "@/features/guard/components/logs/logs-date-sheet";
-import { LogsFilterSheet } from "@/features/guard/components/logs/logs-filter-sheet";
-import { LogsSearchHeader } from "@/features/guard/components/logs/logs-search-header";
-import { VisitorLogSummaryStrip } from "@/features/visitors/components/visitor-log-summary-strip";
-import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
+import { guardEntryDetailRoute, getLogsSegmentSummaryTitle } from "@/features/guard/guard-routes";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
-import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
+import { useAppFeedback } from "@/features/shared/use-app-feedback";
 import { useGuardLogsFromParams } from "@/features/guard/hooks/use-guard-logs";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
-import {
-  type ModelsVisitorEntry,
-} from "@/lib/api/generated-api";
+import { LogEntryRow } from "@/features/visitors/components/log-entry-row";
+import { VisitorEntriesListScreen } from "@/features/visitors/components/visitor-entries-list-screen";
+import { VisitorLogSummaryStrip } from "@/features/visitors/components/visitor-log-summary-strip";
 import { useGetV1SocietiesBySocietyIdVisitorEntriesStatsExtendedQuery } from "@/lib/api/guard-api-extensions";
-import { colors } from "@/theme/colors";
-import { spacing } from "@/theme/spacing";
 
 export function GuardLogsScreen() {
   const router = useRouter();
   const { preset: presetParam } = useLocalSearchParams<{ preset?: string | string[] }>();
   const { isLoading, isReady, memberships, requiresSelection, selectedSocietyId } = useGuardScreen();
-  const feedback = useGuardFeedback();
+  const feedback = useAppFeedback();
   const actions = useGuardActions(selectedSocietyId ?? 0);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [dateOpen, setDateOpen] = useState(false);
   const logs = useGuardLogsFromParams(presetParam);
   const statsQuery = useGetV1SocietiesBySocietyIdVisitorEntriesStatsExtendedQuery(
     {
@@ -47,8 +32,7 @@ export function GuardLogsScreen() {
   }
 
   const stats = statsQuery.data?.data?.stats;
-  const checkedOutCount =
-    stats?.checked_out_in_range ?? stats?.checked_out_today ?? 0;
+  const checkedOutCount = stats?.checked_out_in_range ?? stats?.checked_out_today ?? 0;
   const listLoading = logs.isLoading || (isLoading && !isReady);
 
   const handleCheckOut = async (entryId?: number) => {
@@ -78,92 +62,42 @@ export function GuardLogsScreen() {
     : "Visitor movement will appear here as entries are created.";
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
-      <AppStatusBar />
-      <PaginatedList<ModelsVisitorEntry>
-        ItemSeparatorComponent={LogEntryDivider}
-        data={logs.items}
-        emptyMessage={emptyMessage}
-        emptyTitle={emptyTitle}
-        footer={<View style={styles.footerSpacer} />}
-        hasMore={logs.hasMore}
-        header={
-          <Stack gap="md" style={styles.header}>
-            <LogsSearchHeader
-              activeFilterCount={logs.activeFilterCount}
-              datePreset={logs.datePreset}
-              isSearchActive={logs.isSearchActive}
-              searchValue={logs.searchInput}
-              segment={logs.segment}
-              onClearSearch={() => logs.setSearchInput("")}
-              onDatePress={() => setDateOpen(true)}
-              onFilterPress={() => setFilterOpen(true)}
-              onSearchChange={logs.setSearchInput}
-              onSegmentChange={logs.selectSegment}
-            />
-            {!logs.isSearchActive ? (
-              <VisitorLogSummaryStrip
-                checkedIn={stats?.visitors_inside ?? 0}
-                checkedOut={checkedOutCount}
-                pending={stats?.pending_approvals ?? 0}
-              />
-            ) : null}
-          </Stack>
-        }
-        isLoading={listLoading}
-        isLoadingMore={logs.isLoadingMore}
-        isRefreshing={logs.isRefreshing}
-        keyExtractor={(item) => `log-${item.id}`}
-        renderItem={({ item }) => (
-          <LogEntryRow
-            entry={item}
-            isCheckingOut={actions.activeEntryId === item.id}
-            onPress={() => {
-              if (item.id) {
-                router.push(guardEntryDetailRoute(item.id));
-              }
-            }}
-            onCheckOut={
-              item.status === "checked_in" ? () => void handleCheckOut(item.id) : undefined
-            }
-          />
-        )}
-        onLoadMore={logs.loadMore}
-        onRefresh={() => {
+    <VisitorEntriesListScreen
+      controls={{
+        ...logs,
+        isLoading: listLoading,
+        refresh: () => {
           void logs.refresh();
           void statsQuery.refetch();
-        }}
-      />
-
-      <LogsFilterSheet
-        datePreset={logs.datePreset}
-        purpose={logs.purpose}
-        status={logs.sheetStatus}
-        visible={filterOpen}
-        onApply={logs.applySheetFilters}
-        onClear={logs.clearSheetFilters}
-        onClose={() => setFilterOpen(false)}
-      />
-
-      <LogsDateSheet
-        selected={logs.datePreset}
-        visible={dateOpen}
-        onApply={logs.setDatePreset}
-        onClose={() => setDateOpen(false)}
-      />
-    </SafeAreaView>
+        },
+      }}
+      emptyMessage={emptyMessage}
+      emptyTitle={emptyTitle}
+      headerExtra={
+        !logs.isSearchActive ? (
+          <VisitorLogSummaryStrip
+            checkedIn={stats?.visitors_inside ?? 0}
+            checkedOut={checkedOutCount}
+            pending={stats?.pending_approvals ?? 0}
+            title={getLogsSegmentSummaryTitle(logs.segment)}
+          />
+        ) : null
+      }
+      keyPrefix="log"
+      renderRow={(item) => (
+        <LogEntryRow
+          entry={item}
+          isCheckingOut={actions.activeEntryId === item.id}
+          onPress={() => {
+            if (item.id) {
+              router.push(guardEntryDetailRoute(item.id));
+            }
+          }}
+          onCheckOut={
+            item.status === "checked_in" ? () => void handleCheckOut(item.id) : undefined
+          }
+        />
+      )}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  footerSpacer: {
-    height: spacing.sm,
-  },
-  header: {
-    paddingBottom: spacing.sm,
-  },
-  screen: {
-    backgroundColor: colors.guard.screenBg,
-    flex: 1,
-  },
-});

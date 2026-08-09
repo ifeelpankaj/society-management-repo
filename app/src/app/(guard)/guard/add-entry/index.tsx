@@ -1,4 +1,3 @@
-import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
@@ -16,36 +15,25 @@ export default function GuardAddEntryScreen() {
 
   return (
     <GuardSubScreen title="Add Entry">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.flex}
-      >
-        <ManualEntryForm
-          allowGuardEntry={visitorSettings?.allow_guard_entry !== false}
-          societyId={selectedSocietyId ?? 0}
-          societyName={
-            selectedMembership ? `Society #${selectedMembership.society_id}` : undefined
+      <ManualEntryForm
+        allowGuardEntry={visitorSettings?.allow_guard_entry !== false}
+        societyId={selectedSocietyId ?? 0}
+        societyName={
+          selectedMembership ? `Society #${selectedMembership.society_id}` : undefined
+        }
+        onEntryCreated={({ qrToken }) => {
+          if (qrToken) {
+            router.push(guardCheckInRoute({ source: "qr", token: qrToken }));
           }
-          onEntryCreated={({ qrToken }) => {
-            if (qrToken) {
-              router.push(guardCheckInRoute({ source: "qr", token: qrToken }));
-            }
-          }}
-          onError={(message) =>
-            feedback.showActionResult(
-              { success: false, message },
-              { errorTitle: "Could not create entry", successTitle: "Entry created" },
-            )
-          }
-          onSuccess={(message) => feedback.showSuccess("Entry created", message)}
-        />
-      </KeyboardAvoidingView>
+        }}
+        onError={(message) =>
+          feedback.showActionResult(
+            { success: false, message },
+            { errorTitle: "Could not create entry", successTitle: "Entry created" },
+          )
+        }
+        onSuccess={(message) => feedback.showSuccess("Entry created", message)}
+      />
     </GuardSubScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-});

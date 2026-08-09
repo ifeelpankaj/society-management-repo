@@ -1,10 +1,16 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { Platform, StyleSheet, TextInput, View } from "react-native";
+import { SymbolView } from "expo-symbols";
+import { useRouter } from "expo-router";
 
 import { PaginatedList } from "@/components/ui";
+import {
+  GuardQueueEntryCard,
+  GuardQueueEntryDivider,
+} from "@/features/guard/components/guard-queue-entry-card";
+import { GuardQueueEmptyState } from "@/features/guard/components/guard-queue-empty-state";
 import { GuardSubScreen } from "@/features/guard/components/guard-sub-screen";
-import { VisitorDetailSheet } from "@/features/guard/components/visitor-detail-sheet";
-import { VisitorEntryCard } from "@/features/guard/components/visitor-entry-card";
+import { guardEntryDetailRoute } from "@/features/guard/guard-routes";
 import { getWaitingDuration } from "@/features/guard/guard-utils";
 import { useGuardActions } from "@/features/guard/hooks/use-guard-actions";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
@@ -12,13 +18,16 @@ import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
 import { useGuardWaitingAtGate } from "@/features/guard/hooks/use-guard-waiting-at-gate";
 import type { ModelsVisitorEntry } from "@/lib/api/generated-api";
 import { colors } from "@/theme/colors";
+import { layout } from "@/theme/layout";
+import { radius } from "@/theme/radius";
+import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
 
 export default function GuardWaitingAtGateScreen() {
+  const router = useRouter();
   const { selectedSocietyId } = useGuardScreen();
   const feedback = useGuardFeedback();
   const [search, setSearch] = useState("");
-  const [selectedEntry, setSelectedEntry] = useState<ModelsVisitorEntry | null>(null);
   const queue = useGuardWaitingAtGate(selectedSocietyId, search);
   const actions = useGuardActions(selectedSocietyId ?? 0);
 
@@ -35,35 +44,55 @@ export default function GuardWaitingAtGateScreen() {
       });
 
       if (result.success) {
-        setSelectedEntry(null);
+        void queue.refresh();
       }
     },
-    [actions, feedback],
+    [actions, feedback, queue],
   );
 
   return (
-    <GuardSubScreen
-      headerExtra={
-        <TextInput
-          placeholder="Search name, phone, flat, vehicle..."
-          placeholderTextColor={colors.guard.textMuted}
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-        />
-      }
-      title="Waiting at Gate"
-    >
+    <GuardSubScreen title="Waiting at Gate">
       <PaginatedList
+        ItemSeparatorComponent={GuardQueueEntryDivider}
+        contentContainerStyle={styles.listContent}
         data={queue.items}
-        emptyMessage={
-          search
-            ? "Try a different name, phone, flat, or vehicle."
-            : "No approved visitors waiting for manual check-in (walk-ins and guard-approved entries only)."
+        emptyComponent={
+          <GuardQueueEmptyState
+            message={
+              search
+                ? "Try a different name, phone, flat, or vehicle."
+                : "No approved visitors waiting for manual check-in (walk-ins and guard-approved entries only)."
+            }
+            refreshing={queue.isRefreshing}
+            title={search ? "No matching visitors" : "No visitors waiting at gate"}
+            onRefresh={() => {
+              void queue.refresh();
+            }}
+          />
         }
-        emptyTitle={search ? "No matching visitors" : "No visitors waiting at gate"}
         footer={<View style={styles.footerSpacer} />}
         hasMore={queue.hasMore}
+        header={
+          <View style={styles.searchWrap}>
+            <View style={styles.searchRow}>
+              <SymbolView
+                name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+                size={18}
+                tintColor={colors.brand.orange}
+              />
+              <TextInput
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Search name, phone, flat, vehicle..."
+                placeholderTextColor={colors.guard.textMuted}
+                selectionColor={colors.brand.orange}
+                style={[styles.searchInput, Platform.OS === "web" ? styles.searchInputWeb : null]}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+          </View>
+        }
         isLoading={queue.isLoading}
         isLoadingMore={queue.isLoadingMore}
         isRefreshing={queue.isRefreshing}
@@ -71,13 +100,17 @@ export default function GuardWaitingAtGateScreen() {
         renderItem={({ item }) => {
           const waiting = getWaitingDuration(item.approved_at);
           return (
-            <VisitorEntryCard
+            <GuardQueueEntryCard
               entry={item}
               loading={actions.activeEntryId === item.id}
               primaryActionLabel="Check In"
               waitingLabel={waiting.label}
               waitingTone={waiting.tone}
-              onPress={() => setSelectedEntry(item)}
+              onPress={() => {
+                if (item.id) {
+                  router.push(guardEntryDetailRoute(item.id));
+                }
+              }}
               onPrimaryAction={() => void handleCheckIn(item)}
             />
           );
@@ -88,31 +121,45 @@ export default function GuardWaitingAtGateScreen() {
         }}
       />
 
-      <VisitorDetailSheet
-        entry={selectedEntry}
-        loading={actions.activeEntryId === selectedEntry?.id}
-        primaryActionLabel="Check In"
-        visible={Boolean(selectedEntry)}
-        onClose={() => setSelectedEntry(null)}
-        onPrimaryAction={() => selectedEntry && void handleCheckIn(selectedEntry)}
-      />
     </GuardSubScreen>
   );
 }
 
 const styles = StyleSheet.create({
   footerSpacer: {
-    height: spacing.lg,
+    height: spacing.sm,
+  },
+  listContent: {
+    gap: spacing.xs,
+    paddingBottom: spacing["2xl"],
+    paddingHorizontal: 0,
+    paddingTop: spacing.md,
   },
   searchInput: {
-    backgroundColor: colors.surface.input,
-    borderColor: colors.border.input,
-    borderRadius: 14,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    color: colors.guard.text,
+    flex: 1,
+    fontSize: 14,
+    marginLeft: spacing.sm,
+    minHeight: 40,
+    paddingVertical: 0,
+  },
+  searchInputWeb: {
+    outlineWidth: 0,
+  },
+  searchRow: {
+    alignItems: "center",
+    backgroundColor: colors.surface.card,
+    borderColor: "#F1E4DA",
+    borderRadius: radius.xl,
     borderWidth: 1,
-    color: colors.text.primary,
-    fontSize: 15,
-    fontWeight: "600",
+    flexDirection: "row",
+    minHeight: 48,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 12,
+    ...shadows.sm,
+  },
+  searchWrap: {
+    paddingHorizontal: layout.screenPaddingHorizontal,
   },
 });
