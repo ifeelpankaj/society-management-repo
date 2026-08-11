@@ -64,5 +64,8 @@
     "api:codegen": "npm run api:fetch && npm run api:convert && npm run api:generate",
     "setup:firebase-local": "node ./scripts/sync-firebase-configs.js"
   },
+  "overrides": {
+    "uuid": "^11.1.0"
+  },
   "private": true
 }

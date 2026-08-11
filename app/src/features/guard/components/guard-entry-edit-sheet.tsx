@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   Modal,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,7 +11,10 @@ import {
   View,
 } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Row, Stack } from "@/components/layout";
@@ -69,11 +74,13 @@ export function GuardEntryEditSheet({
   societyId,
   visible,
 }: GuardEntryEditSheetProps) {
+  const insets = useSafeAreaInsets();
   const [values, setValues] = useState(() =>
     buildInitialValues(entry, selectedFlatFromEntry(entry)),
   );
   const [error, setError] = useState<string | null>(null);
-  const [patchEntry, patchState] = usePatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdMutation();
+  const [patchEntry, patchState] =
+    usePatchV1SocietiesBySocietyIdVisitorEntriesAndEntryIdMutation();
   const allowFlatEdit = canEditVisitorFlat(entry);
 
   useEffect(() => {
@@ -139,161 +146,229 @@ export function GuardEntryEditSheet({
   };
 
   return (
-    <Modal animationType="slide" presentationStyle="pageSheet" visible={visible} onRequestClose={onClose}>
-      <SafeAreaView style={styles.screen}>
+    <Modal
+      animationType="slide"
+      presentationStyle="pageSheet"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
         <AppStatusBar />
-        <View style={styles.header}>
-          <View style={styles.headerSide} />
-          <Text style={styles.headerTitle}>Edit Details</Text>
-          <Pressable accessibilityLabel="Close" hitSlop={12} style={styles.headerSide} onPress={onClose}>
-            <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={18} tintColor={colors.text.secondary} />
-          </Pressable>
-        </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerSide} />
+            <Text style={styles.headerTitle}>Edit Details</Text>
+            <Pressable
+              accessibilityLabel="Close"
+              hitSlop={12}
+              style={styles.headerSide}
+              onPress={onClose}
+            >
+              <SymbolView
+                name={{ ios: "xmark", android: "close", web: "close" }}
+                size={18}
+                tintColor={colors.text.secondary}
+              />
+            </Pressable>
+          </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Stack gap="md">
-            <View style={styles.contextCard}>
-              <Text style={styles.contextLabel}>Purpose</Text>
-              <Text style={styles.contextValue}>{titleize(entry?.purpose ?? "guest")}</Text>
-              {entry?.flat || entry?.flat_id ? (
-                <>
-                  <Text style={[styles.contextLabel, styles.contextLabelSpaced]}>Current flat</Text>
-                  <Text style={styles.contextValue}>
-                    {formatSelectedFlatLabel(selectedFlatFromEntry(entry)) ||
-                      (entry.flat_id ? `Flat #${entry.flat_id}` : "—")}
-                  </Text>
-                </>
-              ) : null}
-              {entry?.delivery_partner ? (
-                <>
-                  <Text style={[styles.contextLabel, styles.contextLabelSpaced]}>Delivery partner</Text>
-                  <Text style={styles.contextValue}>{entry.delivery_partner}</Text>
-                </>
-              ) : null}
-              {entry?.service_provider ? (
-                <>
-                  <Text style={[styles.contextLabel, styles.contextLabelSpaced]}>Service provider</Text>
-                  <Text style={styles.contextValue}>{entry.service_provider}</Text>
-                </>
-              ) : null}
-            </View>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Stack gap="md">
+              <View style={styles.contextCard}>
+                <Text style={styles.contextLabel}>Purpose</Text>
+                <Text style={styles.contextValue}>
+                  {titleize(entry?.purpose ?? "guest")}
+                </Text>
+                {entry?.flat || entry?.flat_id ? (
+                  <>
+                    <Text
+                      style={[styles.contextLabel, styles.contextLabelSpaced]}
+                    >
+                      Current flat
+                    </Text>
+                    <Text style={styles.contextValue}>
+                      {formatSelectedFlatLabel(selectedFlatFromEntry(entry)) ||
+                        (entry.flat_id ? `Flat #${entry.flat_id}` : "—")}
+                    </Text>
+                  </>
+                ) : null}
+                {entry?.delivery_partner ? (
+                  <>
+                    <Text
+                      style={[styles.contextLabel, styles.contextLabelSpaced]}
+                    >
+                      Delivery partner
+                    </Text>
+                    <Text style={styles.contextValue}>
+                      {entry.delivery_partner}
+                    </Text>
+                  </>
+                ) : null}
+                {entry?.service_provider ? (
+                  <>
+                    <Text
+                      style={[styles.contextLabel, styles.contextLabelSpaced]}
+                    >
+                      Service provider
+                    </Text>
+                    <Text style={styles.contextValue}>
+                      {entry.service_provider}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
 
-            {allowFlatEdit ? (
-              <FlatPicker
-                label="Visiting flat"
-                selected={values.selectedFlat ?? null}
-                societyId={societyId}
-                onSelect={(flat) =>
-                  setValues((current) => ({
-                    ...current,
-                    selectedFlat: flat,
-                    flat_id: flat.id,
-                  }))
-                }
-              />
-            ) : null}
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Full name</Text>
-              <TextInput
-                autoCapitalize="words"
-                style={styles.fieldInput}
-                value={values.full_name ?? ""}
-                onChangeText={(full_name) => setValues((current) => ({ ...current, full_name }))}
-              />
-            </View>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Phone number</Text>
-              <TextInput
-                autoComplete="tel"
-                keyboardType="phone-pad"
-                style={styles.fieldInput}
-                value={values.phone_number ?? ""}
-                onChangeText={(phone_number) => setValues((current) => ({ ...current, phone_number }))}
-              />
-            </View>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                style={styles.fieldInput}
-                value={values.email ?? ""}
-                onChangeText={(email) => setValues((current) => ({ ...current, email }))}
-              />
-            </View>
-            {entry?.purpose === "guest" ? (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Companion count</Text>
-                <TextInput
-                  keyboardType="number-pad"
-                  style={styles.fieldInput}
-                  value={String(values.companions_count ?? 0)}
-                  onChangeText={(text) =>
+              {allowFlatEdit ? (
+                <FlatPicker
+                  label="Visiting flat"
+                  selected={values.selectedFlat ?? null}
+                  societyId={societyId}
+                  onSelect={(flat) =>
                     setValues((current) => ({
                       ...current,
-                      companions_count: Number(text.replace(/\D/g, "") || 0),
+                      selectedFlat: flat,
+                      flat_id: flat.id,
                     }))
                   }
                 />
-              </View>
-            ) : null}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Vehicle number</Text>
-              <TextInput
-                autoCapitalize="characters"
-                style={styles.fieldInput}
-                value={values.vehicle_number ?? ""}
-                onChangeText={(vehicle_number) =>
-                  setValues((current) => ({ ...current, vehicle_number }))
-                }
-              />
-            </View>
-            {entry?.purpose === "cab" ? (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Vehicle type</Text>
-                <Row align="center" gap={8} style={styles.chipRow}>
-                  {VEHICLE_TYPES.map((type) => {
-                    const active = values.vehicle_type === type;
-                    return (
-                      <Pressable
-                        key={type}
-                        style={[styles.chip, active && styles.chipActive]}
-                        onPress={() => setValues((current) => ({ ...current, vehicle_type: type }))}
-                      >
-                        <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                          {titleize(type)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </Row>
-              </View>
-            ) : null}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Notes</Text>
-              <TextInput
-                multiline
-                numberOfLines={3}
-                style={[styles.fieldInput, styles.fieldInputMultiline]}
-                value={values.notes ?? ""}
-                onChangeText={(notes) => setValues((current) => ({ ...current, notes }))}
-              />
-            </View>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </Stack>
-        </ScrollView>
+              ) : null}
 
-        <View style={styles.footer}>
-          <Pressable
-            disabled={patchState.isLoading}
-            style={[styles.saveButton, patchState.isLoading && styles.saveButtonDisabled]}
-            onPress={() => void handleSave()}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Full name</Text>
+                <TextInput
+                  autoCapitalize="words"
+                  style={styles.fieldInput}
+                  value={values.full_name ?? ""}
+                  onChangeText={(full_name) =>
+                    setValues((current) => ({ ...current, full_name }))
+                  }
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Phone number</Text>
+                <TextInput
+                  autoComplete="tel"
+                  keyboardType="phone-pad"
+                  style={styles.fieldInput}
+                  value={values.phone_number ?? ""}
+                  onChangeText={(phone_number) =>
+                    setValues((current) => ({ ...current, phone_number }))
+                  }
+                />
+              </View>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Email</Text>
+                <TextInput
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  keyboardType="email-address"
+                  style={styles.fieldInput}
+                  value={values.email ?? ""}
+                  onChangeText={(email) =>
+                    setValues((current) => ({ ...current, email }))
+                  }
+                />
+              </View>
+              {entry?.purpose === "guest" ? (
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Companion count</Text>
+                  <TextInput
+                    keyboardType="number-pad"
+                    style={styles.fieldInput}
+                    value={String(values.companions_count ?? 0)}
+                    onChangeText={(text) =>
+                      setValues((current) => ({
+                        ...current,
+                        companions_count: Number(text.replace(/\D/g, "") || 0),
+                      }))
+                    }
+                  />
+                </View>
+              ) : null}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Vehicle number</Text>
+                <TextInput
+                  autoCapitalize="characters"
+                  style={styles.fieldInput}
+                  value={values.vehicle_number ?? ""}
+                  onChangeText={(vehicle_number) =>
+                    setValues((current) => ({ ...current, vehicle_number }))
+                  }
+                />
+              </View>
+              {entry?.purpose === "cab" ? (
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Vehicle type</Text>
+                  <Row align="center" gap={8} style={styles.chipRow}>
+                    {VEHICLE_TYPES.map((type) => {
+                      const active = values.vehicle_type === type;
+                      return (
+                        <Pressable
+                          key={type}
+                          style={[styles.chip, active && styles.chipActive]}
+                          onPress={() =>
+                            setValues((current) => ({
+                              ...current,
+                              vehicle_type: type,
+                            }))
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              active && styles.chipTextActive,
+                            ]}
+                          >
+                            {titleize(type)}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </Row>
+                </View>
+              ) : null}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Notes</Text>
+                <TextInput
+                  multiline
+                  numberOfLines={3}
+                  style={[styles.fieldInput, styles.fieldInputMultiline]}
+                  value={values.notes ?? ""}
+                  onChangeText={(notes) =>
+                    setValues((current) => ({ ...current, notes }))
+                  }
+                />
+              </View>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </Stack>
+          </ScrollView>
+
+          <View
+            style={[
+              styles.footer,
+              { paddingBottom: spacing.lg + Math.max(insets.bottom, 0) },
+            ]}
           >
-            <Text style={styles.saveButtonText}>{patchState.isLoading ? "Saving..." : "Save changes"}</Text>
-          </Pressable>
-        </View>
+            <Pressable
+              disabled={patchState.isLoading}
+              style={[
+                styles.saveButton,
+                patchState.isLoading && styles.saveButtonDisabled,
+              ]}
+              onPress={() => void handleSave()}
+            >
+              <Text style={styles.saveButtonText}>
+                {patchState.isLoading ? "Saving..." : "Save changes"}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
@@ -377,7 +452,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.default,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingVertical: spacing.lg,
+    paddingTop: spacing.lg,
   },
   header: {
     alignItems: "center",

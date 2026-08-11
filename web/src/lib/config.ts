@@ -6,7 +6,7 @@ export const appConfig = {
   apiBaseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
   swaggerDocsUrl:
     process.env.NEXT_PUBLIC_SWAGGER_DOCS_URL ||
-    "http://localhost:8000/swagger/doc.json",
+    "http://localhost:8080/swagger/doc.json",
   trialMonths: Number.isFinite(trialMonths) ? trialMonths : 3,
   pricePerFlat: Number.isFinite(pricePerFlat) ? pricePerFlat : 30,
   demoVideoUrl:

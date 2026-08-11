@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui";
 import { colors } from "@/theme/colors";
@@ -22,6 +23,7 @@ type ManualCodeSheetProps = {
 };
 
 export function ManualCodeSheet({ onClose, onSubmit, visible }: ManualCodeSheetProps) {
+  const insets = useSafeAreaInsets();
   const [code, setCode] = useState("");
 
   const handleClose = () => {
@@ -45,7 +47,12 @@ export function ManualCodeSheet({ onClose, onSubmit, visible }: ManualCodeSheetP
         style={styles.backdrop}
       >
         <Pressable accessibilityRole="button" style={styles.dismissArea} onPress={handleClose} />
-        <View style={styles.sheet}>
+        <View
+          style={[
+            styles.sheet,
+            { paddingBottom: spacing["3xl"] + Math.max(insets.bottom, 0) },
+          ]}
+        >
           <View style={styles.handle} />
           <Text style={styles.title}>Enter Code Manually</Text>
           <Text style={styles.subtitle}>
@@ -127,7 +134,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.card,
     borderTopLeftRadius: radius["2xl"],
     borderTopRightRadius: radius["2xl"],
-    paddingBottom: spacing["3xl"],
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
   },

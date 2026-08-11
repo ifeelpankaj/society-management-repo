@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -20,7 +21,14 @@ import {
   type DashboardActionTone,
 } from "@/components/dashboard";
 import { FlatPicker } from "@/features/guard/components/flat-picker";
-import { DELIVERY_PARTNERS, DELIVERY_PARTNER_OTHER_LABEL, getFlatLabel, getVisitorName, titleize, visitorPurposes } from "@/features/guard/guard-utils";
+import {
+  DELIVERY_PARTNERS,
+  DELIVERY_PARTNER_OTHER_LABEL,
+  getFlatLabel,
+  getVisitorName,
+  titleize,
+  visitorPurposes,
+} from "@/features/guard/guard-utils";
 import {
   formatSelectedFlatLabel,
   type SelectedFlat,
@@ -49,7 +57,7 @@ type EntryMode = "full_entry" | "form_link";
 
 /** Keeps Android from tabbing focus through touchable chips while typing in inputs. */
 const androidTouchableFocusProps =
-  Platform.OS === "android" ? ({ focusable: false as const }) : {};
+  Platform.OS === "android" ? { focusable: false as const } : {};
 
 /** Android autofill and keyboard resize can cycle focus across inputs when the keyboard opens. */
 const androidTextInputProps =
@@ -63,16 +71,53 @@ const androidTextInputProps =
 
 /** Removes the default black browser outline on web when an input is focused. */
 const webNoOutline: TextStyle =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as unknown as TextStyle) : {};
+  Platform.OS === "web"
+    ? ({ outlineStyle: "none" } as unknown as TextStyle)
+    : {};
 
 const PURPOSE_META = {
-  guest: { ios: "person.fill", android: "person", web: "person", label: "Guest" },
-  delivery: { ios: "shippingbox.fill", android: "local_shipping", web: "local_shipping", label: "Delivery" },
-  cab: { ios: "car.fill", android: "local_taxi", web: "local_taxi", label: "Cab" },
-  service: { ios: "wrench.fill", android: "build", web: "build", label: "Service" },
-  maintenance: { ios: "hammer.fill", android: "handyman", web: "handyman", label: "Maint." },
-  staff: { ios: "person.badge.shield.checkmark.fill", android: "badge", web: "badge", label: "Staff" },
-  other: { ios: "ellipsis.circle.fill", android: "more_horiz", web: "more_horiz", label: "Other" },
+  guest: {
+    ios: "person.fill",
+    android: "person",
+    web: "person",
+    label: "Guest",
+  },
+  delivery: {
+    ios: "shippingbox.fill",
+    android: "local_shipping",
+    web: "local_shipping",
+    label: "Delivery",
+  },
+  cab: {
+    ios: "car.fill",
+    android: "local_taxi",
+    web: "local_taxi",
+    label: "Cab",
+  },
+  service: {
+    ios: "wrench.fill",
+    android: "build",
+    web: "build",
+    label: "Service",
+  },
+  maintenance: {
+    ios: "hammer.fill",
+    android: "handyman",
+    web: "handyman",
+    label: "Maint.",
+  },
+  staff: {
+    ios: "person.badge.shield.checkmark.fill",
+    android: "badge",
+    web: "badge",
+    label: "Staff",
+  },
+  other: {
+    ios: "ellipsis.circle.fill",
+    android: "more_horiz",
+    web: "more_horiz",
+    label: "Other",
+  },
 } as const;
 
 const PURPOSE_TONES: Record<ModelsVisitorPurpose, DashboardActionTone> = {
@@ -266,7 +311,11 @@ function PurposePicker({
                 style={[
                   styles.purposeTileLabel,
                   active && styles.purposeTileLabelActive,
-                  { color: active ? toneStyle.iconColor : colors.guard.textMuted },
+                  {
+                    color: active
+                      ? toneStyle.iconColor
+                      : colors.guard.textMuted,
+                  },
                 ]}
               >
                 {meta.label}
@@ -371,7 +420,10 @@ type ManualEntryFormProps = {
   allowGuardEntry?: boolean;
   societyId: number;
   societyName?: string | null;
-  onEntryCreated?: (result: { entry?: ModelsVisitorEntry; qrToken?: string }) => void;
+  onEntryCreated?: (result: {
+    entry?: ModelsVisitorEntry;
+    qrToken?: string;
+  }) => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
 };
@@ -412,10 +464,14 @@ export function ManualEntryForm({
   const isSubmitting = isFormLinkMode
     ? inviteForm.createInviteState.isLoading
     : form.createEntryState.isLoading;
-  const selectedFlat = isFormLinkMode ? inviteForm.selectedFlat : form.selectedFlat;
+  const selectedFlat = isFormLinkMode
+    ? inviteForm.selectedFlat
+    : form.selectedFlat;
   const flatError = isFormLinkMode ? inviteForm.flatError : form.errors.flat;
   const purpose = isFormLinkMode ? inviteForm.purpose : form.purpose;
-  const setSelectedFlat = isFormLinkMode ? inviteForm.setSelectedFlat : form.setSelectedFlat;
+  const setSelectedFlat = isFormLinkMode
+    ? inviteForm.setSelectedFlat
+    : form.setSelectedFlat;
   const setPurpose = isFormLinkMode ? inviteForm.setPurpose : form.setPurpose;
 
   return (
@@ -431,327 +487,378 @@ export function ManualEntryForm({
       showsVerticalScrollIndicator={false}
       style={styles.formScroll}
     >
-        <Row align="flex-start" justify="space-between">
-          <Stack gap="xs" style={styles.formTitleBlock}>
-            <Row align="baseline" gap={4} justify="flex-start">
-              <Text style={styles.formTitleAdd}>Add</Text>
-              <Text style={styles.formTitleVisitor}>Visitor</Text>
-            </Row>
-            <Text style={styles.formSubtitle}>
-              {isFormLinkMode
-                ? "Visitor fills details online and gets a gate QR code."
-                : societyName
-                  ? `Gate entry · ${societyName}`
-                  : "Quick gate entry"}
-            </Text>
-          </Stack>
-          <EntryLinkModeButton
-            active={isFormLinkMode}
-            onPress={() =>
-              setEntryMode((mode) => (mode === "form_link" ? "full_entry" : "form_link"))
-            }
-          />
-        </Row>
+      <Row align="flex-start" justify="space-between">
+        <Stack gap="xs" style={styles.formTitleBlock}>
+          <Row align="baseline" gap={4} justify="flex-start">
+            <Text style={styles.formTitleAdd}>Add</Text>
+            <Text style={styles.formTitleVisitor}>Visitor</Text>
+          </Row>
+          <Text style={styles.formSubtitle}>
+            {isFormLinkMode
+              ? "Visitor fills details online and gets a gate QR code."
+              : societyName
+                ? `Gate entry · ${societyName}`
+                : "Quick gate entry"}
+          </Text>
+        </Stack>
+        <EntryLinkModeButton
+          active={isFormLinkMode}
+          onPress={() =>
+            setEntryMode((mode) =>
+              mode === "form_link" ? "full_entry" : "form_link",
+            )
+          }
+        />
+      </Row>
 
-        {!allowGuardEntry ? (
-          <View style={styles.permissionBanner}>
-            <Text style={styles.permissionBannerTitle}>Guard entry disabled</Text>
-            <Text style={styles.permissionBannerBody}>
-              Your admin has not allowed guard entry for this society.
-            </Text>
-          </View>
-        ) : null}
+      {!allowGuardEntry ? (
+        <View style={styles.permissionBanner}>
+          <Text style={styles.permissionBannerTitle}>Guard entry disabled</Text>
+          <Text style={styles.permissionBannerBody}>
+            Your admin has not allowed guard entry for this society.
+          </Text>
+        </View>
+      ) : null}
 
-        {purpose !== "staff" ? (
-          <FlatPicker
-            error={flatError}
-            selected={selectedFlat}
-            societyId={societyId}
-            onSelect={setSelectedFlat}
-          />
-        ) : null}
+      {purpose !== "staff" ? (
+        <FlatPicker
+          error={flatError}
+          selected={selectedFlat}
+          societyId={societyId}
+          onSelect={setSelectedFlat}
+        />
+      ) : null}
 
-        <PurposePicker value={purpose} onChange={setPurpose} />
+      <PurposePicker value={purpose} onChange={setPurpose} />
 
-        {!isFormLinkMode ? (
-          <>
-            <Stack gap="lg">
-              <SectionHeader accent title="Visitor details" />
-              {form.purpose !== "delivery" ? (
-                <Field
-                  key="visitor-name"
-                  autoCapitalize="words"
-                  error={form.errors.fullName}
-                  icon={FIELD_ICONS.person}
-                  label={form.purpose === "cab" ? "Driver name" : "Visitor name"}
-                  placeholder="Full name"
-                  value={form.fullName}
-                  onChangeText={form.setFullName}
-                />
-              ) : null}
+      {!isFormLinkMode ? (
+        <>
+          <Stack gap="lg">
+            <SectionHeader accent title="Visitor details" />
+            {form.purpose !== "delivery" ? (
               <Field
-                key="phone-number"
-                error={form.errors.phoneNumber}
-                icon={FIELD_ICONS.phone}
-                keyboardType="phone-pad"
-                label="Phone number"
-                placeholder={form.purpose === "cab" ? "Optional" : "10-digit mobile"}
-                value={form.phoneNumber}
-                onChangeText={form.setPhoneNumber}
+                key="visitor-name"
+                autoCapitalize="words"
+                error={form.errors.fullName}
+                icon={FIELD_ICONS.person}
+                label={form.purpose === "cab" ? "Driver name" : "Visitor name"}
+                placeholder="Full name"
+                value={form.fullName}
+                onChangeText={form.setFullName}
               />
-              {form.purpose === "guest" ? (
-                <Field
-                  key="companions-count"
-                  error={form.errors.companionsCount}
-                  icon={FIELD_ICONS.tag}
-                  keyboardType="number-pad"
-                  label="Companion count"
-                  placeholder="0"
-                  value={String(form.companionsCount)}
-                  onChangeText={(value) => form.setCompanionsCount(Number(value.replace(/\D/g, "") || 0))}
-                />
-              ) : null}
-              {form.purpose === "guest" && form.companionsCount > 0 ? (
-                <Stack gap="md">
-                  {Array.from({ length: form.companionsCount }, (_, index) => {
-                    const companion = form.companions[index] ?? { name: "", phoneNumber: "" };
-                    const companionErrors = form.errors.companionDetails?.[index];
+            ) : null}
+            <Field
+              key="phone-number"
+              error={form.errors.phoneNumber}
+              icon={FIELD_ICONS.phone}
+              keyboardType="phone-pad"
+              label="Phone number"
+              placeholder={
+                form.purpose === "cab" ? "Optional" : "10-digit mobile"
+              }
+              value={form.phoneNumber}
+              onChangeText={form.setPhoneNumber}
+            />
+            {form.purpose === "guest" ? (
+              <Field
+                key="companions-count"
+                error={form.errors.companionsCount}
+                icon={FIELD_ICONS.tag}
+                keyboardType="number-pad"
+                label="Companion count"
+                placeholder="0"
+                value={String(form.companionsCount)}
+                onChangeText={(value) =>
+                  form.setCompanionsCount(Number(value.replace(/\D/g, "") || 0))
+                }
+              />
+            ) : null}
+            {form.purpose === "guest" && form.companionsCount > 0 ? (
+              <Stack gap="md">
+                {Array.from({ length: form.companionsCount }, (_, index) => {
+                  const companion = form.companions[index] ?? {
+                    name: "",
+                    phoneNumber: "",
+                  };
+                  const companionErrors = form.errors.companionDetails?.[index];
 
+                  return (
+                    <View
+                      key={`companion-${index}`}
+                      style={styles.companionCard}
+                    >
+                      <Text style={styles.companionCardTitle}>
+                        Companion {index + 1}
+                      </Text>
+                      <Text style={styles.companionCardHint}>
+                        Name or phone is required
+                      </Text>
+                      <Field
+                        autoCapitalize="words"
+                        error={companionErrors?.name}
+                        icon={FIELD_ICONS.person}
+                        label="Companion name"
+                        placeholder="Optional if phone is provided"
+                        value={companion.name}
+                        onChangeText={(value) =>
+                          form.updateCompanion(index, "name", value)
+                        }
+                      />
+                      <Field
+                        error={companionErrors?.phoneNumber}
+                        icon={FIELD_ICONS.phone}
+                        keyboardType="phone-pad"
+                        label="Companion phone"
+                        placeholder="Optional if name is provided"
+                        value={companion.phoneNumber}
+                        onChangeText={(value) =>
+                          form.updateCompanion(index, "phoneNumber", value)
+                        }
+                      />
+                    </View>
+                  );
+                })}
+              </Stack>
+            ) : null}
+            {form.purpose === "delivery" ? (
+              <>
+                <Text style={styles.fieldLabel}>Delivery partner</Text>
+                <View style={styles.partnerChipGrid}>
+                  {DELIVERY_PARTNERS.map((partner) => {
+                    const active =
+                      !form.deliveryPartnerIsOther &&
+                      form.deliveryPartner === partner;
                     return (
-                      <View key={`companion-${index}`} style={styles.companionCard}>
-                        <Text style={styles.companionCardTitle}>Companion {index + 1}</Text>
-                        <Text style={styles.companionCardHint}>Name or phone is required</Text>
-                        <Field
-                          autoCapitalize="words"
-                          error={companionErrors?.name}
-                          icon={FIELD_ICONS.person}
-                          label="Companion name"
-                          placeholder="Optional if phone is provided"
-                          value={companion.name}
-                          onChangeText={(value) => form.updateCompanion(index, "name", value)}
-                        />
-                        <Field
-                          error={companionErrors?.phoneNumber}
-                          icon={FIELD_ICONS.phone}
-                          keyboardType="phone-pad"
-                          label="Companion phone"
-                          placeholder="Optional if name is provided"
-                          value={companion.phoneNumber}
-                          onChangeText={(value) => form.updateCompanion(index, "phoneNumber", value)}
-                        />
-                      </View>
+                      <Pressable
+                        key={partner}
+                        style={[
+                          styles.partnerChip,
+                          active && styles.partnerChipActive,
+                        ]}
+                        onPress={() => form.selectDeliveryPartner(partner)}
+                        {...androidTouchableFocusProps}
+                      >
+                        <Text
+                          style={[
+                            styles.partnerChipText,
+                            active && styles.partnerChipTextActive,
+                          ]}
+                        >
+                          {partner}
+                        </Text>
+                      </Pressable>
                     );
                   })}
-                </Stack>
-              ) : null}
-              {form.purpose === "delivery" ? (
-                <>
-                  <Text style={styles.fieldLabel}>Delivery partner</Text>
-                  <View style={styles.partnerChipGrid}>
-                    {DELIVERY_PARTNERS.map((partner) => {
-                      const active =
-                        !form.deliveryPartnerIsOther && form.deliveryPartner === partner;
-                      return (
-                        <Pressable
-                          key={partner}
-                          style={[styles.partnerChip, active && styles.partnerChipActive]}
-                          onPress={() => form.selectDeliveryPartner(partner)}
-                          {...androidTouchableFocusProps}
-                        >
-                          <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
-                            {partner}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                    <Pressable
+                  <Pressable
+                    style={[
+                      styles.partnerChip,
+                      form.deliveryPartnerIsOther && styles.partnerChipActive,
+                    ]}
+                    onPress={form.selectCustomDeliveryPartner}
+                    {...androidTouchableFocusProps}
+                  >
+                    <Text
                       style={[
-                        styles.partnerChip,
-                        form.deliveryPartnerIsOther && styles.partnerChipActive,
+                        styles.partnerChipText,
+                        form.deliveryPartnerIsOther &&
+                          styles.partnerChipTextActive,
                       ]}
-                      onPress={form.selectCustomDeliveryPartner}
-                      {...androidTouchableFocusProps}
                     >
-                      <Text
-                        style={[
-                          styles.partnerChipText,
-                          form.deliveryPartnerIsOther && styles.partnerChipTextActive,
-                        ]}
-                      >
-                        {DELIVERY_PARTNER_OTHER_LABEL}
-                      </Text>
-                    </Pressable>
-                  </View>
-                  {form.deliveryPartnerIsOther ? (
-                    <Field
-                      autoCapitalize="words"
-                      error={form.errors.deliveryPartner}
-                      icon={FIELD_ICONS.building}
-                      label="Delivery from"
-                      placeholder="Company or service name"
-                      value={form.deliveryPartner}
-                      onChangeText={form.setDeliveryPartner}
-                    />
-                  ) : null}
-                  {!form.deliveryPartnerIsOther && form.errors.deliveryPartner ? (
-                    <Text style={styles.flatPickerError}>{form.errors.deliveryPartner}</Text>
-                  ) : null}
-                </>
-              ) : null}
-              {form.purpose === "cab" ? (
-                <>
-                  <Field
-                    autoCapitalize="characters"
-                    error={form.errors.vehicleNumber}
-                    icon={FIELD_ICONS.car}
-                    label="Vehicle number"
-                    placeholder="Required"
-                    value={form.vehicleNumber}
-                    onChangeText={form.setVehicleNumber}
-                  />
-                  <Text style={styles.fieldLabel}>Vehicle type</Text>
-                  <Row align="center" gap={8} style={styles.vehicleTypeRow}>
-                    {(["cab", "auto", "car", "bike"] as const).map((type) => {
-                      const active = form.vehicleType === type;
-                      return (
-                        <Pressable
-                          key={type}
-                          style={[styles.partnerChip, active && styles.partnerChipActive]}
-                          onPress={() => form.setVehicleType(type)}
-                          {...androidTouchableFocusProps}
-                        >
-                          <Text style={[styles.partnerChipText, active && styles.partnerChipTextActive]}>
-                            {titleize(type)}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </Row>
-                  {form.errors.vehicleType ? (
-                    <Text style={styles.flatPickerError}>{form.errors.vehicleType}</Text>
-                  ) : null}
-                </>
-              ) : null}
-              {form.purpose === "service" || form.purpose === "maintenance" ? (
-                <Field
-                  error={form.errors.serviceProvider}
-                  icon={FIELD_ICONS.building}
-                  label={form.purpose === "maintenance" ? "Vendor / company" : "Service provider"}
-                  placeholder="Required"
-                  value={form.serviceProvider}
-                  onChangeText={form.setServiceProvider}
-                />
-              ) : null}
-            </Stack>
-
-            <Pressable
-              style={styles.extraToggle}
-              onPress={() => setShowExtra((v) => !v)}
-              {...androidTouchableFocusProps}
-            >
-              <View style={styles.extraToggleIcon}>
-                <SymbolView
-                  name={{
-                    ios: showExtra ? "minus" : "plus",
-                    android: showExtra ? "remove" : "add",
-                    web: showExtra ? "remove" : "add",
-                  }}
-                  size={14}
-                  tintColor={colors.brand.orange}
-                />
-              </View>
-              <Text style={styles.extraToggleText}>
-                {showExtra ? "Hide details" : "Additional details (optional)"}
-              </Text>
-              {form.optionalFieldsCount > 0 ? (
-                <View style={styles.optionalCountBadge}>
-                  <Text style={styles.optionalCountText}>{form.optionalFieldsCount}</Text>
+                      {DELIVERY_PARTNER_OTHER_LABEL}
+                    </Text>
+                  </Pressable>
                 </View>
-              ) : null}
-              <SymbolView
-                name={{
-                  ios: showExtra ? "chevron.up" : "chevron.down",
-                  android: showExtra ? "expand_less" : "expand_more",
-                  web: showExtra ? "expand_less" : "expand_more",
-                }}
-                size={16}
-                tintColor={colors.guard.textMuted}
-              />
-            </Pressable>
-
-            {showExtra ? (
-              <Stack gap="lg">
-                <Field
-                  autoCapitalize="none"
-                  icon={FIELD_ICONS.email}
-                  keyboardType="email-address"
-                  label="Email"
-                  placeholder="Optional"
-                  value={form.email}
-                  onChangeText={form.setEmail}
-                />
+                {form.deliveryPartnerIsOther ? (
+                  <Field
+                    autoCapitalize="words"
+                    error={form.errors.deliveryPartner}
+                    icon={FIELD_ICONS.building}
+                    label="Delivery from"
+                    placeholder="Company or service name"
+                    value={form.deliveryPartner}
+                    onChangeText={form.setDeliveryPartner}
+                  />
+                ) : null}
+                {!form.deliveryPartnerIsOther && form.errors.deliveryPartner ? (
+                  <Text style={styles.flatPickerError}>
+                    {form.errors.deliveryPartner}
+                  </Text>
+                ) : null}
+              </>
+            ) : null}
+            {form.purpose === "cab" ? (
+              <>
                 <Field
                   autoCapitalize="characters"
+                  error={form.errors.vehicleNumber}
                   icon={FIELD_ICONS.car}
                   label="Vehicle number"
-                  placeholder="Optional"
+                  placeholder="Required"
                   value={form.vehicleNumber}
                   onChangeText={form.setVehicleNumber}
                 />
-                <Field
-                  icon={FIELD_ICONS.note}
-                  label="Notes"
-                  multiline
-                  placeholder="Optional"
-                  value={form.notes}
-                  onChangeText={form.setNotes}
-                />
-              </Stack>
-            ) : null}
-
-            {form.createdEntry?.entry ? (
-              <Stack gap="md" style={styles.successCard}>
-                <Text style={styles.successCardTitle}>Entry created</Text>
-                <Text style={styles.successCardSubtitle}>
-                  {getVisitorName(form.createdEntry.entry)}
-                </Text>
-                <Text style={styles.entryCreatedMeta}>
-                  {getFlatLabel(form.createdEntry.entry)} · {titleize(form.createdEntry.entry.purpose)}
-                </Text>
-                {form.createdEntry.qrToken ? (
-                  <Text style={styles.successHint}>
-                    QR token generated. You can proceed to check-in.
+                <Text style={styles.fieldLabel}>Vehicle type</Text>
+                <Row align="center" gap={8} style={styles.vehicleTypeRow}>
+                  {(["cab", "auto", "car", "bike"] as const).map((type) => {
+                    const active = form.vehicleType === type;
+                    return (
+                      <Pressable
+                        key={type}
+                        style={[
+                          styles.partnerChip,
+                          active && styles.partnerChipActive,
+                        ]}
+                        onPress={() => form.setVehicleType(type)}
+                        {...androidTouchableFocusProps}
+                      >
+                        <Text
+                          style={[
+                            styles.partnerChipText,
+                            active && styles.partnerChipTextActive,
+                          ]}
+                        >
+                          {titleize(type)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </Row>
+                {form.errors.vehicleType ? (
+                  <Text style={styles.flatPickerError}>
+                    {form.errors.vehicleType}
                   </Text>
-                ) : (
-                  <Text style={styles.successHint}>
-                    Check-in will be available when a QR token is generated.
-                  </Text>
-                )}
-                <Pressable
-                  style={[styles.secondaryButton, styles.flexButton]}
-                  onPress={form.clearCreatedEntry}
-                >
-                  <Text style={styles.secondaryButtonText}>New entry</Text>
-                </Pressable>
-              </Stack>
+                ) : null}
+              </>
             ) : null}
-          </>
-        ) : (
-          <>
-            {inviteForm.createdInvite ? (
-              <InviteLinkSuccessCard
-                invite={inviteForm.createdInvite}
-                onClear={inviteForm.clearCreatedInvite}
+            {form.purpose === "service" || form.purpose === "maintenance" ? (
+              <Field
+                error={form.errors.serviceProvider}
+                icon={FIELD_ICONS.building}
+                label={
+                  form.purpose === "maintenance"
+                    ? "Vendor / company"
+                    : "Service provider"
+                }
+                placeholder="Required"
+                value={form.serviceProvider}
+                onChangeText={form.setServiceProvider}
               />
             ) : null}
-          </>
-        )}
+          </Stack>
+
+          <Pressable
+            style={styles.extraToggle}
+            onPress={() => setShowExtra((v) => !v)}
+            {...androidTouchableFocusProps}
+          >
+            <View style={styles.extraToggleIcon}>
+              <SymbolView
+                name={{
+                  ios: showExtra ? "minus" : "plus",
+                  android: showExtra ? "remove" : "add",
+                  web: showExtra ? "remove" : "add",
+                }}
+                size={14}
+                tintColor={colors.brand.orange}
+              />
+            </View>
+            <Text style={styles.extraToggleText}>
+              {showExtra ? "Hide details" : "Additional details (optional)"}
+            </Text>
+            {form.optionalFieldsCount > 0 ? (
+              <View style={styles.optionalCountBadge}>
+                <Text style={styles.optionalCountText}>
+                  {form.optionalFieldsCount}
+                </Text>
+              </View>
+            ) : null}
+            <SymbolView
+              name={{
+                ios: showExtra ? "chevron.up" : "chevron.down",
+                android: showExtra ? "expand_less" : "expand_more",
+                web: showExtra ? "expand_less" : "expand_more",
+              }}
+              size={16}
+              tintColor={colors.guard.textMuted}
+            />
+          </Pressable>
+
+          {showExtra ? (
+            <Stack gap="lg">
+              <Field
+                autoCapitalize="none"
+                icon={FIELD_ICONS.email}
+                keyboardType="email-address"
+                label="Email"
+                placeholder="Optional"
+                value={form.email}
+                onChangeText={form.setEmail}
+              />
+              <Field
+                autoCapitalize="characters"
+                icon={FIELD_ICONS.car}
+                label="Vehicle number"
+                placeholder="Optional"
+                value={form.vehicleNumber}
+                onChangeText={form.setVehicleNumber}
+              />
+              <Field
+                icon={FIELD_ICONS.note}
+                label="Notes"
+                multiline
+                placeholder="Optional"
+                value={form.notes}
+                onChangeText={form.setNotes}
+              />
+            </Stack>
+          ) : null}
+
+          {form.createdEntry?.entry ? (
+            <Stack gap="md" style={styles.successCard}>
+              <Text style={styles.successCardTitle}>Entry created</Text>
+              <Text style={styles.successCardSubtitle}>
+                {getVisitorName(form.createdEntry.entry)}
+              </Text>
+              <Text style={styles.entryCreatedMeta}>
+                {getFlatLabel(form.createdEntry.entry)} ·{" "}
+                {titleize(form.createdEntry.entry.purpose)}
+              </Text>
+              {form.createdEntry.qrToken ? (
+                <Text style={styles.successHint}>
+                  QR token generated. You can proceed to check-in.
+                </Text>
+              ) : (
+                <Text style={styles.successHint}>
+                  Check-in will be available when a QR token is generated.
+                </Text>
+              )}
+              <Pressable
+                style={[styles.secondaryButton, styles.flexButton]}
+                onPress={form.clearCreatedEntry}
+              >
+                <Text style={styles.secondaryButtonText}>New entry</Text>
+              </Pressable>
+            </Stack>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {inviteForm.createdInvite ? (
+            <InviteLinkSuccessCard
+              invite={inviteForm.createdInvite}
+              onClear={inviteForm.clearCreatedInvite}
+            />
+          ) : null}
+        </>
+      )}
       <View style={styles.formSubmitSection}>
         <Pressable
           disabled={!canSubmit}
           style={[
             styles.submitButton,
-            canSubmit ? styles.submitButtonEnabled : styles.submitButtonDisabled,
+            canSubmit
+              ? styles.submitButtonEnabled
+              : styles.submitButtonDisabled,
           ]}
           onPress={handleSubmit}
           {...androidTouchableFocusProps}
@@ -767,7 +874,9 @@ export function ManualEntryForm({
                   web: "verified_user",
                 }}
                 size={20}
-                tintColor={canSubmit ? colors.text.inverse : colors.guard.textMuted}
+                tintColor={
+                  canSubmit ? colors.text.inverse : colors.guard.textMuted
+                }
               />
               <Text
                 style={[
@@ -775,7 +884,11 @@ export function ManualEntryForm({
                   !canSubmit && styles.submitButtonTextDisabled,
                 ]}
               >
-                {isFormLinkMode ? "Create link" : allowGuardEntry ? "Create Entry" : "Guard entry disabled"}
+                {isFormLinkMode
+                  ? "Create link"
+                  : allowGuardEntry
+                    ? "Create Entry"
+                    : "Guard entry disabled"}
               </Text>
               <SymbolView
                 name={{
@@ -784,7 +897,9 @@ export function ManualEntryForm({
                   web: "chevron_right",
                 }}
                 size={16}
-                tintColor={canSubmit ? colors.text.inverse : colors.guard.textMuted}
+                tintColor={
+                  canSubmit ? colors.text.inverse : colors.guard.textMuted
+                }
               />
             </Row>
           )}

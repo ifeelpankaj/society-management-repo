@@ -12,7 +12,10 @@ type LoadingStateProps = {
 
 export function LoadingState({ message = "Loading your workspace" }: LoadingStateProps) {
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.safeArea}>
+    <SafeAreaView
+      edges={["top", "left", "right", "bottom"]}
+      style={styles.safeArea}
+    >
       <AppStatusBar />
       <View style={styles.container}>
         <ActivityIndicator color={colors.brand.orange} size="large" />

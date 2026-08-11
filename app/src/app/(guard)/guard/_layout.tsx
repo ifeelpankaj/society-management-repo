@@ -2,6 +2,7 @@ import { Redirect, Stack } from "expo-router";
 
 import { useAuth } from "@/features/auth/use-auth";
 import { GuardSocietyProvider } from "@/features/guard/guard-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function GuardStackLayout() {
   const { status } = useAuth();

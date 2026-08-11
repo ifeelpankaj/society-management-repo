@@ -1,5 +1,11 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
@@ -36,10 +42,17 @@ export function RoleSubScreen({
   }
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
+    <SafeAreaView
+      edges={["top", "left", "right", "bottom"]}
+      style={styles.screen}
+    >
       <AppStatusBar />
       <View style={styles.header}>
-        <ScreenBackHeader fallbackHomeRoute={fallbackHomeRoute} title={title} trailing={headerTrailing} />
+        <ScreenBackHeader
+          fallbackHomeRoute={fallbackHomeRoute}
+          title={title}
+          trailing={headerTrailing}
+        />
         {headerExtra}
       </View>
       {isLoading || !isReady ? (
@@ -47,7 +60,12 @@ export function RoleSubScreen({
           <ActivityIndicator color={colors.guard.teal} size="small" />
         </View>
       ) : (
-        <View style={styles.content}>{children}</View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.content}
+        >
+          {children}
+        </KeyboardAvoidingView>
       )}
     </SafeAreaView>
   );

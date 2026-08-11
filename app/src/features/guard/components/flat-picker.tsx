@@ -12,7 +12,10 @@ import {
   type TextStyle,
 } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Row, Stack } from "@/components/layout";
@@ -30,15 +33,18 @@ import { layout } from "@/theme/layout";
 import { radius } from "@/theme/radius";
 import { shadows } from "@/theme/shadows";
 import { spacing } from "@/theme/spacing";
+import { KeyboardAvoidingView } from "react-native";
 
 const SEARCH_DEBOUNCE_MS = 400;
 const SEARCH_LIMIT = 8;
 
 const androidTouchableFocusProps =
-  Platform.OS === "android" ? ({ focusable: false as const }) : {};
+  Platform.OS === "android" ? { focusable: false as const } : {};
 
 const webNoOutline: TextStyle =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as unknown as TextStyle) : {};
+  Platform.OS === "web"
+    ? ({ outlineStyle: "none" } as unknown as TextStyle)
+    : {};
 
 function FlatSearchField({
   label = "Search flat",
@@ -95,6 +101,7 @@ function FlatSearchModal({
   onClose: () => void;
   onSelect: (flat: SelectedFlat) => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -111,10 +118,17 @@ function FlatSearchModal({
   }, [visible]);
 
   const canSearch = debounced.length > 0;
-  const { data, isFetching, isLoading } = useGetV1SocietiesBySocietyIdFlatsQuery(
-    { societyId, search: debounced, status: "occupied", isActive: true, limit: SEARCH_LIMIT },
-    { skip: !visible || !canSearch },
-  );
+  const { data, isFetching, isLoading } =
+    useGetV1SocietiesBySocietyIdFlatsQuery(
+      {
+        societyId,
+        search: debounced,
+        status: "occupied",
+        isActive: true,
+        limit: SEARCH_LIMIT,
+      },
+      { skip: !visible || !canSearch },
+    );
 
   const flats = data?.data?.flats?.items ?? [];
   const total = data?.data?.flats?.total ?? 0;
@@ -125,12 +139,23 @@ function FlatSearchModal({
 
   return (
     <Modal animationType="slide" visible onRequestClose={onClose}>
-      <SafeAreaView style={styles.modalScreen}>
+      <SafeAreaView
+        edges={["top", "left", "right"]}
+        style={styles.modalScreen}
+      >
         <AppStatusBar />
         <Row align="center" gap="sm" style={styles.modalHeader}>
-          <Pressable style={styles.modalBackButton} onPress={onClose} {...androidTouchableFocusProps}>
+          <Pressable
+            style={styles.modalBackButton}
+            onPress={onClose}
+            {...androidTouchableFocusProps}
+          >
             <SymbolView
-              name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
+              name={{
+                ios: "chevron.left",
+                android: "arrow_back",
+                web: "arrow_back",
+              }}
               size={20}
               tintColor={colors.guard.text}
             />
@@ -157,47 +182,67 @@ function FlatSearchModal({
             </Text>
           </View>
         ) : isLoading ? (
-          <ActivityIndicator color={colors.guard.teal} style={styles.modalLoading} />
+          <ActivityIndicator
+            color={colors.guard.teal}
+            style={styles.modalLoading}
+          />
         ) : flats.length === 0 ? (
           <Text style={styles.modalNoResults}>No flats found</Text>
         ) : (
-          <FlatList
-            contentContainerStyle={styles.modalListContent}
-            data={flats}
-            keyExtractor={(item) => String(item.id)}
-            keyboardShouldPersistTaps="always"
-            ListFooterComponent={
-              total > flats.length ? (
-                <Text style={styles.modalListFooter}>
-                  {flats.length} of {total} — type more to refine
-                </Text>
-              ) : isFetching ? (
-                <ActivityIndicator color={colors.guard.teal} style={styles.modalListLoading} />
-              ) : null
-            }
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.flatListItem}
-                onPress={() => {
-                  const flat = flatFromResponse(item);
-                  if (flat) {
-                    onSelect(flat);
-                    onClose();
-                  }
-                }}
-                {...androidTouchableFocusProps}
-              >
-                <Text style={styles.flatListItemNumber}>
-                  {item.flat_number ?? `#${item.id}`}
-                </Text>
-                <Text style={styles.flatListItemMeta}>
-                  {[item.block ? `Wing ${item.block}` : null, item.floor ? `Floor ${item.floor}` : null]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </Text>
-              </Pressable>
-            )}
-          />
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <FlatList
+              contentContainerStyle={[
+                styles.modalListContent,
+                {
+                  paddingBottom:
+                    spacing["3xl"] + Math.max(insets.bottom, 0),
+                },
+              ]}
+              data={flats}
+              keyExtractor={(item) => String(item.id)}
+              keyboardShouldPersistTaps="always"
+              ListFooterComponent={
+                total > flats.length ? (
+                  <Text style={styles.modalListFooter}>
+                    {flats.length} of {total} — type more to refine
+                  </Text>
+                ) : isFetching ? (
+                  <ActivityIndicator
+                    color={colors.guard.teal}
+                    style={styles.modalListLoading}
+                  />
+                ) : null
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.flatListItem}
+                  onPress={() => {
+                    const flat = flatFromResponse(item);
+                    if (flat) {
+                      onSelect(flat);
+                      onClose();
+                    }
+                  }}
+                  {...androidTouchableFocusProps}
+                >
+                  <Text style={styles.flatListItemNumber}>
+                    {item.flat_number ?? `#${item.id}`}
+                  </Text>
+                  <Text style={styles.flatListItemMeta}>
+                    {[
+                      item.block ? `Wing ${item.block}` : null,
+                      item.floor ? `Floor ${item.floor}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </KeyboardAvoidingView>
         )}
       </SafeAreaView>
     </Modal>
@@ -222,10 +267,16 @@ function ResidentPreviewCard({
       : null;
   const residentLine = loading
     ? "Loading resident..."
-    : [resident ?? "No primary resident", wingLabel].filter(Boolean).join(" · ");
+    : [resident ?? "No primary resident", wingLabel]
+        .filter(Boolean)
+        .join(" · ");
 
   return (
-    <Pressable style={styles.flatSearchCard} onPress={onPress} {...androidTouchableFocusProps}>
+    <Pressable
+      style={styles.flatSearchCard}
+      onPress={onPress}
+      {...androidTouchableFocusProps}
+    >
       <View
         style={[
           styles.flatSearchIcon,
@@ -239,7 +290,9 @@ function ResidentPreviewCard({
         />
       </View>
       <Stack gap={2} style={styles.flatSearchCopy}>
-        <Text style={styles.flatSearchTitle}>{flat.flat_number ?? `Flat ${flat.id}`}</Text>
+        <Text style={styles.flatSearchTitle}>
+          {flat.flat_number ?? `Flat ${flat.id}`}
+        </Text>
         <Text numberOfLines={1} style={styles.flatSearchSubtitle}>
           {residentLine}
         </Text>
@@ -247,7 +300,11 @@ function ResidentPreviewCard({
       <Row align="center" gap="xs" style={styles.changeBadge}>
         <Text style={styles.changeBadgeText}>Change</Text>
         <SymbolView
-          name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+          name={{
+            ios: "chevron.right",
+            android: "chevron_right",
+            web: "chevron_right",
+          }}
           size={10}
           tintColor={colors.brand.orange}
         />
@@ -264,12 +321,19 @@ export type FlatPickerProps = {
   onSelect: (flat: SelectedFlat) => void;
 };
 
-export function FlatPicker({ societyId, selected, error, label, onSelect }: FlatPickerProps) {
+export function FlatPicker({
+  societyId,
+  selected,
+  error,
+  label,
+  onSelect,
+}: FlatPickerProps) {
   const [open, setOpen] = useState(false);
-  const { data, isFetching } = useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery(
-    { societyId, flatId: selected?.id ?? 0 },
-    { skip: !selected?.id },
-  );
+  const { data, isFetching } =
+    useGetV1SocietiesBySocietyIdFlatsAndFlatIdVisitorContextQuery(
+      { societyId, flatId: selected?.id ?? 0 },
+      { skip: !selected?.id },
+    );
   const resident = data?.data?.context?.primary_resident?.full_name;
 
   return (
@@ -290,7 +354,11 @@ export function FlatPicker({ societyId, selected, error, label, onSelect }: Flat
         >
           <View style={[styles.flatSearchIcon, styles.flatSearchIconOrange]}>
             <SymbolView
-              name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+              name={{
+                ios: "magnifyingglass",
+                android: "search",
+                web: "search",
+              }}
               size={24}
               tintColor={colors.brand.orange}
             />
@@ -302,7 +370,11 @@ export function FlatPicker({ societyId, selected, error, label, onSelect }: Flat
             </Text>
           </Stack>
           <SymbolView
-            name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+            name={{
+              ios: "chevron.right",
+              android: "chevron_right",
+              web: "chevron_right",
+            }}
             size={16}
             tintColor={colors.guard.textMuted}
           />
@@ -311,12 +383,17 @@ export function FlatPicker({ societyId, selected, error, label, onSelect }: Flat
 
       {error ? <Text style={styles.flatPickerError}>{error}</Text> : null}
       {open ? (
-        <FlatSearchModal
-          societyId={societyId}
-          visible
-          onClose={() => setOpen(false)}
-          onSelect={onSelect}
-        />
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <FlatSearchModal
+            societyId={societyId}
+            visible
+            onClose={() => setOpen(false)}
+            onSelect={onSelect}
+          />
+        </KeyboardAvoidingView>
       ) : null}
     </Stack>
   );
@@ -441,7 +518,6 @@ const styles = StyleSheet.create({
   },
   modalListContent: {
     gap: spacing.sm,
-    paddingBottom: spacing["3xl"],
     paddingHorizontal: layout.screenPaddingHorizontal,
     paddingTop: spacing.md,
   },

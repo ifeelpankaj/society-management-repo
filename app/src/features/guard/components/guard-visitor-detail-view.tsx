@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SymbolView } from "expo-symbols";
+import { SymbolView, type SymbolViewProps } from "expo-symbols";
 
 import { Button } from "@/components/ui";
 import {
@@ -12,7 +12,10 @@ import {
   getVisitorStatusMeta,
   titleize,
 } from "@/features/guard/guard-utils";
-import type { ModelsVisitorEntry, ModelsVisitorPendingEntry } from "@/lib/api/generated-api";
+import type {
+  ModelsVisitorEntry,
+  ModelsVisitorPendingEntry,
+} from "@/lib/api/generated-api";
 import { colors } from "@/theme/colors";
 import { layout } from "@/theme/layout";
 import { radius } from "@/theme/radius";
@@ -27,9 +30,9 @@ type GuardVisitorDetailViewProps = {
   checkOutLoading?: boolean;
   onCheckOut?: () => void;
 };
-
+type SymbolName = Extract<NonNullable<SymbolViewProps["name"]>, object>;
 type InfoField = {
-  icon: { ios: string; android: string; web: string };
+  icon: SymbolName;
   label: string;
   value: string;
 };
@@ -38,7 +41,7 @@ function SectionHeader({
   icon,
   title,
 }: {
-  icon: { ios: string; android: string; web: string };
+  icon: SymbolName;
   title: string;
 }) {
   return (
@@ -49,13 +52,7 @@ function SectionHeader({
   );
 }
 
-function MetaTag({
-  icon,
-  label,
-}: {
-  icon: { ios: string; android: string; web: string };
-  label: string;
-}) {
+function MetaTag({ icon, label }: { icon: SymbolName; label: string }) {
   return (
     <View style={styles.metaTag}>
       <SymbolView name={icon} size={12} tintColor={colors.guard.textMuted} />
@@ -79,13 +76,19 @@ function TimeCard({
 }) {
   const isCheckIn = accent === "checkin";
   const iconColor = isCheckIn ? colors.status.success : colors.brand.orange;
-  const iconBg = isCheckIn ? colors.status.successSoft : colors.brand.orangeSoft;
+  const iconBg = isCheckIn
+    ? colors.status.successSoft
+    : colors.brand.orangeSoft;
 
   return (
     <View style={styles.timeCard}>
       <View style={[styles.timeIconWrap, { backgroundColor: iconBg }]}>
         <SymbolView
-          name={{ ios: "calendar", android: "calendar_today", web: "calendar_today" }}
+          name={{
+            ios: "calendar",
+            android: "calendar_today",
+            web: "calendar_today",
+          }}
           size={16}
           tintColor={iconColor}
         />
@@ -110,7 +113,7 @@ function InfoRow({
   label,
   value,
 }: {
-  icon: { ios: string; android: string; web: string };
+  icon: SymbolName;
   isLast?: boolean;
   label: string;
   value: string;
@@ -162,7 +165,9 @@ function getDetailStatusStyle(status?: ModelsVisitorEntry["status"]) {
   }
 }
 
-function buildInfoFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry): InfoField[] {
+function buildInfoFields(
+  entry: ModelsVisitorEntry | ModelsVisitorPendingEntry,
+): InfoField[] {
   const fields: InfoField[] = [
     {
       icon: { ios: "person.fill", android: "person", web: "person" },
@@ -181,7 +186,11 @@ function buildInfoFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry):
 
   if (entry.purpose) {
     fields.push({
-      icon: { ios: "person.text.rectangle.fill", android: "badge", web: "badge" },
+      icon: {
+        ios: "person.text.rectangle.fill",
+        android: "badge",
+        web: "badge",
+      },
       label: "Purpose",
       value: titleize(entry.purpose),
     });
@@ -197,7 +206,11 @@ function buildInfoFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry):
 
   if (entry.vehicle_number) {
     fields.push({
-      icon: { ios: "car.fill", android: "directions_car", web: "directions_car" },
+      icon: {
+        ios: "car.fill",
+        android: "directions_car",
+        web: "directions_car",
+      },
       label: "Vehicle",
       value: entry.vehicle_type
         ? `${entry.vehicle_number} (${titleize(entry.vehicle_type)})`
@@ -215,7 +228,11 @@ function buildInfoFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry):
 
   if (entry.delivery_partner) {
     fields.push({
-      icon: { ios: "shippingbox.fill", android: "local_shipping", web: "local_shipping" },
+      icon: {
+        ios: "shippingbox.fill",
+        android: "local_shipping",
+        web: "local_shipping",
+      },
       label: "Delivery Partner",
       value: entry.delivery_partner,
     });
@@ -223,7 +240,11 @@ function buildInfoFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry):
 
   if (entry.service_provider) {
     fields.push({
-      icon: { ios: "wrench.and.screwdriver.fill", android: "build", web: "build" },
+      icon: {
+        ios: "wrench.and.screwdriver.fill",
+        android: "build",
+        web: "build",
+      },
       label: "Service Provider",
       value: entry.service_provider,
     });
@@ -232,7 +253,9 @@ function buildInfoFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry):
   return fields;
 }
 
-function buildVisitFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry): InfoField[] {
+function buildVisitFields(
+  entry: ModelsVisitorEntry | ModelsVisitorPendingEntry,
+): InfoField[] {
   const fields: InfoField[] = [];
 
   if (entry.expected_at) {
@@ -245,7 +268,11 @@ function buildVisitFields(entry: ModelsVisitorEntry | ModelsVisitorPendingEntry)
 
   if (entry.approved_at) {
     fields.push({
-      icon: { ios: "checkmark.seal.fill", android: "verified", web: "verified" },
+      icon: {
+        ios: "checkmark.seal.fill",
+        android: "verified",
+        web: "verified",
+      },
       label: "Approved At",
       value: formatDateTime(entry.approved_at),
     });
@@ -276,8 +303,12 @@ export function GuardVisitorDetailView({
   const infoFields = buildInfoFields(entry);
   const visitFields = buildVisitFields(entry);
 
-  const checkInDate = entry.checked_in_at ? formatDateOnly(entry.checked_in_at) : null;
-  const checkInTime = entry.checked_in_at ? formatTimeOfDay(entry.checked_in_at) : null;
+  const checkInDate = entry.checked_in_at
+    ? formatDateOnly(entry.checked_in_at)
+    : null;
+  const checkInTime = entry.checked_in_at
+    ? formatTimeOfDay(entry.checked_in_at)
+    : null;
   const checkOutDate = entry.checked_out_at
     ? formatDateOnly(entry.checked_out_at)
     : entry.expected_checkout_at
@@ -296,164 +327,194 @@ export function GuardVisitorDetailView({
 
   return (
     <View style={styles.container}>
-      <View style={styles.heroCard}>
-        <View style={styles.heroTop}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{visitorName.charAt(0).toUpperCase()}</Text>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTop}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {visitorName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+
+            <View style={styles.heroCopy}>
+              <Text numberOfLines={1} style={styles.visitorName}>
+                {visitorName}
+              </Text>
+              <MetaTag
+                icon={{ ios: "person.fill", android: "person", web: "person" }}
+                label={purposeLabel}
+              />
+              <MetaTag
+                icon={{
+                  ios: "building.2.fill",
+                  android: "apartment",
+                  web: "apartment",
+                }}
+                label={flatLocation}
+              />
+            </View>
+
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: badgeBg, borderColor: badgeBorder },
+              ]}
+            >
+              {detailStatus?.showCheck ? (
+                <SymbolView
+                  name={{
+                    ios: "checkmark.circle.fill",
+                    android: "check_circle",
+                    web: "check_circle",
+                  }}
+                  size={12}
+                  tintColor={badgeColor}
+                />
+              ) : (
+                <SymbolView
+                  name={{ ios: "clock", android: "schedule", web: "schedule" }}
+                  size={11}
+                  tintColor={badgeColor}
+                />
+              )}
+              <Text style={[styles.statusText, { color: badgeColor }]}>
+                {statusMeta.label}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.heroCopy}>
-            <Text numberOfLines={1} style={styles.visitorName}>
-              {visitorName}
-            </Text>
-            <MetaTag
-              icon={{ ios: "person.fill", android: "person", web: "person" }}
-              label={purposeLabel}
+          <View style={styles.timeCardsRow}>
+            <TimeCard
+              accent="checkin"
+              date={checkInDate}
+              label="CHECK-IN"
+              time={checkInTime}
             />
-            <MetaTag
-              icon={{ ios: "building.2.fill", android: "apartment", web: "apartment" }}
-              label={flatLocation}
+            <TimeCard
+              accent="checkout"
+              date={checkOutDate}
+              label={checkOutLabel}
+              time={checkOutTime}
             />
-          </View>
-
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: badgeBg, borderColor: badgeBorder },
-            ]}
-          >
-            {detailStatus?.showCheck ? (
-              <SymbolView
-                name={{ ios: "checkmark.circle.fill", android: "check_circle", web: "check_circle" }}
-                size={12}
-                tintColor={badgeColor}
-              />
-            ) : (
-              <SymbolView
-                name={{ ios: "clock", android: "schedule", web: "schedule" }}
-                size={11}
-                tintColor={badgeColor}
-              />
-            )}
-            <Text style={[styles.statusText, { color: badgeColor }]}>{statusMeta.label}</Text>
           </View>
         </View>
 
-        <View style={styles.timeCardsRow}>
-          <TimeCard
-            accent="checkin"
-            date={checkInDate}
-            label="CHECK-IN"
-            time={checkInTime}
-          />
-          <TimeCard
-            accent="checkout"
-            date={checkOutDate}
-            label={checkOutLabel}
-            time={checkOutTime}
-          />
-        </View>
-      </View>
+        {contextMessage ? (
+          <View style={styles.contextBanner}>
+            <SymbolView
+              name={{ ios: "info.circle.fill", android: "info", web: "info" }}
+              size={15}
+              tintColor={colors.brand.orange}
+            />
+            <Text style={styles.contextText}>{contextMessage}</Text>
+          </View>
+        ) : null}
 
-      {contextMessage ? (
-        <View style={styles.contextBanner}>
+        <SectionHeader
+          icon={{
+            ios: "building.2.fill",
+            android: "apartment",
+            web: "apartment",
+          }}
+          title="Visiting Flat"
+        />
+        <View style={styles.flatCard}>
+          <View style={styles.flatIconWrap}>
+            <SymbolView
+              name={{ ios: "house.fill", android: "home", web: "home" }}
+              size={18}
+              tintColor={colors.brand.orange}
+            />
+          </View>
+          <View style={styles.flatCopy}>
+            <Text style={styles.flatPrimary}>{flatLocation}</Text>
+            <Text style={styles.flatSecondary}>Flat</Text>
+          </View>
           <SymbolView
-            name={{ ios: "info.circle.fill", android: "info", web: "info" }}
-            size={15}
+            name={{
+              ios: "chevron.right",
+              android: "chevron_right",
+              web: "chevron_right",
+            }}
+            size={14}
+            tintColor={colors.guard.textMuted}
+          />
+        </View>
+
+        <SectionHeader
+          icon={{ ios: "person.fill", android: "person", web: "person" }}
+          title="Visitor Information"
+        />
+        <View style={styles.infoCard}>
+          {infoFields.map((field, index) => (
+            <InfoRow
+              key={field.label}
+              icon={field.icon}
+              isLast={index === infoFields.length - 1}
+              label={field.label}
+              value={field.value}
+            />
+          ))}
+        </View>
+
+        {visitFields.length > 0 ? (
+          <>
+            <SectionHeader
+              icon={{ ios: "clock.fill", android: "schedule", web: "schedule" }}
+              title="Visit Details"
+            />
+            <View style={styles.infoCard}>
+              {visitFields.map((field, index) => (
+                <InfoRow
+                  key={field.label}
+                  icon={field.icon}
+                  isLast={index === visitFields.length - 1}
+                  label={field.label}
+                  value={field.value}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {entry.notes ? (
+          <>
+            <SectionHeader
+              icon={{
+                ios: "note.text",
+                android: "sticky_note_2",
+                web: "sticky_note_2",
+              }}
+              title="Notes"
+            />
+            <View style={styles.notesCard}>
+              <Text style={styles.notesText}>{entry.notes}</Text>
+            </View>
+          </>
+        ) : null}
+
+        {entry.status === "checked_in" && onCheckOut ? (
+          <Button
+            loading={checkOutLoading}
+            style={styles.checkOutButton}
+            title="Check Out"
+            onPress={onCheckOut}
+          />
+        ) : null}
+
+        <View style={styles.footer}>
+          <SymbolView
+            name={{
+              ios: "shield.checkered",
+              android: "verified_user",
+              web: "verified_user",
+            }}
+            size={16}
             tintColor={colors.brand.orange}
           />
-          <Text style={styles.contextText}>{contextMessage}</Text>
+          <Text style={styles.footerText}>
+            Thank you for keeping our community safe.
+          </Text>
         </View>
-      ) : null}
-
-      <SectionHeader
-        icon={{ ios: "building.2.fill", android: "apartment", web: "apartment" }}
-        title="Visiting Flat"
-      />
-      <View style={styles.flatCard}>
-        <View style={styles.flatIconWrap}>
-          <SymbolView
-            name={{ ios: "house.fill", android: "home", web: "home" }}
-            size={18}
-            tintColor={colors.brand.orange}
-          />
-        </View>
-        <View style={styles.flatCopy}>
-          <Text style={styles.flatPrimary}>{flatLocation}</Text>
-          <Text style={styles.flatSecondary}>Flat</Text>
-        </View>
-        <SymbolView
-          name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-          size={14}
-          tintColor={colors.guard.textMuted}
-        />
-      </View>
-
-      <SectionHeader
-        icon={{ ios: "person.fill", android: "person", web: "person" }}
-        title="Visitor Information"
-      />
-      <View style={styles.infoCard}>
-        {infoFields.map((field, index) => (
-          <InfoRow
-            key={field.label}
-            icon={field.icon}
-            isLast={index === infoFields.length - 1}
-            label={field.label}
-            value={field.value}
-          />
-        ))}
-      </View>
-
-      {visitFields.length > 0 ? (
-        <>
-          <SectionHeader
-            icon={{ ios: "clock.fill", android: "schedule", web: "schedule" }}
-            title="Visit Details"
-          />
-          <View style={styles.infoCard}>
-            {visitFields.map((field, index) => (
-              <InfoRow
-                key={field.label}
-                icon={field.icon}
-                isLast={index === visitFields.length - 1}
-                label={field.label}
-                value={field.value}
-              />
-            ))}
-          </View>
-        </>
-      ) : null}
-
-      {entry.notes ? (
-        <>
-          <SectionHeader
-            icon={{ ios: "note.text", android: "sticky_note_2", web: "sticky_note_2" }}
-            title="Notes"
-          />
-          <View style={styles.notesCard}>
-            <Text style={styles.notesText}>{entry.notes}</Text>
-          </View>
-        </>
-      ) : null}
-
-      {entry.status === "checked_in" && onCheckOut ? (
-        <Button
-          loading={checkOutLoading}
-          style={styles.checkOutButton}
-          title="Check Out"
-          onPress={onCheckOut}
-        />
-      ) : null}
-
-      <View style={styles.footer}>
-        <SymbolView
-          name={{ ios: "shield.checkered", android: "verified_user", web: "verified_user" }}
-          size={16}
-          tintColor={colors.brand.orange}
-        />
-        <Text style={styles.footerText}>Thank you for keeping our community safe.</Text>
-      </View>
     </View>
   );
 }

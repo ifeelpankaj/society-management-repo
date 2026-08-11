@@ -195,10 +195,14 @@ export function VisitorDetailClient({
                 <div className="space-y-3 text-sm">
                   <p>
                     <span className="text-muted-foreground">Flat: </span>
-                    <span className="font-medium">{visitorFlatLabel(entry)}</span>
+                    <span className="font-medium">
+                      {visitorFlatLabel(entry)}
+                    </span>
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Block / floor: </span>
+                    <span className="text-muted-foreground">
+                      Block / floor:{" "}
+                    </span>
                     {[entry.flat?.block, entry.flat?.floor]
                       .filter(Boolean)
                       .join(" / ") || "Not set"}

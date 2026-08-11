@@ -1,7 +1,17 @@
 import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import type { Href } from "expo-router";
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
@@ -79,46 +89,60 @@ export function VisitorEntriesListScreen<TSegment extends string>({
 }: VisitorEntriesListScreenProps<TSegment>) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const listContentPaddingBottom = spacing["2xl"] + Math.max(insets.bottom, 0);
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={[styles.screen, { backgroundColor }]}>
+    <SafeAreaView
+      edges={["top", "left", "right", "bottom"]}
+      style={[styles.screen, { backgroundColor }]}
+    >
       <AppStatusBar />
-      <PaginatedList<ModelsVisitorEntry>
-        ItemSeparatorComponent={LogEntryDivider}
-        contentContainerStyle={StyleSheet.flatten([styles.listContent, listContentStyle])}
-        data={controls.items}
-        emptyMessage={emptyMessage}
-        emptyTitle={emptyTitle}
-        footer={footer ?? <View style={styles.footerSpacer} />}
-        hasMore={controls.hasMore}
-        header={
-          <Stack gap="md" style={styles.header}>
-            <LogsSearchHeader<TSegment>
-              activeFilterCount={controls.activeFilterCount}
-              datePreset={controls.datePreset}
-              fallbackHomeRoute={fallbackHomeRoute}
-              isSearchActive={controls.isSearchActive}
-              searchValue={controls.searchInput}
-              segment={controls.segment}
-              segmentOptions={segmentOptions}
-              title={searchTitle}
-              onClearSearch={() => controls.setSearchInput("")}
-              onDatePress={() => setDateOpen(true)}
-              onFilterPress={() => setFilterOpen(true)}
-              onSearchChange={controls.setSearchInput}
-              onSegmentChange={controls.selectSegment}
-            />
-            {headerExtra}
-          </Stack>
-        }
-        isLoading={controls.isLoading}
-        isLoadingMore={controls.isLoadingMore}
-        isRefreshing={controls.isRefreshing}
-        keyExtractor={(item) => `${keyPrefix}-${item.id}`}
-        renderItem={({ item }) => renderRow(item)}
-        onLoadMore={controls.loadMore}
-        onRefresh={controls.refresh}
-      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.screen}
+      >
+        <PaginatedList<ModelsVisitorEntry>
+          ItemSeparatorComponent={LogEntryDivider}
+          contentContainerStyle={StyleSheet.flatten([
+            styles.listContent,
+            { paddingBottom: listContentPaddingBottom },
+            listContentStyle,
+          ])}
+          data={controls.items}
+          emptyMessage={emptyMessage}
+          emptyTitle={emptyTitle}
+          footer={footer ?? <View style={styles.footerSpacer} />}
+          hasMore={controls.hasMore}
+          header={
+            <Stack gap="md" style={styles.header}>
+              <LogsSearchHeader<TSegment>
+                activeFilterCount={controls.activeFilterCount}
+                datePreset={controls.datePreset}
+                fallbackHomeRoute={fallbackHomeRoute}
+                isSearchActive={controls.isSearchActive}
+                searchValue={controls.searchInput}
+                segment={controls.segment}
+                segmentOptions={segmentOptions}
+                title={searchTitle}
+                onClearSearch={() => controls.setSearchInput("")}
+                onDatePress={() => setDateOpen(true)}
+                onFilterPress={() => setFilterOpen(true)}
+                onSearchChange={controls.setSearchInput}
+                onSegmentChange={controls.selectSegment}
+              />
+              {headerExtra}
+            </Stack>
+          }
+          isLoading={controls.isLoading}
+          isLoadingMore={controls.isLoadingMore}
+          isRefreshing={controls.isRefreshing}
+          keyExtractor={(item) => `${keyPrefix}-${item.id}`}
+          renderItem={({ item }) => renderRow(item)}
+          onLoadMore={controls.loadMore}
+          onRefresh={controls.refresh}
+        />
+      </KeyboardAvoidingView>
 
       <LogsFilterSheet
         datePreset={controls.datePreset}

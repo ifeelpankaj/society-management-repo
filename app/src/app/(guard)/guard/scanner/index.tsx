@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { scanFromURLAsync } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { SymbolView } from "expo-symbols";
@@ -12,7 +18,10 @@ import { AppIcon } from "@/components/icons";
 import { GuardSocietyGate } from "@/features/guard/components/guard-society-gate";
 import { ManualCodeSheet } from "@/features/guard/components/scanner/manual-code-sheet";
 import { ScanFrameOverlay } from "@/features/guard/components/scanner/scan-frame-overlay";
-import { guardCheckInRoute, guardHomeRoute } from "@/features/guard/guard-routes";
+import {
+  guardCheckInRoute,
+  guardHomeRoute,
+} from "@/features/guard/guard-routes";
 import { extractQrToken } from "@/features/guard/guard-utils";
 import { useGuardFeedback } from "@/features/guard/hooks/use-guard-feedback";
 import { useGuardScreen } from "@/features/guard/hooks/use-guard-screen";
@@ -24,7 +33,8 @@ import { spacing } from "@/theme/spacing";
 export default function GuardScannerScreen() {
   const router = useRouter();
   const feedback = useGuardFeedback();
-  const { isLoading, isReady, memberships, requiresSelection } = useGuardScreen();
+  const { isLoading, isReady, memberships, requiresSelection } =
+    useGuardScreen();
   const scanLockedRef = useRef(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [manualVisible, setManualVisible] = useState(false);
@@ -78,7 +88,8 @@ export default function GuardScannerScreen() {
     setGalleryLoading(true);
 
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permission.granted) {
         feedback.showError(
@@ -127,7 +138,10 @@ export default function GuardScannerScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top", "left", "right", "bottom"]} style={styles.screen}>
+    <SafeAreaView
+      edges={["top", "left", "right", "bottom"]}
+      style={styles.screen}
+    >
       <AppStatusBar />
 
       <View style={styles.headerCard}>
@@ -136,14 +150,19 @@ export default function GuardScannerScreen() {
             accessibilityLabel="Go back"
             accessibilityRole="button"
             hitSlop={8}
-            style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+            style={({ pressed }) => [
+              styles.iconButton,
+              pressed && styles.iconButtonPressed,
+            ]}
             onPress={handleBack}
           >
             <AppIcon color={colors.brand.navy} name="back" size={18} />
           </Pressable>
 
           <Pressable
-            accessibilityLabel={flashEnabled ? "Turn flash off" : "Turn flash on"}
+            accessibilityLabel={
+              flashEnabled ? "Turn flash off" : "Turn flash on"
+            }
             accessibilityRole="button"
             hitSlop={8}
             style={({ pressed }) => [
@@ -189,13 +208,18 @@ export default function GuardScannerScreen() {
 
       <View style={styles.footerCard}>
         <Text style={styles.helpTitle}>Can&apos;t scan the code?</Text>
-        <Text style={styles.helpText}>Try adjusting the angle or distance.</Text>
+        <Text style={styles.helpText}>
+          Try adjusting the angle or distance.
+        </Text>
 
         <View style={styles.footerActions}>
           <Pressable
             accessibilityLabel="Enter code manually"
             accessibilityRole="button"
-            style={({ pressed }) => [styles.footerAction, pressed && styles.footerActionPressed]}
+            style={({ pressed }) => [
+              styles.footerAction,
+              pressed && styles.footerActionPressed,
+            ]}
             onPress={() => setManualVisible(true)}
           >
             <SymbolView

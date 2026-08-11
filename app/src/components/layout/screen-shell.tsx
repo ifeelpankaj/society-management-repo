@@ -1,6 +1,15 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { RefreshControl, StyleSheet, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -50,16 +59,31 @@ export function ScreenShell({
     );
   }
 
+  const bottomInset = Math.max(insets.bottom, 0);
+  const scrollPaddingBottom = footer
+    ? spacing.lg
+    : contentPaddingBottom + bottomInset;
+
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={[styles.flex, { backgroundColor }]}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={[styles.flex, { backgroundColor }]}
+    >
       <AppStatusBar />
-      <View style={styles.flex}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
+      >
         <ScrollContainer
           style={styles.flex}
-          paddingBottom={footer ? spacing.lg : contentPaddingBottom}
+          paddingBottom={scrollPaddingBottom}
           refreshControl={
             onRefresh ? (
-              <RefreshControl refreshing={refreshing} tintColor={refreshTintColor} onRefresh={onRefresh} />
+              <RefreshControl
+                refreshing={refreshing}
+                tintColor={refreshTintColor}
+                onRefresh={onRefresh}
+              />
             ) : undefined
           }
         >
@@ -78,7 +102,7 @@ export function ScreenShell({
             {footer}
           </View>
         ) : null}
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

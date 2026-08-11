@@ -23,7 +23,9 @@ function firstParam(value?: string | string[]) {
 
 export default function GuardEntryDetailRoute() {
   const router = useRouter();
-  const { entryId: entryIdParam } = useLocalSearchParams<{ entryId?: string | string[] }>();
+  const { entryId: entryIdParam } = useLocalSearchParams<{
+    entryId?: string | string[];
+  }>();
   const entryId = Number(firstParam(entryIdParam));
   const { selectedSocietyId } = useGuardScreen();
   const actions = useGuardActions(selectedSocietyId ?? 0);
@@ -64,9 +66,11 @@ export default function GuardEntryDetailRoute() {
   };
 
   const handleMenuPress = () => {
-    const menuOptions: { text: string; onPress?: () => void; style?: "cancel" | "destructive" }[] = [
-      { text: "Cancel", style: "cancel" },
-    ];
+    const menuOptions: {
+      text: string;
+      onPress?: () => void;
+      style?: "cancel" | "destructive";
+    }[] = [{ text: "Cancel", style: "cancel" }];
 
     if (editable) {
       menuOptions.unshift({
@@ -90,7 +94,10 @@ export default function GuardEntryDetailRoute() {
     }
 
     if (menuOptions.length === 1) {
-      Alert.alert("Visitor Actions", "No actions are available for this visitor.");
+      Alert.alert(
+        "Visitor Actions",
+        "No actions are available for this visitor.",
+      );
       return;
     }
 
@@ -102,7 +109,10 @@ export default function GuardEntryDetailRoute() {
       accessibilityLabel="More actions"
       accessibilityRole="button"
       hitSlop={8}
-      style={({ pressed }) => [styles.menuButton, pressed && styles.menuButtonPressed]}
+      style={({ pressed }) => [
+        styles.menuButton,
+        pressed && styles.menuButtonPressed,
+      ]}
       onPress={handleMenuPress}
     >
       <SymbolView
@@ -147,7 +157,10 @@ export default function GuardEntryDetailRoute() {
                 />
               ) : null}
               {canCheckIn ? (
-                <Button title="Review & Check In" onPress={() => void handleCheckIn()} />
+                <Button
+                  title="Review & Check In"
+                  onPress={() => void handleCheckIn()}
+                />
               ) : null}
             </View>
           ) : null}

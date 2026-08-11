@@ -25,7 +25,7 @@ SELECT
     f.*,
     s.name AS society_name,
     s.society_code AS society_code,
-    primary_resident.full_name AS primary_resident_name
+    COALESCE(primary_resident.full_name, '') AS primary_resident_name
 FROM flats f
 JOIN societies s ON s.id = f.society_id
 LEFT JOIN LATERAL (

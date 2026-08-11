@@ -3,7 +3,7 @@ import { useRouter, type Href } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 import { AppIcon } from "@/components/icons";
-import { Row } from "@/components/layout";
+import { Row } from "@/components/layout/row";
 import { colors } from "@/theme/colors";
 import { radius } from "@/theme/radius";
 import { spacing } from "@/theme/spacing";
@@ -14,7 +14,11 @@ type ScreenBackHeaderProps = {
   trailing?: ReactNode;
 };
 
-export function ScreenBackHeader({ fallbackHomeRoute, title, trailing }: ScreenBackHeaderProps) {
+export function ScreenBackHeader({
+  fallbackHomeRoute,
+  title,
+  trailing,
+}: ScreenBackHeaderProps) {
   const router = useRouter();
 
   const handleBack = () => {
@@ -32,7 +36,10 @@ export function ScreenBackHeader({ fallbackHomeRoute, title, trailing }: ScreenB
         accessibilityLabel="Go back"
         accessibilityRole="button"
         hitSlop={8}
-        style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.backButtonPressed,
+        ]}
         onPress={handleBack}
       >
         <AppIcon color={colors.guard.text} name="back" size={18} />

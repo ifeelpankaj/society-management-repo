@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,7 +11,10 @@ import {
   View,
 } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { AppStatusBar } from "@/components/layout/app-status-bar";
 import { Stack } from "@/components/layout";
@@ -49,6 +54,7 @@ function buildInitialValues(user?: ModelsUserResponse | null): UpdateProfileBody
 }
 
 export function ProfileEditSheet({ onClose, onSaved, user, visible }: ProfileEditSheetProps) {
+  const insets = useSafeAreaInsets();
   const [values, setValues] = useState<UpdateProfileBody>(() => buildInitialValues(user));
   const [error, setError] = useState<string | null>(null);
   const [dobError, setDobError] = useState<string | null>(null);
@@ -108,18 +114,22 @@ export function ProfileEditSheet({ onClose, onSaved, user, visible }: ProfileEdi
 
   return (
     <Modal animationType="slide" presentationStyle="pageSheet" visible={visible} onRequestClose={onClose}>
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.screen}>
         <AppStatusBar />
-        <View style={styles.header}>
-          <View style={styles.headerSide} />
-          <Text style={styles.headerTitle}>Edit Profile</Text>
-          <Pressable accessibilityLabel="Close" hitSlop={12} style={styles.headerSide} onPress={onClose}>
-            <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={18} tintColor={colors.text.secondary} />
-          </Pressable>
-        </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.screen}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerSide} />
+            <Text style={styles.headerTitle}>Edit Profile</Text>
+            <Pressable accessibilityLabel="Close" hitSlop={12} style={styles.headerSide} onPress={onClose}>
+              <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={18} tintColor={colors.text.secondary} />
+            </Pressable>
+          </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Stack gap="md">
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <Stack gap="md">
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>First name</Text>
               <TextInput
@@ -191,18 +201,24 @@ export function ProfileEditSheet({ onClose, onSaved, user, visible }: ProfileEdi
               {dobError ? <Text style={styles.errorText}>{dobError}</Text> : null}
             </View>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </Stack>
-        </ScrollView>
+            </Stack>
+          </ScrollView>
 
-        <View style={styles.footer}>
-          <Pressable
-            disabled={patchState.isLoading}
-            style={[styles.saveButton, patchState.isLoading && styles.saveButtonDisabled]}
-            onPress={() => void handleSave()}
+          <View
+            style={[
+              styles.footer,
+              { paddingBottom: spacing.lg + Math.max(insets.bottom, 0) },
+            ]}
           >
-            <Text style={styles.saveButtonText}>{patchState.isLoading ? "Saving..." : "Save profile"}</Text>
-          </Pressable>
-        </View>
+            <Pressable
+              disabled={patchState.isLoading}
+              style={[styles.saveButton, patchState.isLoading && styles.saveButtonDisabled]}
+              onPress={() => void handleSave()}
+            >
+              <Text style={styles.saveButtonText}>{patchState.isLoading ? "Saving..." : "Save profile"}</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
@@ -247,7 +263,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.default,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: layout.screenPaddingHorizontal,
-    paddingVertical: spacing.lg,
+    paddingTop: spacing.lg,
   },
   genderChip: {
     backgroundColor: colors.surface.card,
